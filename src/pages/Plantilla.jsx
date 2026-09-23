@@ -204,19 +204,26 @@ export default function Plantilla() {
                     </small>
                   </span>
                 </Link>
-                <span className={`roster-cell${portero ? ' accent-orange' : ''}`}>
+                <span
+                  className={`roster-cell${portero ? ' accent-orange' : ''}`}
+                  data-label="Partidos"
+                >
                   {partidos != null && partidos > 0 ? partidos : '—'}
                 </span>
-                <span className={`roster-cell valor${portero ? ' accent-orange' : ''}`}>
+                <span
+                  className={`roster-cell valor${portero ? ' accent-orange' : ''}`}
+                  data-label="Eficacia"
+                >
                   {valor != null ? `${valor}%` : '—'}
                 </span>
                 <span
                   className={`roster-cell${pctPerd != null && pctPerd >= 25 ? ' accent-warn' : ''}`}
+                  data-label="% Pérd."
                   title={s ? `${s.perdidas || 0} pérdidas / ${(s.lanzamientos || 0) + (s.perdidas || 0)} acciones` : ''}
                 >
                   {pctPerd != null ? `${pctPerd}%` : '—'}
                 </span>
-                <span className="roster-cell roster-cell-sanc">
+                <span className="roster-cell roster-cell-sanc" data-label="Sanciones">
                   <SancionChips s={s} />
                 </span>
                 <div className="roster-actions">

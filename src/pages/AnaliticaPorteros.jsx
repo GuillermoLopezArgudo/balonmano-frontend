@@ -321,9 +321,15 @@ export default function AnaliticaPorteros() {
                   <small>{p.partidos} partidos</small>
                 </span>
               </div>
-              <span className="roster-cell accent-orange">{p.paradas}</span>
-              <span className="roster-cell">{p.recibidos}</span>
-              <span className="roster-cell valor">{p.efi}%</span>
+              <span className="roster-cell accent-orange" data-label="Paradas">
+                {p.paradas}
+              </span>
+              <span className="roster-cell" data-label="Recibidos">
+                {p.recibidos}
+              </span>
+              <span className="roster-cell valor" data-label="Efi.">
+                {p.efi}%
+              </span>
             </div>
           ))}
           {!porPortero.length && (

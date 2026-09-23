@@ -256,11 +256,15 @@ export default function ResumenPartido() {
                     <small>{j.posicion}</small>
                   </span>
                 </div>
-                <span className="roster-cell">{j.goles} G</span>
-                <span className="roster-cell">
+                <span className="roster-cell" data-label="Goles">
+                  {j.goles} G
+                </span>
+                <span className="roster-cell" data-label="Lanz.">
                   {j.goles}/{j.lanzamientos}
                 </span>
-                <span className="roster-cell valor">{j.efi}%</span>
+                <span className="roster-cell valor" data-label="Efi.">
+                  {j.efi}%
+                </span>
               </div>
             ))}
             {!porJugador.length && (
