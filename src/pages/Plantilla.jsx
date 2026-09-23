@@ -42,6 +42,26 @@ function matchesFiltro(j, match) {
   return (j.posiciones || []).some((p) => p.toLowerCase().includes(match.toLowerCase()));
 }
 
+function SancionChips({ s }) {
+  if (!s) return <span className="muted">—</span>;
+  const items = [
+    { key: '2min', label: "2'", n: s.exclusiones_2min || 0, cls: 'sanc-2min' },
+    { key: 'am', label: 'A', n: s.amarillas || 0, cls: 'sanc-am' },
+    { key: 'ro', label: 'R', n: s.rojas || 0, cls: 'sanc-ro' },
+    { key: 'az', label: 'Az', n: s.azules || 0, cls: 'sanc-az' },
+  ].filter((i) => i.n > 0);
+  if (!items.length) return <span className="muted">—</span>;
+  return (
+    <span className="roster-sanciones">
+      {items.map((i) => (
+        <span key={i.key} className={`roster-sanc-chip ${i.cls}`} title={`${i.label}: ${i.n}`}>
+          {i.label}·{i.n}
+        </span>
+      ))}
+    </span>
+  );
+}
+
 export default function Plantilla() {
   const { equipo } = useAuth();
   const [jugadores, setJugadores] = useState([]);
@@ -131,9 +151,10 @@ export default function Plantilla() {
       <section className="roster-panel">
         <div className="roster-head">
           <span>Nombre / Posición</span>
-          <span>Edad</span>
           <span>Partidos</span>
-          <span>Valoración</span>
+          <span>Eficacia</span>
+          <span>% Pérd.</span>
+          <span>Sanciones</span>
           <span />
         </div>
 
@@ -144,6 +165,10 @@ export default function Plantilla() {
             const valor =
               s && s.lanzamientos > 0
                 ? Math.round((s.goles / s.lanzamientos) * 100)
+                : null;
+            const pctPerd =
+              s && (s.lanzamientos > 0 || s.perdidas > 0)
+                ? Math.round(s.pct_perdidas ?? 0)
                 : null;
             const portero = isPortero(j);
 
@@ -173,15 +198,26 @@ export default function Plantilla() {
                     <strong>
                       {j.nombre} {j.apellido}
                     </strong>
-                    <small>{posLabel(j)}</small>
+                    <small>
+                      {posLabel(j)}
+                      {edad(j.fecha_nacimiento) != null ? ` · ${edad(j.fecha_nacimiento)} a` : ''}
+                    </small>
                   </span>
                 </Link>
-                <span className="roster-cell">{edad(j.fecha_nacimiento) ?? '—'}</span>
                 <span className={`roster-cell${portero ? ' accent-orange' : ''}`}>
                   {partidos != null && partidos > 0 ? partidos : '—'}
                 </span>
                 <span className={`roster-cell valor${portero ? ' accent-orange' : ''}`}>
                   {valor != null ? `${valor}%` : '—'}
+                </span>
+                <span
+                  className={`roster-cell${pctPerd != null && pctPerd >= 25 ? ' accent-warn' : ''}`}
+                  title={s ? `${s.perdidas || 0} pérdidas / ${(s.lanzamientos || 0) + (s.perdidas || 0)} acciones` : ''}
+                >
+                  {pctPerd != null ? `${pctPerd}%` : '—'}
+                </span>
+                <span className="roster-cell roster-cell-sanc">
+                  <SancionChips s={s} />
                 </span>
                 <div className="roster-actions">
                   <Link

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { api, isAbortError } from '../api';
+import { api, isAbortError, mediaUrl } from '../api';
 import { useAuth } from '../auth';
 import { useAbortable } from '../useAbortable';
 
@@ -132,7 +132,16 @@ export default function Dashboard() {
                 : 'Aún no hay partidos programados'}
             </p>
           </div>
-          <div className="match-card-photo">
+          <div
+            className="match-card-photo"
+            style={
+              proximo?.img_portada
+                ? {
+                    backgroundImage: `linear-gradient(160deg, rgba(11, 14, 20, 0.15), rgba(11, 14, 20, 0.82)), url(${mediaUrl(proximo.img_portada)})`,
+                  }
+                : undefined
+            }
+          >
             <p>
               {proximo
                 ? new Date(proximo.fecha).toLocaleDateString('es-ES', {

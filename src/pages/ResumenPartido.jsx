@@ -145,11 +145,6 @@ export default function ResumenPartido() {
               Directo
             </button>
           </Link>
-          <Link to={`/partidos/${id}/estadisticas`}>
-            <button type="button" className="ghost">
-              Acta
-            </button>
-          </Link>
           <button type="button" onClick={exportarPdf}>
             Exportar acta PDF
           </button>

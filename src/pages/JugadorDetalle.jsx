@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api, mediaUrl } from '../api';
+import { HandballCourtMarks, PISTA_CELLS } from '../components/ShotMaps';
 
 function edad(fecha) {
   if (!fecha) return null;
@@ -19,12 +20,55 @@ function zoneTone(pct) {
 }
 
 const ZONE_LABELS = {
-  '6m': '6 m',
-  '9m': '9 m',
+  ext_izq: 'Ext. izq.',
+  ext_der: 'Ext. der.',
+  '6m_izq': '6 m izq.',
+  '6m_cen': '6 m cen.',
+  '6m_der': '6 m der.',
   '7m': '7 m',
-  extremo: 'Extremo',
+  '9m_izq': '9 m izq.',
+  '9m_cen': '9 m cen.',
+  '9m_der': '9 m der.',
   contraataque: 'Contra',
 };
+
+function zoneEntry(map, key, mode) {
+  const vals = (map || {})[key] || { lanzamientos: 0, goles: 0, paradas: 0 };
+  if (mode === 'gk') {
+    const pct = vals.lanzamientos
+      ? Math.round((vals.paradas / vals.lanzamientos) * 100)
+      : 0;
+    return {
+      key,
+      label: ZONE_LABELS[key] || key,
+      pct,
+      ratio: `${vals.paradas || 0}/${vals.lanzamientos || 0}`,
+    };
+  }
+  const pct = vals.lanzamientos
+    ? Math.round((vals.goles / vals.lanzamientos) * 100)
+    : 0;
+  return {
+    key,
+    label: ZONE_LABELS[key] || key,
+    pct,
+    ratio: `${vals.goles || 0}/${vals.lanzamientos || 0}`,
+  };
+}
+
+function ZoneCard({ z, compact = false }) {
+  if (!z) return null;
+  return (
+    <div
+      className={`zone-card tone-${zoneTone(z.pct)}${compact ? ' zone-card-compact' : ''}`}
+      data-zone={z.key}
+    >
+      <span className="muted">{z.label}</span>
+      <strong>{z.pct}%</strong>
+      <small className="muted">{z.ratio}</small>
+    </div>
+  );
+}
 
 export default function JugadorDetalle() {
   const { id } = useParams();
@@ -66,18 +110,18 @@ export default function JugadorDetalle() {
           tone: 'orange',
         },
         {
-          label: 'Tiros recibidos',
-          value: data.lanzamientos_recibidos,
+          label: 'Goles recibidos',
+          value: data.goles_recibidos ?? Math.max(0, data.lanzamientos_recibidos - data.paradas),
           hint:
             data.partidos > 0
-              ? `${(data.lanzamientos_recibidos / data.partidos).toFixed(1)} por partido`
+              ? `${((data.goles_recibidos ?? Math.max(0, data.lanzamientos_recibidos - data.paradas)) / data.partidos).toFixed(1)} por partido`
               : 'Sin partidos',
           tone: 'cyan',
         },
         {
           label: 'Efectividad',
           value: `${data.efectividad_paradas}%`,
-          hint: `${data.paradas} / ${data.lanzamientos_recibidos}`,
+          hint: `${data.paradas} / ${data.lanzamientos_recibidos} tiros`,
           tone: 'lime',
         },
       ]
@@ -106,31 +150,24 @@ export default function JugadorDetalle() {
           hint: `${data.goles} / ${data.lanzamientos}`,
           tone: 'lime',
         },
+        {
+          label: '% Pérdidas',
+          value: `${data.pct_perdidas ?? 0}%`,
+          hint: `${data.perdidas || 0} pérdidas de balón`,
+          tone: 'purple',
+        },
       ];
 
-  const mapaEntries = isGk
-    ? Object.entries(data.mapa_paradas || {}).map(([key, vals]) => {
-        const pct = vals.lanzamientos
-          ? Math.round((vals.paradas / vals.lanzamientos) * 100)
-          : 0;
-        return {
-          key,
-          label: ZONE_LABELS[key] || key,
-          pct,
-          ratio: `${vals.paradas}/${vals.lanzamientos}`,
-        };
-      })
-    : Object.entries(data.zonas || {}).map(([key, vals]) => {
-        const pct = vals.lanzamientos
-          ? Math.round((vals.goles / vals.lanzamientos) * 100)
-          : 0;
-        return {
-          key,
-          label: ZONE_LABELS[key] || key,
-          pct,
-          ratio: `${vals.goles}/${vals.lanzamientos}`,
-        };
-      });
+  const sanciones = [
+    { label: "2'", value: data.exclusiones_2min || 0, cls: 'sanc-2min' },
+    { label: 'Amarillas', value: data.amarillas || 0, cls: 'sanc-am' },
+    { label: 'Rojas', value: data.rojas || 0, cls: 'sanc-ro' },
+    { label: 'Azules', value: data.azules || 0, cls: 'sanc-az' },
+  ];
+
+  const zoneMode = isGk ? 'gk' : 'campo';
+  const zoneMap = isGk ? data.mapa_paradas : data.zonas;
+  const z = (key) => zoneEntry(zoneMap, key, zoneMode);
 
   return (
     <>
@@ -206,16 +243,53 @@ export default function JugadorDetalle() {
         </div>
       </div>
 
+      {!isGk && (
+        <section className="panel forma-panel">
+          <h2>Sanciones</h2>
+          <div className="ficha-sanciones">
+            {sanciones.map((s) => (
+              <div className={`ficha-sanc-card ${s.cls}`} key={s.label}>
+                <span>{s.label}</span>
+                <strong>{s.value}</strong>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       <section className="panel forma-panel">
         <h2>{isGk ? 'Mapa de paradas' : 'Eficiencia por zona'}</h2>
-        <div className="zone-grid ficha-zones">
-          {mapaEntries.map((z) => (
-            <div className={`zone-card tone-${zoneTone(z.pct)}`} key={z.key}>
-              <span className="muted">{z.label}</span>
-              <strong>{z.pct}%</strong>
-              <small className="muted">{z.ratio}</small>
+        <div className="zone-eff ficha-zones" aria-label="Eficiencia por zona de pista">
+          <div className="zone-eff-court">
+            <svg
+              className="zone-eff-svg"
+              viewBox="0 0 200 118"
+              role="img"
+              aria-label="Pista de balonmano"
+            >
+              <HandballCourtMarks gradientId="zoneEff" />
+            </svg>
+            <div className="zone-eff-overlay">
+              {PISTA_CELLS.map((c) => (
+                <div
+                  key={c.key}
+                  className="zone-eff-slot"
+                  data-zone={c.key}
+                  style={{
+                    left: `${(c.x / 200) * 100}%`,
+                    top: `${(c.y / 118) * 100}%`,
+                    width: `${(c.w / 200) * 100}%`,
+                    height: `${(c.h / 118) * 100}%`,
+                  }}
+                >
+                  <ZoneCard z={z(c.key)} compact />
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
+          <div className="zone-eff-contra">
+            <ZoneCard z={z('contraataque')} />
+          </div>
         </div>
       </section>
 

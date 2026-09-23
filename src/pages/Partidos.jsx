@@ -272,11 +272,6 @@ export default function Partidos() {
                           Convocatoria
                         </button>
                       </Link>
-                      <Link to={`/partidos/${p.id_partido}/estadisticas`}>
-                        <button type="button" className="ghost">
-                          {finished ? 'Acta' : 'Registrar'}
-                        </button>
-                      </Link>
                       <button
                         type="button"
                         className="ghost roster-del"

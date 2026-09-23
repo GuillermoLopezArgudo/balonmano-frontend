@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8001/api';
 
 export function apiOrigin() {
   return API_URL.replace(/\/api\/?$/, '');
@@ -34,20 +34,31 @@ function authHeaders() {
 
 async function request(path, options = {}) {
   const { headers: extraHeaders, ...rest } = options;
+  const method = (rest.method || 'GET').toUpperCase();
+  const headers = {
+    ...authHeaders(),
+    ...(extraHeaders || {}),
+  };
+  // No forzar Content-Type en GET/HEAD: provoca preflight CORS innecesario
+  if (method !== 'GET' && method !== 'HEAD' && rest.body !== undefined) {
+    headers['Content-Type'] = headers['Content-Type'] || 'application/json';
+  }
   let res;
   try {
     res = await fetch(`${API_URL}${path}`, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...authHeaders(),
-        ...(extraHeaders || {}),
-      },
+      headers,
       ...rest,
     });
   } catch (err) {
     if (isAbortError(err) || rest.signal?.aborted) {
       const abortErr = new DOMException('Aborted', 'AbortError');
       throw abortErr;
+    }
+    const msg = err?.message || '';
+    if (/failed to fetch|networkerror|load failed|fetch/i.test(msg)) {
+      throw new Error(
+        `No se pudo conectar con la API (${API_URL}). ¿Está el backend en marcha?`,
+      );
     }
     throw err;
   }
@@ -151,6 +162,15 @@ export const api = {
   createRival: (data, opts) =>
     request('/rivales/', { method: 'POST', body: JSON.stringify(data), ...opts }),
   deleteRival: (id, opts) => request(`/rivales/${id}`, { method: 'DELETE', ...opts }),
+  getRivalJugadoras: (idRival, opts) => request(`/rivales/${idRival}/jugadoras`, opts),
+  upsertRivalJugadora: (idRival, data, opts) =>
+    request(`/rivales/${idRival}/jugadoras`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+      ...opts,
+    }),
+  getRivalGoleadorasPartido: (idPartido, opts) =>
+    request(`/rivales/partido/${idPartido}/goleadoras`, opts),
 
   getConvocatoria: (idPartido, opts) => request(`/convocatorias/partido/${idPartido}`, opts),
   saveConvocatoria: (idPartido, data, opts) =>
@@ -159,6 +179,32 @@ export const api = {
       body: JSON.stringify(data),
       ...opts,
     }),
+
+  getAlineaciones: (opts) => request('/alineaciones/', opts),
+  createAlineacion: (data, opts) =>
+    request('/alineaciones/', { method: 'POST', body: JSON.stringify(data), ...opts }),
+  updateAlineacion: (id, data, opts) =>
+    request(`/alineaciones/${id}`, { method: 'PUT', body: JSON.stringify(data), ...opts }),
+  deleteAlineacion: (id, opts) =>
+    request(`/alineaciones/${id}`, { method: 'DELETE', ...opts }),
+
+  getJugadas: (opts = {}) => {
+    const { fase, ...rest } = opts;
+    const path = fase ? `/jugadas/?fase=${encodeURIComponent(fase)}` : '/jugadas/';
+    return request(path, rest);
+  },
+  getJugada: (id, opts) => request(`/jugadas/${id}`, opts),
+  createJugada: (data, opts) =>
+    request('/jugadas/', { method: 'POST', body: JSON.stringify(data), ...opts }),
+  updateJugada: (id, data, opts) =>
+    request(`/jugadas/${id}`, { method: 'PUT', body: JSON.stringify(data), ...opts }),
+  copyJugada: (id, data, opts) =>
+    request(`/jugadas/${id}/copiar`, {
+      method: 'POST',
+      body: JSON.stringify(data || {}),
+      ...opts,
+    }),
+  deleteJugada: (id, opts) => request(`/jugadas/${id}`, { method: 'DELETE', ...opts }),
 
   getEstadisticas: (opts) => request('/estadisticas/jugadores/', opts),
   getEstadisticasPorteros: (opts) => request('/estadisticas/porteros/', opts),

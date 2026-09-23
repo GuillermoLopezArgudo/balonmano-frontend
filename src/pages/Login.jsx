@@ -64,6 +64,13 @@ export default function Login() {
 
       <section className="auth-card">
         <div className="card">
+          <div className="auth-mobile-brand brand-lockup">
+            <span className="brand-badge">7M</span>
+            <div>
+              <strong>SIETE</strong>
+              <small>MÁS QUE EL JUEGO</small>
+            </div>
+          </div>
           <h2>Bienvenido de nuevo</h2>
           <p className="sub">Accede al espacio de trabajo de tu club.</p>
           <form onSubmit={onSubmit}>
@@ -72,6 +79,8 @@ export default function Login() {
               <input
                 id="correo"
                 type="email"
+                autoComplete="email"
+                inputMode="email"
                 placeholder="marta@atleticorome.es"
                 value={correo}
                 onChange={(e) => setCorreo(e.target.value)}
@@ -83,6 +92,7 @@ export default function Login() {
               <input
                 id="password"
                 type="password"
+                autoComplete="current-password"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}

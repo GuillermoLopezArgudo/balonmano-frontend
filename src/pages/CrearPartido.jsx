@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { api } from '../api';
+import { api, mediaUrl } from '../api';
 import { useAuth } from '../auth';
 
 const STEPS = [
@@ -52,21 +52,32 @@ function labelTemporada(t) {
 }
 
 async function ensureTemporadaActual() {
-  const actual = temporadaActual();
-  const list = await api.getTemporadas();
+  const meta = temporadaActual();
+  let list = await api.getTemporadas();
+
+  // Preferir siempre la temporada activa del club
+  const activa = list.find((t) => t.estado === 'activa');
+  if (activa) return { list, actual: activa };
+
   const found = list.find(
     (t) =>
-      t.nombre === actual.nombre ||
-      (t.fecha_inicio || '').slice(0, 7) === actual.fecha_inicio.slice(0, 7),
+      t.nombre === meta.nombre ||
+      (t.fecha_inicio || '').slice(0, 7) === meta.fecha_inicio.slice(0, 7),
   );
-  if (found) return { list, actual: found };
+  if (found && found.estado !== 'archivada') {
+    const activated = await api.activarTemporada(found.id_temporada);
+    list = await api.getTemporadas();
+    return { list, actual: activated };
+  }
+
   const created = await api.createTemporada({
-    nombre: actual.nombre,
-    fecha_inicio: actual.fecha_inicio,
-    fecha_fin: actual.fecha_fin,
+    nombre: meta.nombre,
+    fecha_inicio: meta.fecha_inicio,
+    fecha_fin: meta.fecha_fin,
     activar: true,
   });
-  return { list: [...list, created], actual: created };
+  list = await api.getTemporadas();
+  return { list, actual: created };
 }
 
 export default function CrearPartido() {
@@ -79,6 +90,8 @@ export default function CrearPartido() {
   const [nuevoRival, setNuevoRival] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef(null);
   const [form, setForm] = useState({
     competicion: equipo?.datos?.competicion || '',
     jornada: '1',
@@ -88,6 +101,7 @@ export default function CrearPartido() {
     pabellon: equipo?.datos?.pabellon || '',
     id_temporada: '',
     id_rival: '',
+    img_portada: '',
   });
 
   useEffect(() => {
@@ -106,6 +120,26 @@ export default function CrearPartido() {
   }, [equipo]);
 
   const setField = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
+
+  const onPortada = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      setError('La imagen debe pesar menos de 2 MB');
+      return;
+    }
+    setUploading(true);
+    setError('');
+    try {
+      const { path } = await api.uploadImagen(file, 'partido');
+      setField('img_portada', path);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const rivalesFiltrados = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
@@ -158,11 +192,20 @@ export default function CrearPartido() {
     setSaving(true);
     setError('');
     try {
+      let idTemporada = form.id_temporada;
+      const sel = temporadas.find((t) => t.id_temporada === idTemporada);
+      if (!sel || sel.estado !== 'activa') {
+        const { list, actual } = await ensureTemporadaActual();
+        setTemporadas(list);
+        idTemporada = actual.id_temporada;
+        setForm((f) => ({ ...f, id_temporada: idTemporada }));
+      }
+
       const fechaIso = new Date(`${form.fecha}T${form.hora}:00`).toISOString();
       const created = await api.createPartido({
         id_rival: form.id_rival,
         es_local: form.condicion === 'local',
-        id_temporada: form.id_temporada,
+        id_temporada: idTemporada,
         fecha: fechaIso,
         jornada:
           form.competicion === 'Amistoso'
@@ -172,6 +215,7 @@ export default function CrearPartido() {
               : null,
         pabellon: form.pabellon || null,
         competicion: form.competicion || null,
+        img_portada: form.img_portada || null,
         estado: 'programado',
       });
       navigate(`/partidos/${created.id_partido}/convocatoria`);
@@ -317,6 +361,49 @@ export default function CrearPartido() {
                   ))}
               </select>
             </div>
+            <div className="field full partido-portada-field">
+              <label>Portada (opcional)</label>
+              <div className="partido-portada-box">
+                <div
+                  className={`partido-portada-preview${form.img_portada ? ' has-img' : ''}`}
+                  style={
+                    form.img_portada
+                      ? { backgroundImage: `url(${mediaUrl(form.img_portada)})` }
+                      : undefined
+                  }
+                >
+                  {!form.img_portada && (
+                    <span className="muted">Sin imagen · se usará la de por defecto</span>
+                  )}
+                </div>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  hidden
+                  onChange={onPortada}
+                />
+                <div className="partido-portada-actions">
+                  <button
+                    type="button"
+                    className="ghost"
+                    disabled={uploading}
+                    onClick={() => fileRef.current?.click()}
+                  >
+                    {uploading ? 'Subiendo…' : form.img_portada ? 'Cambiar imagen' : 'Subir imagen'}
+                  </button>
+                  {form.img_portada && (
+                    <button
+                      type="button"
+                      className="ghost"
+                      onClick={() => setField('img_portada', '')}
+                    >
+                      Quitar
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
           <div className="wizard-nav">
             <button type="button" disabled={!canStep1} onClick={() => setStep(2)}>
@@ -437,6 +524,10 @@ export default function CrearPartido() {
             <div>
               <dt>Pabellón</dt>
               <dd>{form.pabellon || '—'}</dd>
+            </div>
+            <div>
+              <dt>Portada</dt>
+              <dd>{form.img_portada ? 'Imagen cargada' : 'Por defecto'}</dd>
             </div>
             <div>
               <dt>Temporada</dt>

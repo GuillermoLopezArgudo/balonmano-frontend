@@ -1,4 +1,5 @@
-import { NavLink, Outlet } from 'react-router-dom';
+import { useEffect, useId, useState } from 'react';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth';
 
 function Icon({ children }) {
@@ -31,7 +32,6 @@ const IcoPlantilla = (
 
 const IcoPartidos = (
   <Icon>
-    {/* Pista / campo: rectángulo, círculo central y áreas */}
     <rect x="3" y="5" width="18" height="14" rx="1.5" />
     <line x1="12" y1="5" x2="12" y2="19" />
     <circle cx="12" cy="12" r="2.2" />
@@ -69,10 +69,20 @@ const IcoAjustes = (
   </Icon>
 );
 
+const IcoJugadas = (
+  <Icon>
+    <circle cx="8" cy="8" r="2.2" />
+    <circle cx="16" cy="12" r="2.2" />
+    <circle cx="9" cy="17" r="2.2" />
+    <path d="M10 9.2 14.2 11.2M10.2 15.5 14.2 13.2" />
+  </Icon>
+);
+
 const links = [
   { to: '/', label: 'Resumen', ico: IcoResumen, end: true },
   { to: '/plantilla', label: 'Plantilla', ico: IcoPlantilla },
   { to: '/partidos', label: 'Partidos', ico: IcoPartidos },
+  { to: '/jugadas', label: 'Jugadas', ico: IcoJugadas },
   { to: '/analitica', label: 'Analítica', ico: IcoAnalitica },
   { to: '/informes', label: 'Informes', ico: IcoInformes },
   { to: '/club', label: 'Club', ico: IcoClub },
@@ -81,22 +91,86 @@ const links = [
 
 export default function AppShell() {
   const { equipo, logout } = useAuth();
+  const location = useLocation();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const navId = useId();
+
   const team = equipo?.datos?.nombre_corto || equipo?.datos?.nombre || 'Tu equipo';
   const subtitle = equipo?.datos?.categoria || '';
   const mail = equipo?.correo || '';
   const coach =
     equipo?.datos?.entrenador_nombre || mail.split('@')[0] || 'Usuario';
 
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+    const onKey = (e) => {
+      if (e.key === 'Escape') setMenuOpen(false);
+    };
+    document.addEventListener('keydown', onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [menuOpen]);
+
   return (
-    <div className="app-shell">
-      <aside className="rail">
-        <NavLink to="/" className="rail-brand">
+    <div className={`app-shell${menuOpen ? ' nav-open' : ''}`}>
+      <header className="mobile-top">
+        <button
+          type="button"
+          className="mobile-menu-btn"
+          aria-expanded={menuOpen}
+          aria-controls={navId}
+          aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'}
+          onClick={() => setMenuOpen((v) => !v)}
+        >
+          <span className="burger" aria-hidden="true">
+            <i />
+            <i />
+            <i />
+          </span>
+        </button>
+        <NavLink to="/" className="mobile-brand" onClick={() => setMenuOpen(false)}>
           <span className="brand-badge">7M</span>
-          <div>
-            <strong>SIETE</strong>
-            <small>BALONMANO</small>
-          </div>
+          <strong>SIETE</strong>
         </NavLink>
+        <div className="mobile-team" title={team}>
+          {team}
+        </div>
+      </header>
+
+      <button
+        type="button"
+        className="rail-backdrop"
+        aria-label="Cerrar menú"
+        tabIndex={menuOpen ? 0 : -1}
+        onClick={() => setMenuOpen(false)}
+      />
+
+      <aside className="rail" id={navId}>
+        <div className="rail-drawer-head">
+          <NavLink to="/" className="rail-brand" onClick={() => setMenuOpen(false)}>
+            <span className="brand-badge">7M</span>
+            <div>
+              <strong>SIETE</strong>
+              <small>BALONMANO</small>
+            </div>
+          </NavLink>
+          <button
+            type="button"
+            className="rail-close ghost"
+            aria-label="Cerrar menú"
+            onClick={() => setMenuOpen(false)}
+          >
+            ✕
+          </button>
+        </div>
 
         <div className="rail-team" title={team}>
           <span className="rail-team-dot" />
@@ -130,6 +204,7 @@ export default function AppShell() {
           </button>
         </div>
       </aside>
+
       <div className="workspace">
         <Outlet />
       </div>
