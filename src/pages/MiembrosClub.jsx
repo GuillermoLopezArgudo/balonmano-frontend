@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { api, isAbortError } from '../api';
 import { useAuth } from '../auth';
 import { CARGOS, CARGOS_UNICOS } from '../permisos';
 import { useAbortable } from '../useAbortable';
+import { onMiembrosChanged } from '../useClubRealtime';
 
 function initials(nombre = '') {
   const parts = nombre.trim().split(/\s+/).filter(Boolean);
@@ -77,6 +78,10 @@ export default function MiembrosClub() {
       setError(e.message);
     }
   }, []);
+
+  useEffect(() => onMiembrosChanged(() => {
+    load().catch(() => {});
+  }), []);
 
   const adminActual = useMemo(
     () => miembros.find((m) => m.permiso === 'administrador' && m.estado === 'activo'),
@@ -195,10 +200,24 @@ export default function MiembrosClub() {
 
   const cambiarCargo = (id, cargo) =>
     withBusy(id, async () => {
-      await api.updateMiembro(id, { cargo });
-      await load();
-      setMsg('Cargo actualizado');
-      await refreshSesion();
+      const prev = miembros.find((m) => m.id_miembro === id)?.cargo;
+      setMiembros((list) =>
+        list.map((m) => (m.id_miembro === id ? { ...m, cargo } : m)),
+      );
+      try {
+        await api.updateMiembro(id, { cargo });
+        setMsg('Cargo actualizado');
+        await refreshSesion();
+      } catch (e) {
+        if (prev != null) {
+          setMiembros((list) =>
+            list.map((m) => (m.id_miembro === id ? { ...m, cargo: prev } : m)),
+          );
+        } else {
+          await load();
+        }
+        throw e;
+      }
     });
 
   const traspasarAdmin = async (m) => {

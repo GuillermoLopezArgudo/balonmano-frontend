@@ -229,7 +229,8 @@ export default function AppShell() {
             </span>
             <div>
               <strong>{userName}</strong>
-              <small>{mail || userRole || 'club'}</small>
+              <small>{userRole}</small>
+              {mail ? <small className="rail-user-mail">{mail}</small> : null}
             </div>
           </div>
           <button type="button" className="ghost full" onClick={logout}>

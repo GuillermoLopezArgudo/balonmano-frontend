@@ -4,6 +4,24 @@ export function apiOrigin() {
   return API_URL.replace(/\/api\/?$/, '');
 }
 
+/** URL WebSocket del club (wss en prod / ws en local o vía proxy Vite). */
+export function clubWsUrl(token) {
+  if (!token) return '';
+  const api = API_URL.replace(/\/$/, '');
+  let wsBase;
+  if (api.startsWith('/')) {
+    const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    wsBase = `${proto}//${window.location.host}${api}`;
+  } else if (api.startsWith('https://')) {
+    wsBase = `wss://${api.slice('https://'.length)}`;
+  } else if (api.startsWith('http://')) {
+    wsBase = `ws://${api.slice('http://'.length)}`;
+  } else {
+    wsBase = api;
+  }
+  return `${wsBase}/ws?token=${encodeURIComponent(token)}`;
+}
+
 /** Convierte ruta relativa de BBDD en URL usable por <img>. Soporta data: legacy. */
 export function mediaUrl(path) {
   if (!path) return '';

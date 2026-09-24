@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { api, isAbortError, setUnauthorizedHandler } from './api';
 import { permsFromSession } from './permisos';
 import { syncThemeFromPrefs } from './theme';
+import { useClubRealtime } from './useClubRealtime';
 
 const AuthContext = createContext(null);
 
@@ -125,6 +126,28 @@ export function AuthProvider({ children }) {
     const sesion = await api.sesion();
     return applySesion(sesion);
   }, [applySesion]);
+
+  useClubRealtime({
+    enabled: !!token,
+    token,
+    onEvent: (ev) => {
+      if (ev?.refresh_sesion || ev?.type === 'miembros.changed') {
+        refreshSesion().catch(() => {});
+      }
+    },
+  });
+
+  // Por si el WS está dormido (Render free): al volver a la pestaña, refresca sesión
+  useEffect(() => {
+    if (!token) return undefined;
+    const onVis = () => {
+      if (document.visibilityState === 'visible') {
+        refreshSesion().catch(() => {});
+      }
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+  }, [token, refreshSesion]);
 
   const canManageClub = !miembro || miembro.permiso === 'administrador';
 
