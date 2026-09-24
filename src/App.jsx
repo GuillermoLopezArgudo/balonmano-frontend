@@ -21,6 +21,10 @@ import CrearPartido from './pages/CrearPartido';
 import Convocatoria from './pages/Convocatoria';
 import Jugadas from './pages/Jugadas';
 import JugadaEditor from './pages/JugadaEditor';
+import PreparacionFisica from './pages/PreparacionFisica';
+import PreparacionEditor from './pages/PreparacionEditor';
+import Entrenamientos from './pages/Entrenamientos';
+import EntrenamientoEditor from './pages/EntrenamientoEditor';
 
 function PrivateRoute({ children }) {
   const { isAuth, booting } = useAuth();
@@ -56,6 +60,12 @@ function AppRoutes() {
         <Route path="jugadas" element={<Jugadas />} />
         <Route path="jugadas/nueva" element={<JugadaEditor />} />
         <Route path="jugadas/:id" element={<JugadaEditor />} />
+        <Route path="preparacion" element={<PreparacionFisica />} />
+        <Route path="preparacion/nueva" element={<PreparacionEditor />} />
+        <Route path="preparacion/entrenamiento" element={<Entrenamientos />} />
+        <Route path="preparacion/entrenamiento/nueva" element={<EntrenamientoEditor />} />
+        <Route path="preparacion/entrenamiento/:id" element={<EntrenamientoEditor />} />
+        <Route path="preparacion/:id" element={<PreparacionEditor />} />
         <Route path="partidos/:id/directo" element={<PartidoDirecto />} />
         <Route path="partidos/:id/resumen" element={<ResumenPartido />} />
         <Route path="live" element={<PartidoDirecto />} />

@@ -9,8 +9,56 @@ const uid = () =>
     : `id-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
 const COLORS = ['#a3e635', '#84cc16', '#d9f99d', '#93c5fd', '#60a5fa', '#fbbf24', '#f472b6'];
+const COLOR_ATAQUE = '#ef4444';
+const COLOR_DEFENSA = '#3b82f6';
+
+function isColorAtaque(color) {
+  if (!color) return true;
+  const c = String(color).toLowerCase();
+  if (c === COLOR_ATAQUE.toLowerCase()) return true;
+  if (c === COLOR_DEFENSA.toLowerCase()) return false;
+  if (c.startsWith('#') && c.length >= 7) {
+    const r = parseInt(c.slice(1, 3), 16);
+    const b = parseInt(c.slice(5, 7), 16);
+    if (Number.isFinite(r) && Number.isFinite(b)) return r >= b;
+  }
+  return true;
+}
+
+/** Separa flechas por equipo (mantiene el orden de dibujo dentro de cada uno). */
+function flechasPorEquipo(flechas, piezas) {
+  const colorById = {};
+  for (const p of piezas || []) colorById[p.id_pieza] = p.color;
+  const atk = [];
+  const def = [];
+  for (const f of flechas || []) {
+    if (isColorAtaque(colorById[f.id_pieza])) atk.push(f);
+    else def.push(f);
+  }
+  return { atk, def };
+}
+
+const POSICIONES_CAMPO = ['EI', 'LI', 'CE', 'PI', 'LD', 'ED', 'PO'];
 
 function defaultPiezas(fase) {
+  // Campo completo: A-* atacan portería derecha; D-* la defienden (6-0).
+  // Y=0 arriba. Atacante mirando a la derecha → EI arriba, ED abajo.
+  const completo = [
+    { etiqueta: 'A-PO', x: 4, y: 50, color: COLOR_ATAQUE },
+    { etiqueta: 'A-CE', x: 22, y: 50, color: COLOR_ATAQUE },
+    { etiqueta: 'A-LI', x: 28, y: 28, color: COLOR_ATAQUE },
+    { etiqueta: 'A-LD', x: 28, y: 72, color: COLOR_ATAQUE },
+    { etiqueta: 'A-EI', x: 40, y: 12, color: COLOR_ATAQUE },
+    { etiqueta: 'A-ED', x: 40, y: 88, color: COLOR_ATAQUE },
+    { etiqueta: 'A-PI', x: 46, y: 50, color: COLOR_ATAQUE },
+    { etiqueta: 'D-PO', x: 96, y: 50, color: COLOR_DEFENSA },
+    { etiqueta: 'D-ED', x: 82, y: 12, color: COLOR_DEFENSA },
+    { etiqueta: 'D-LD', x: 78, y: 28, color: COLOR_DEFENSA },
+    { etiqueta: 'D-CE', x: 74, y: 42, color: COLOR_DEFENSA },
+    { etiqueta: 'D-PI', x: 74, y: 58, color: COLOR_DEFENSA },
+    { etiqueta: 'D-LI', x: 78, y: 72, color: COLOR_DEFENSA },
+    { etiqueta: 'D-EI', x: 82, y: 88, color: COLOR_DEFENSA },
+  ];
   const atk = [
     { etiqueta: 'CE', x: 50, y: 12 },
     { etiqueta: 'LD', x: 28, y: 32 },
@@ -28,13 +76,14 @@ function defaultPiezas(fase) {
     { etiqueta: 'ED', x: 92, y: 78 },
     { etiqueta: 'PO', x: 50, y: 92 },
   ];
-  return (fase === 'defensa' ? def : atk).map((p, i) => {
+  const base = fase === 'completo' ? completo : fase === 'defensa' ? def : atk;
+  return base.map((p, i) => {
     const id = uid();
     return {
       pieza: {
         id_pieza: id,
         etiqueta: p.etiqueta,
-        color: COLORS[i % COLORS.length],
+        color: p.color || COLORS[i % COLORS.length],
         orden: i,
       },
       pos: { id_pieza: id, x: p.x, y: p.y },
@@ -42,13 +91,14 @@ function defaultPiezas(fase) {
   });
 }
 
-function blankJugada(fase = 'ataque') {
+function blankJugada(fase = 'ataque', ambito = 'tactica') {
   const rows = defaultPiezas(fase);
   const first = rows[0];
   const esDefensa = fase === 'defensa';
   return {
     nombre: '',
     fase,
+    ambito,
     descripcion: '',
     piezas: rows.map((r) => r.pieza),
     pasos: [
@@ -92,8 +142,8 @@ function nearestPiezaId(posMap, x, y) {
 }
 
 /** Estado visual al reproducir las flechas 0..actionIdx (con progreso t en la actual). */
-function snapshotPlay(paso, actionIdx, t) {
-  const flechas = paso?.flechas || [];
+function snapshotPlay(paso, actionIdx, t, flechasOverride) {
+  const flechas = flechasOverride || paso?.flechas || [];
   const pos = {};
   for (const p of paso?.posiciones || []) {
     pos[p.id_pieza] = { id_pieza: p.id_pieza, x: p.x, y: p.y };
@@ -101,10 +151,8 @@ function snapshotPlay(paso, actionIdx, t) {
   let ballOwner = paso?.id_pieza_balon ?? null;
   let ball = ballCoords(paso, pos);
 
-  const apply = (i, progress) => {
-    if (progress <= 0) return;
-    const f = flechas[i];
-    if (!f) return;
+  const apply = (f, progress) => {
+    if (!f || progress <= 0) return;
     const tipo = f.tipo || 'movimiento';
     if (tipo === 'movimiento') {
       const cur = pos[f.id_pieza] || { x: f.x1, y: f.y1 };
@@ -134,10 +182,81 @@ function snapshotPlay(paso, actionIdx, t) {
   };
 
   for (let i = 0; i < flechas.length; i += 1) {
-    if (i < actionIdx) apply(i, 1);
-    else if (i === actionIdx) apply(i, t);
+    if (i < actionIdx) apply(flechas[i], 1);
+    else if (i === actionIdx) apply(flechas[i], t);
     else break;
   }
+
+  return { pos, ball, ballOwner };
+}
+
+/**
+ * Campo completo: atacantes y defensoras avanzan en paralelo.
+ * actionIdx es el índice de la acción dentro de la secuencia de CADA equipo.
+ */
+function snapshotPlayParallel(paso, actionIdx, t, atkFlechas, defFlechas) {
+  const pos = {};
+  for (const p of paso?.posiciones || []) {
+    pos[p.id_pieza] = { id_pieza: p.id_pieza, x: p.x, y: p.y };
+  }
+
+  const applyMov = (list) => {
+    for (let i = 0; i < list.length; i += 1) {
+      const progress = i < actionIdx ? 1 : i === actionIdx ? t : 0;
+      if (progress <= 0) break;
+      const f = list[i];
+      if ((f.tipo || 'movimiento') !== 'movimiento') continue;
+      const cur = pos[f.id_pieza] || { x: f.x1, y: f.y1 };
+      pos[f.id_pieza] = {
+        id_pieza: f.id_pieza,
+        x: cur.x + (f.x2 - cur.x) * progress,
+        y: cur.y + (f.y2 - cur.y) * progress,
+      };
+    }
+  };
+
+  applyMov(atkFlechas || []);
+  applyMov(defFlechas || []);
+
+  let ballOwner = paso?.id_pieza_balon ?? null;
+  let ball = ballCoords(paso, pos);
+  if (ballOwner && pos[ballOwner]) {
+    ball = { x: pos[ballOwner].x + 3.5, y: pos[ballOwner].y - 3.5 };
+  }
+
+  const applyBall = (list) => {
+    for (let i = 0; i < list.length; i += 1) {
+      const progress = i < actionIdx ? 1 : i === actionIdx ? t : 0;
+      if (progress <= 0) break;
+      const f = list[i];
+      const tipo = f.tipo || 'movimiento';
+      if (tipo === 'movimiento') {
+        if (ballOwner === f.id_pieza && pos[f.id_pieza]) {
+          ball = { x: pos[f.id_pieza].x + 3.5, y: pos[f.id_pieza].y - 3.5 };
+        }
+      } else if (tipo === 'pase' || tipo === 'lanzamiento') {
+        ball = {
+          x: f.x1 + (f.x2 - f.x1) * progress,
+          y: f.y1 + (f.y2 - f.y1) * progress,
+        };
+        if (progress >= 1) {
+          if (tipo === 'pase') {
+            ballOwner =
+              f.id_destino || nearestPiezaId(pos, f.x2, f.y2) || ballOwner;
+            if (ballOwner && pos[ballOwner]) {
+              ball = { x: pos[ballOwner].x + 3.5, y: pos[ballOwner].y - 3.5 };
+            }
+          } else {
+            ballOwner = null;
+          }
+        }
+      }
+    }
+  };
+
+  // Defensa primero; ataque manda en el balón si también actúa
+  applyBall(defFlechas || []);
+  applyBall(atkFlechas || []);
 
   return { pos, ball, ballOwner };
 }
@@ -148,6 +267,7 @@ function fromApi(data) {
     id_jugada: data.id_jugada,
     nombre: data.nombre,
     fase: data.fase,
+    ambito: data.ambito || 'tactica',
     descripcion: data.descripcion || '',
     piezas: (data.piezas || []).map((p) => ({ ...p })),
     pasos: (data.pasos || []).map((paso) => ({
@@ -177,6 +297,7 @@ function toPayload(state) {
   return {
     nombre: state.nombre.trim(),
     fase: state.fase,
+    ambito: state.ambito || 'tactica',
     descripcion: state.descripcion.trim() || null,
     piezas: state.piezas.map((p, i) => ({
       id_pieza: p.id_pieza,
@@ -205,13 +326,18 @@ function toPayload(state) {
   };
 }
 
-export default function JugadaEditor() {
+export default function JugadaEditor({ variant = 'jugada' }) {
+  const isEntrenamiento = variant === 'entrenamiento';
+  const basePath = isEntrenamiento ? '/preparacion/entrenamiento' : '/jugadas';
   const { id } = useParams();
   const isNew = !id || id === 'nueva';
   const navigate = useNavigate();
-  const { canWriteJugadas } = useAuth();
+  const { canWriteJugadas, canWriteFisico } = useAuth();
+  const canWrite = isEntrenamiento ? canWriteFisico : canWriteJugadas;
 
-  const [state, setState] = useState(() => blankJugada('ataque'));
+  const [state, setState] = useState(() =>
+    blankJugada(isEntrenamiento ? 'completo' : 'ataque', isEntrenamiento ? 'fisico' : 'tactica'),
+  );
   const [pasoIdx, setPasoIdx] = useState(0);
   const [modo, setModo] = useState('mover'); // mover | flecha | pase | lanzar
   const [flechaPieza, setFlechaPieza] = useState(null);
@@ -221,6 +347,7 @@ export default function JugadaEditor() {
   const [playT, setPlayT] = useState(0); // 0..1
   const [playActionIdx, setPlayActionIdx] = useState(0);
   const [playPhase, setPlayPhase] = useState('idle'); // idle | action | between
+  const [frozenSnap, setFrozenSnap] = useState(null); // posición final tras Play
   const [error, setError] = useState('');
   const [status, setStatus] = useState('');
   const [saving, setSaving] = useState(false);
@@ -254,6 +381,17 @@ export default function JugadaEditor() {
 
   const paso = state.pasos[pasoIdx] || state.pasos[0];
   const nextPaso = state.pasos[pasoIdx + 1];
+  const esCompleto = state.fase === 'completo';
+
+  const playTracks = useMemo(() => {
+    if (!paso) return { atk: [], def: [], max: 0, flat: [] };
+    if (esCompleto) {
+      const { atk, def } = flechasPorEquipo(paso.flechas, state.piezas);
+      return { atk, def, max: Math.max(atk.length, def.length), flat: [...atk, ...def] };
+    }
+    const flat = paso.flechas || [];
+    return { atk: flat, def: [], max: flat.length, flat };
+  }, [paso, esCompleto, state.piezas]);
 
   const posMap = useMemo(() => {
     const map = {};
@@ -264,19 +402,35 @@ export default function JugadaEditor() {
   const playSnap = useMemo(() => {
     if (!playing || !paso) return null;
     if (playPhase === 'action') {
-      return snapshotPlay(paso, playActionIdx, playT);
+      if (esCompleto) {
+        return snapshotPlayParallel(paso, playActionIdx, playT, playTracks.atk, playTracks.def);
+      }
+      return snapshotPlay(paso, playActionIdx, playT, playTracks.flat);
     }
     if (playPhase === 'between') {
-      const end = snapshotPlay(paso, (paso.flechas || []).length, 1);
-      return end;
+      if (esCompleto) {
+        return snapshotPlayParallel(
+          paso,
+          playTracks.max,
+          1,
+          playTracks.atk,
+          playTracks.def,
+        );
+      }
+      return snapshotPlay(paso, playTracks.flat.length, 1, playTracks.flat);
     }
     return null;
-  }, [playing, paso, playPhase, playActionIdx, playT]);
+  }, [playing, paso, playPhase, playActionIdx, playT, playTracks, esCompleto]);
 
   const displayPos = useCallback(
     (piezaId) => {
       const a = posMap[piezaId];
       if (!a) return a;
+
+      if (!playing && frozenSnap?.pos?.[piezaId]) {
+        return frozenSnap.pos[piezaId];
+      }
+
       if (!playing || !playSnap) return a;
 
       if (playPhase === 'action') {
@@ -294,11 +448,12 @@ export default function JugadaEditor() {
       }
       return playSnap.pos[piezaId] || a;
     },
-    [posMap, playing, playSnap, playPhase, nextPaso, playT],
+    [posMap, playing, playSnap, playPhase, nextPaso, playT, frozenSnap],
   );
 
   const displayBall = useMemo(() => {
     const from = ballCoords(paso, posMap);
+    if (!playing && frozenSnap?.ball) return frozenSnap.ball;
     if (!playing || !playSnap) return from;
 
     if (playPhase === 'action') return playSnap.ball;
@@ -313,7 +468,7 @@ export default function JugadaEditor() {
       };
     }
     return playSnap.ball;
-  }, [paso, posMap, playing, playSnap, playPhase, nextPaso, playT]);
+  }, [paso, posMap, playing, playSnap, playPhase, nextPaso, playT, frozenSnap]);
 
   const stopPlay = () => {
     setPlaying(false);
@@ -324,6 +479,8 @@ export default function JugadaEditor() {
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
   };
 
+  const clearFrozen = () => setFrozenSnap(null);
+
   const cancelPending = () => {
     setFlechaPieza(null);
     setPaseFrom(null);
@@ -333,6 +490,7 @@ export default function JugadaEditor() {
   const removeFlecha = (flechaId) => {
     if (!flechaId || playing) return;
     stopPlay();
+    clearFrozen();
     setState((prev) => {
       const pasos = [...prev.pasos];
       const cur = { ...pasos[pasoIdx] };
@@ -385,30 +543,54 @@ export default function JugadaEditor() {
     setFlechaPieza(null);
     setPaseFrom(null);
     setSelectedFlechaId(null);
+    clearFrozen();
 
     const ACTION_MS = 650;
     const BETWEEN_MS = 700;
     const pasos = state.pasos;
-    let idx = pasoIdx;
-    let actionIdx = 0;
+    const piezas = state.piezas;
+    const paralelo = state.fase === 'completo';
+
+    const maxAcciones = (p) => {
+      if (!paralelo) return (p?.flechas || []).length;
+      const { atk, def } = flechasPorEquipo(p?.flechas, piezas);
+      return Math.max(atk.length, def.length);
+    };
+
+    const snapFinalDe = (p) => {
+      if (!p) return null;
+      if (paralelo) {
+        const { atk, def } = flechasPorEquipo(p.flechas, piezas);
+        return snapshotPlayParallel(p, Math.max(atk.length, def.length), 1, atk, def);
+      }
+      const flechas = p.flechas || [];
+      return snapshotPlay(p, flechas.length, 1, flechas);
+    };
+
+    const finishPlay = (finalIdx) => {
+      const last = Math.max(0, Math.min(finalIdx, pasos.length - 1));
+      const snap = snapFinalDe(pasos[last]);
+      setPasoIdx(last);
+      setFrozenSnap(snap);
+      setPlaying(false);
+      setPlayPhase('idle');
+      setPlayT(0);
+      setPlayActionIdx(0);
+      playRef.current = { pasoIdx: last, actionIdx: 0, phase: 'idle' };
+    };
+
+    // Siempre reproducir desde el principio hasta el último paso
+    let idx = 0;
     let phase =
-      (pasos[idx]?.flechas || []).length > 0
+      maxAcciones(pasos[0]) > 0
         ? 'action'
-        : idx < pasos.length - 1
+        : pasos.length > 1
           ? 'between'
           : 'idle';
 
     if (phase === 'idle') {
-      // empezar desde el primer paso con contenido
-      const startAt = pasos.findIndex(
-        (p, i) => (p.flechas || []).length > 0 || i < pasos.length - 1,
-      );
-      if (startAt < 0) {
-        setError('No hay movimientos que reproducir');
-        return;
-      }
-      idx = startAt;
-      phase = (pasos[idx]?.flechas || []).length > 0 ? 'action' : 'between';
+      setError('No hay movimientos que reproducir');
+      return;
     }
 
     setPasoIdx(idx);
@@ -431,11 +613,11 @@ export default function JugadaEditor() {
       }
 
       const pasoCur = pasos[cur.pasoIdx];
-      const flechas = pasoCur?.flechas || [];
+      const nAcciones = maxAcciones(pasoCur);
 
       if (cur.phase === 'action') {
         const nextAction = cur.actionIdx + 1;
-        if (nextAction < flechas.length) {
+        if (nextAction < nAcciones) {
           playRef.current = { ...cur, actionIdx: nextAction, phase: 'action' };
           setPlayActionIdx(nextAction);
           setPlayT(0);
@@ -443,34 +625,27 @@ export default function JugadaEditor() {
           rafRef.current = requestAnimationFrame(tick);
           return;
         }
-        // fin de líneas del paso → transición al siguiente si existe
         if (cur.pasoIdx < pasos.length - 1) {
-          playRef.current = { ...cur, phase: 'between', actionIdx: flechas.length };
+          playRef.current = { ...cur, phase: 'between', actionIdx: nAcciones };
           setPlayPhase('between');
-          setPlayActionIdx(flechas.length);
+          setPlayActionIdx(nAcciones);
           setPlayT(0);
           start = performance.now();
           rafRef.current = requestAnimationFrame(tick);
           return;
         }
-        setPlaying(false);
-        setPlayPhase('idle');
-        setPlayT(0);
+        finishPlay(cur.pasoIdx);
         return;
       }
 
-      // between terminado → avanzar paso
       const nextIdx = cur.pasoIdx + 1;
       if (nextIdx >= pasos.length) {
-        setPasoIdx(pasos.length - 1);
-        setPlaying(false);
-        setPlayPhase('idle');
-        setPlayT(0);
+        finishPlay(pasos.length - 1);
         return;
       }
       setPasoIdx(nextIdx);
-      const nextFlechas = pasos[nextIdx]?.flechas || [];
-      if (nextFlechas.length > 0) {
+      const nextN = maxAcciones(pasos[nextIdx]);
+      if (nextN > 0) {
         playRef.current = { pasoIdx: nextIdx, actionIdx: 0, phase: 'action' };
         setPlayActionIdx(0);
         setPlayPhase('action');
@@ -488,10 +663,7 @@ export default function JugadaEditor() {
         rafRef.current = requestAnimationFrame(tick);
         return;
       }
-      setPasoIdx(nextIdx);
-      setPlaying(false);
-      setPlayPhase('idle');
-      setPlayT(0);
+      finishPlay(nextIdx);
     };
 
     rafRef.current = requestAnimationFrame(tick);
@@ -520,6 +692,7 @@ export default function JugadaEditor() {
 
 
   const updatePasoPos = (piezaId, x, y) => {
+    clearFrozen();
     setState((prev) => {
       const pasos = prev.pasos.map((p, i) => {
         if (i !== pasoIdx) return p;
@@ -541,6 +714,7 @@ export default function JugadaEditor() {
 
   const onPointerDownPieza = (e, piezaId) => {
     if (playing) return;
+    clearFrozen();
     e.preventDefault();
     e.stopPropagation();
 
@@ -650,6 +824,7 @@ export default function JugadaEditor() {
   const onBoardClick = (e) => {
     if (playing || !flechaPieza) return;
     if (modo !== 'flecha' && modo !== 'lanzar') return;
+    clearFrozen();
     const board = boardRef.current;
     if (!board) return;
     const rect = board.getBoundingClientRect();
@@ -750,6 +925,7 @@ export default function JugadaEditor() {
 
   const addPaso = () => {
     stopPlay();
+    clearFrozen();
     setState((prev) => {
       const last = prev.pasos[prev.pasos.length - 1];
       const nuevo = {
@@ -770,6 +946,7 @@ export default function JugadaEditor() {
   const removePaso = () => {
     if (state.pasos.length <= 1) return;
     stopPlay();
+    clearFrozen();
     setState((prev) => {
       const pasos = prev.pasos.filter((_, i) => i !== pasoIdx).map((p, i) => ({ ...p, orden: i }));
       return { ...prev, pasos };
@@ -777,29 +954,55 @@ export default function JugadaEditor() {
     setPasoIdx((i) => Math.max(0, Math.min(i, state.pasos.length - 2)));
   };
 
-  const addPieza = () => {
+  const addPieza = (equipoColor) => {
     stopPlay();
+    clearFrozen();
     const idPieza = uid();
+    const esCompleto = state.fase === 'completo';
+    let color = COLORS[state.piezas.length % COLORS.length];
+    let etiqueta = `P${state.piezas.length + 1}`;
+    if (esCompleto) {
+      const esAtk =
+        equipoColor === 'ataque' ||
+        (equipoColor !== 'defensa' &&
+          state.piezas.filter((p) => p.color === COLOR_ATAQUE).length <=
+            state.piezas.filter((p) => p.color === COLOR_DEFENSA).length);
+      color = esAtk ? COLOR_ATAQUE : COLOR_DEFENSA;
+      const pref = esAtk ? 'A-' : 'D-';
+      const usadas = new Set(
+        state.piezas.filter((p) => p.color === color).map((p) => p.etiqueta),
+      );
+      const libre = POSICIONES_CAMPO.find((pos) => !usadas.has(`${pref}${pos}`));
+      etiqueta = libre ? `${pref}${libre}` : `${pref}${state.piezas.filter((p) => p.color === color).length + 1}`;
+    }
     setState((prev) => ({
       ...prev,
       piezas: [
         ...prev.piezas,
         {
           id_pieza: idPieza,
-          etiqueta: `P${prev.piezas.length + 1}`,
-          color: COLORS[prev.piezas.length % COLORS.length],
+          etiqueta,
+          color,
           orden: prev.piezas.length,
         },
       ],
       pasos: prev.pasos.map((p) => ({
         ...p,
-        posiciones: [...p.posiciones, { id_pieza: idPieza, x: 50, y: 50 }],
+        posiciones: [
+          ...p.posiciones,
+          {
+            id_pieza: idPieza,
+            x: esCompleto ? (color === COLOR_ATAQUE ? 30 : 70) : 50,
+            y: 50,
+          },
+        ],
       })),
     }));
   };
 
   const removePieza = (piezaId) => {
     stopPlay();
+    clearFrozen();
     setState((prev) => ({
       ...prev,
       piezas: prev.piezas.filter((p) => p.id_pieza !== piezaId),
@@ -817,6 +1020,7 @@ export default function JugadaEditor() {
       return;
     }
     stopPlay();
+    clearFrozen();
     const blank = blankJugada(fase);
     setState((prev) => ({
       ...prev,
@@ -832,7 +1036,7 @@ export default function JugadaEditor() {
 
   const guardar = async () => {
     if (!state.nombre.trim()) {
-      setError('Pon un nombre a la jugada');
+      setError(isEntrenamiento ? 'Pon un nombre al entrenamiento' : 'Pon un nombre a la jugada');
       return;
     }
     setSaving(true);
@@ -842,8 +1046,8 @@ export default function JugadaEditor() {
       const payload = toPayload(state);
       if (isNew) {
         const created = await api.createJugada(payload);
-        setStatus('Jugada guardada');
-        navigate(`/jugadas/${created.id_jugada}`, { replace: true });
+        setStatus(isEntrenamiento ? 'Entrenamiento guardado' : 'Jugada guardada');
+        navigate(`${basePath}/${created.id_jugada}`, { replace: true });
       } else {
         const updated = await api.updateJugada(id, payload);
         setState(fromApi(updated));
@@ -861,7 +1065,7 @@ export default function JugadaEditor() {
     setSaving(true);
     try {
       const copia = await api.copyJugada(id, { nombre: `${state.nombre} (copia)` });
-      navigate(`/jugadas/${copia.id_jugada}`);
+      navigate(`${basePath}/${copia.id_jugada}`);
     } catch (e) {
       setError(e.message);
     } finally {
@@ -869,29 +1073,46 @@ export default function JugadaEditor() {
     }
   };
 
-  if (loading) return <p className="muted" style={{ padding: '2rem' }}>Cargando jugada…</p>;
+  if (loading) {
+    return (
+      <p className="muted" style={{ padding: '2rem' }}>
+        {isEntrenamiento ? 'Cargando entrenamiento…' : 'Cargando jugada…'}
+      </p>
+    );
+  }
+
+  const faseLabel =
+    state.fase === 'defensa' ? 'Defensa' : state.fase === 'completo' ? 'Campo completo' : 'Ataque';
 
   return (
     <>
       <header className="page-head">
         <div>
           <p className="page-kicker">
-            <Link to="/jugadas">JUGADAS</Link> / {isNew ? 'NUEVA' : 'EDITAR'}
+            <Link to={basePath}>{isEntrenamiento ? 'ENTRENAMIENTOS' : 'JUGADAS'}</Link>
+            {' / '}
+            {isNew ? 'NUEVA' : 'EDITAR'}
           </p>
-          <h1>{isNew ? 'Nueva jugada' : state.nombre || 'Jugada'}</h1>
+          <h1>
+            {isNew
+              ? isEntrenamiento
+                ? 'Nuevo entrenamiento'
+                : 'Nueva jugada'
+              : state.nombre || (isEntrenamiento ? 'Entrenamiento' : 'Jugada')}
+          </h1>
         </div>
         <div className="add-player-actions">
-          <Link to="/jugadas">
+          <Link to={basePath}>
             <button type="button" className="ghost">
               Volver
             </button>
           </Link>
-          {!isNew && canWriteJugadas && (
+          {!isNew && canWrite && (
             <button type="button" className="ghost" disabled={saving} onClick={copiar}>
               Copiar
             </button>
           )}
-          {canWriteJugadas && (
+          {canWrite && (
             <button type="button" disabled={saving} onClick={guardar}>
               {saving ? 'Guardando…' : 'Guardar'}
             </button>
@@ -899,8 +1120,10 @@ export default function JugadaEditor() {
         </div>
       </header>
 
-      {!canWriteJugadas && (
-        <p className="hint">Tu cargo solo permite consultar esta jugada.</p>
+      {!canWrite && (
+        <p className="hint">
+          Tu cargo solo permite consultar {isEntrenamiento ? 'este entrenamiento' : 'esta jugada'}.
+        </p>
       )}
       {error && <p className="error">{error}</p>}
       {status && <p className="club-status saved">{status}</p>}
@@ -911,17 +1134,27 @@ export default function JugadaEditor() {
           <input
             value={state.nombre}
             onChange={(e) => setState((s) => ({ ...s, nombre: e.target.value }))}
-            placeholder="Ej. Cruce por 1.ª"
+            placeholder={
+              isEntrenamiento ? 'Ej. Posesión 4×4 campo completo' : 'Ej. Cruce por 1.ª'
+            }
             maxLength={120}
           />
         </div>
-        <div className="field">
-          <label>Fase</label>
-          <select value={state.fase} onChange={(e) => changeFase(e.target.value)}>
-            <option value="ataque">Ataque</option>
-            <option value="defensa">Defensa</option>
-          </select>
-        </div>
+        {!isEntrenamiento && (
+          <div className="field">
+            <label>Fase</label>
+            <select value={state.fase} onChange={(e) => changeFase(e.target.value)}>
+              <option value="ataque">Ataque</option>
+              <option value="defensa">Defensa</option>
+            </select>
+          </div>
+        )}
+        {isEntrenamiento && (
+          <div className="field">
+            <label>Campo</label>
+            <input value="Completo (40×20)" disabled readOnly />
+          </div>
+        )}
         <div className="field jugada-desc-field">
           <label>Notas</label>
           <input
@@ -942,6 +1175,7 @@ export default function JugadaEditor() {
               className={`btn-seg jugada-paso-chip${i === pasoIdx ? ' active' : ''}`}
               onClick={() => {
                 stopPlay();
+                clearFrozen();
                 setPasoIdx(i);
                 setSelectedFlechaId(null);
                 setFlechaPieza(null);
@@ -1012,9 +1246,30 @@ export default function JugadaEditor() {
               </button>
             </>
           )}
-          <button type="button" className="ghost" onClick={addPieza}>
-            + Pieza
-          </button>
+          {isEntrenamiento ? (
+            <>
+              <button
+                type="button"
+                className="ghost"
+                onClick={() => addPieza('ataque')}
+                title="Añadir atacante (roja)"
+              >
+                + Atacante
+              </button>
+              <button
+                type="button"
+                className="ghost"
+                onClick={() => addPieza('defensa')}
+                title="Añadir defensora (azul)"
+              >
+                + Defensora
+              </button>
+            </>
+          ) : (
+            <button type="button" className="ghost" onClick={() => addPieza()}>
+              + Pieza
+            </button>
+          )}
           <button
             type="button"
             className="ghost danger"
@@ -1034,7 +1289,14 @@ export default function JugadaEditor() {
               ▶ Play
             </button>
           ) : (
-            <button type="button" className="ghost" onClick={stopPlay}>
+            <button
+              type="button"
+              className="ghost"
+              onClick={() => {
+                stopPlay();
+                clearFrozen();
+              }}
+            >
               ■ Stop
             </button>
           )}
@@ -1073,29 +1335,47 @@ export default function JugadaEditor() {
       )}
       {modo === 'mover' && !selectedFlechaId && !playing && (paso?.flechas || []).length > 0 && (
         <p className="muted jugada-hint">
-          Play anima todas las líneas de este paso en orden · Clic en una línea para eliminarla
+          {isEntrenamiento
+            ? 'Play mueve atacantes (rojas) y defensoras (azules) a la vez, cada una con su secuencia · Clic en una línea para eliminarla'
+            : 'Play anima todas las líneas de este paso en orden · Clic en una línea para eliminarla'}
         </p>
       )}
       {playing && (
         <p className="muted jugada-hint">
           Reproduciendo
           {playPhase === 'action'
-            ? ` · acción ${(playActionIdx || 0) + 1}/${(paso?.flechas || []).length || 1}`
+            ? isEntrenamiento
+              ? ` · paso paralelo ${(playActionIdx || 0) + 1}/${playTracks.max || 1}`
+              : ` · acción ${(playActionIdx || 0) + 1}/${playTracks.max || 1}`
             : ' · transición al siguiente paso'}
         </p>
       )}
 
-      <div className={`jugada-board-wrap panel club-card`}>
+      <div className={`jugada-board-wrap panel club-card${isEntrenamiento ? ' jugada-board-wrap-full' : ''}`}>
         <div
           ref={boardRef}
-          className={`hb-court hb-court-${state.fase} jugada-board`}
+          className={`hb-court hb-court-${state.fase} jugada-board${isEntrenamiento ? ' jugada-board-full' : ''}`}
           onClick={onBoardClick}
         >
-          <div className="hb-court-mark hb-court-arc" aria-hidden="true" />
-          <div className="hb-court-mark hb-court-goal" aria-hidden="true" />
-          <span className={`hb-fase-tag hb-fase-${state.fase}`}>
-            {state.fase === 'defensa' ? 'Defensa' : 'Ataque'}
-          </span>
+          {state.fase === 'completo' ? (
+            <>
+              <div className="hb-full-mark hb-full-border" aria-hidden="true" />
+              <div className="hb-full-mark hb-full-center-line" aria-hidden="true" />
+              <div className="hb-full-mark hb-full-center-circle" aria-hidden="true" />
+              <div className="hb-full-mark hb-full-goal hb-full-goal-l" aria-hidden="true" />
+              <div className="hb-full-mark hb-full-goal hb-full-goal-r" aria-hidden="true" />
+              <div className="hb-full-mark hb-full-arc hb-full-arc-l" aria-hidden="true" />
+              <div className="hb-full-mark hb-full-arc hb-full-arc-r" aria-hidden="true" />
+              <div className="hb-full-mark hb-full-6m hb-full-6m-l" aria-hidden="true" />
+              <div className="hb-full-mark hb-full-6m hb-full-6m-r" aria-hidden="true" />
+            </>
+          ) : (
+            <>
+              <div className="hb-court-mark hb-court-arc" aria-hidden="true" />
+              <div className="hb-court-mark hb-court-goal" aria-hidden="true" />
+            </>
+          )}
+          <span className={`hb-fase-tag hb-fase-${state.fase}`}>{faseLabel}</span>
 
           <svg className="jugada-arrows" viewBox="0 0 100 100" preserveAspectRatio="none">
             <defs>
@@ -1141,11 +1421,18 @@ export default function JugadaEditor() {
                   : tipo === 'pase'
                     ? 'url(#jugada-arrowhead-pase)'
                     : 'url(#jugada-arrowhead)';
+              const atkIdx = playTracks.atk.findIndex(
+                (x) => x.id_flecha === f.id_flecha || x === f,
+              );
+              const defIdx = playTracks.def.findIndex(
+                (x) => x.id_flecha === f.id_flecha || x === f,
+              );
+              const trackIdx = atkIdx >= 0 ? atkIdx : defIdx;
               const selected =
                 selectedFlechaId === f.id_flecha ||
-                (playing && playPhase === 'action' && fi === playActionIdx);
+                (playing && playPhase === 'action' && trackIdx === playActionIdx);
               const dimmed =
-                playing && playPhase === 'action' && fi > playActionIdx;
+                playing && playPhase === 'action' && trackIdx > playActionIdx;
               return (
                 <g
                   key={f.id_flecha || `${f.id_pieza}-${f.x2}-${tipo}-${fi}`}
@@ -1197,7 +1484,9 @@ export default function JugadaEditor() {
               state.fase !== 'defensa' &&
               (playing && playSnap
                 ? playSnap.ballOwner === pieza.id_pieza
-                : paso?.id_pieza_balon === pieza.id_pieza);
+                : !playing && frozenSnap
+                  ? frozenSnap.ballOwner === pieza.id_pieza
+                  : paso?.id_pieza_balon === pieza.id_pieza);
             return (
               <div
                 key={pieza.id_pieza}

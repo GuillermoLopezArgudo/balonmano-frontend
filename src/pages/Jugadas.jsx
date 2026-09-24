@@ -14,14 +14,14 @@ export default function Jugadas() {
 
   const load = (f = fase) =>
     api
-      .getJugadas(f ? { fase: f } : {})
+      .getJugadas(f ? { fase: f, ambito: 'tactica' } : { ambito: 'tactica' })
       .then(setItems)
       .catch((e) => setError(e.message));
 
   useEffect(() => {
     let cancelled = false;
     api
-      .getJugadas(fase ? { fase } : {})
+      .getJugadas(fase ? { fase, ambito: 'tactica' } : { ambito: 'tactica' })
       .then((all) => {
         if (!cancelled) setItems(all);
       })

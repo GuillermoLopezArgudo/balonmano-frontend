@@ -203,8 +203,12 @@ export const api = {
     request(`/alineaciones/${id}`, { method: 'DELETE', ...opts }),
 
   getJugadas: (opts = {}) => {
-    const { fase, ...rest } = opts;
-    const path = fase ? `/jugadas/?fase=${encodeURIComponent(fase)}` : '/jugadas/';
+    const { fase, ambito, ...rest } = opts;
+    const params = new URLSearchParams();
+    if (fase) params.set('fase', fase);
+    if (ambito) params.set('ambito', ambito);
+    const q = params.toString();
+    const path = q ? `/jugadas/?${q}` : '/jugadas/';
     return request(path, rest);
   },
   getJugada: (id, opts) => request(`/jugadas/${id}`, opts),
@@ -219,6 +223,21 @@ export const api = {
       ...opts,
     }),
   deleteJugada: (id, opts) => request(`/jugadas/${id}`, { method: 'DELETE', ...opts }),
+
+  getPreparaciones: (opts = {}) => {
+    const { tipo, ...rest } = opts;
+    const path = tipo
+      ? `/preparaciones/?tipo=${encodeURIComponent(tipo)}`
+      : '/preparaciones/';
+    return request(path, rest);
+  },
+  getPreparacion: (id, opts) => request(`/preparaciones/${id}`, opts),
+  createPreparacion: (data, opts) =>
+    request('/preparaciones/', { method: 'POST', body: JSON.stringify(data), ...opts }),
+  updatePreparacion: (id, data, opts) =>
+    request(`/preparaciones/${id}`, { method: 'PUT', body: JSON.stringify(data), ...opts }),
+  deletePreparacion: (id, opts) =>
+    request(`/preparaciones/${id}`, { method: 'DELETE', ...opts }),
 
   getEstadisticas: (opts) => request('/estadisticas/jugadores/', opts),
   getEstadisticasPorteros: (opts) => request('/estadisticas/porteros/', opts),

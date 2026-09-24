@@ -78,11 +78,26 @@ const IcoJugadas = (
   </Icon>
 );
 
+const IcoFisico = (
+  <Icon>
+    <path d="M6.5 8.5 4 11.5l2.5 3 2-1.5" />
+    <path d="M17.5 8.5 20 11.5l-2.5 3-2-1.5" />
+    <path d="M9 7.5h6v9H9z" />
+    <path d="M11 4.5h2v3h-2zM11 16.5h2v3h-2z" />
+  </Icon>
+);
+
 const links = [
   { to: '/', label: 'Resumen', ico: IcoResumen, end: true },
   { to: '/plantilla', label: 'Plantilla', ico: IcoPlantilla },
   { to: '/partidos', label: 'Partidos', ico: IcoPartidos },
   { to: '/jugadas', label: 'Jugadas', ico: IcoJugadas },
+  {
+    to: '/preparacion/entrenamiento',
+    label: 'Físico/Entrenamiento',
+    ico: IcoFisico,
+    match: '/preparacion',
+  },
   { to: '/analitica', label: 'Analítica', ico: IcoAnalitica },
   { to: '/informes', label: 'Informes', ico: IcoInformes },
   { to: '/club', label: 'Club', ico: IcoClub },
@@ -190,7 +205,17 @@ export default function AppShell() {
 
         <nav>
           {links.map((l) => (
-            <NavLink key={l.to} to={l.to} end={l.end} className="nav-item">
+            <NavLink
+              key={l.to}
+              to={l.to}
+              end={l.end}
+              className={({ isActive }) => {
+                const matched = l.match
+                  ? location.pathname === l.match || location.pathname.startsWith(`${l.match}/`)
+                  : isActive;
+                return matched ? 'nav-item active' : 'nav-item';
+              }}
+            >
               {l.ico}
               {l.label}
             </NavLink>
