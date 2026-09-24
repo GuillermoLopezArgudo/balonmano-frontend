@@ -44,7 +44,7 @@ function isAplazado(p) {
 }
 
 export default function Partidos() {
-  const { equipo } = useAuth();
+  const { equipo, canWritePartidos } = useAuth();
   const [partidos, setPartidos] = useState([]);
   const [temporadas, setTemporadas] = useState([]);
   const [filtro, setFiltro] = useState('todos');
@@ -100,7 +100,18 @@ export default function Partidos() {
       if (condicion === 'local' && p.id_equipo_local !== myId) return false;
       if (condicion === 'visitante' && p.id_equipo_visitante !== myId) return false;
       if (q) {
-        const hay = `${p.equipo_local_nombre} ${p.equipo_visitante_nombre}`.toLowerCase();
+        const hay = [
+          p.equipo_local_nombre,
+          p.equipo_visitante_nombre,
+          p.competicion,
+          p.pabellon,
+          p.jornada != null ? `jornada ${p.jornada}` : '',
+          p.estado,
+          p.es_local === false ? 'visitante' : 'local',
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;
@@ -128,9 +139,11 @@ export default function Partidos() {
           <p className="page-kicker">TEMPORADA {temporadaLabel}</p>
           <h1>Partidos</h1>
         </div>
-        <Link to="/partidos/nuevo">
-          <button type="button">+ Nuevo partido</button>
-        </Link>
+        {canWritePartidos && (
+          <Link to="/partidos/nuevo">
+            <button type="button">+ Nuevo partido</button>
+          </Link>
+        )}
       </header>
 
       <div className="filters roster-filters">
@@ -176,11 +189,14 @@ export default function Partidos() {
           </select>
         </div>
         <div className="field">
-          <label>Buscar rival</label>
+          <label htmlFor="partidos-q">Buscar</label>
           <input
+            id="partidos-q"
+            type="search"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            placeholder="Buscar por nombre…"
+            placeholder="Rival, jornada, pabellón, competición…"
+            autoComplete="off"
           />
         </div>
       </section>
@@ -293,7 +309,11 @@ export default function Partidos() {
 
         {!grouped.length && (
           <section className="panel">
-            <p className="muted">No hay partidos con estos filtros</p>
+            <p className="muted">
+              {busqueda.trim()
+                ? 'Ningún partido coincide con la búsqueda'
+                : 'No hay partidos con estos filtros'}
+            </p>
           </section>
         )}
       </div>

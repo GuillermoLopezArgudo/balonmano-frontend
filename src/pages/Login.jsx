@@ -72,7 +72,9 @@ export default function Login() {
             </div>
           </div>
           <h2>Bienvenido de nuevo</h2>
-          <p className="sub">Accede al espacio de trabajo de tu club.</p>
+          <p className="sub">
+            Accede con el correo del club o el de un miembro invitado.
+          </p>
           <form onSubmit={onSubmit}>
             <div className="field">
               <label htmlFor="correo">Correo electrónico</label>
@@ -105,6 +107,8 @@ export default function Login() {
             </button>
             <p className="auth-foot muted">
               ¿Nuevo club? <Link to="/registro">Registrar equipo</Link>
+              <br />
+              ¿Te invitaron? Usa el enlace que te enviaron para crear tu contraseña.
             </p>
           </form>
         </div>

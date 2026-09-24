@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api';
+import { useAuth } from '../auth';
 
 const uid = () =>
   typeof crypto !== 'undefined' && crypto.randomUUID
@@ -77,6 +78,70 @@ function ballCoords(paso, posMap) {
   return { x: 50, y: 50 };
 }
 
+function nearestPiezaId(posMap, x, y) {
+  let bestId = null;
+  let best = 1e9;
+  for (const [id, p] of Object.entries(posMap)) {
+    const d = (p.x - x) ** 2 + (p.y - y) ** 2;
+    if (d < best) {
+      best = d;
+      bestId = id;
+    }
+  }
+  return bestId;
+}
+
+/** Estado visual al reproducir las flechas 0..actionIdx (con progreso t en la actual). */
+function snapshotPlay(paso, actionIdx, t) {
+  const flechas = paso?.flechas || [];
+  const pos = {};
+  for (const p of paso?.posiciones || []) {
+    pos[p.id_pieza] = { id_pieza: p.id_pieza, x: p.x, y: p.y };
+  }
+  let ballOwner = paso?.id_pieza_balon ?? null;
+  let ball = ballCoords(paso, pos);
+
+  const apply = (i, progress) => {
+    if (progress <= 0) return;
+    const f = flechas[i];
+    if (!f) return;
+    const tipo = f.tipo || 'movimiento';
+    if (tipo === 'movimiento') {
+      const cur = pos[f.id_pieza] || { x: f.x1, y: f.y1 };
+      const x = cur.x + (f.x2 - cur.x) * progress;
+      const y = cur.y + (f.y2 - cur.y) * progress;
+      pos[f.id_pieza] = { id_pieza: f.id_pieza, x, y };
+      if (ballOwner === f.id_pieza) {
+        ball = { x: x + 3.5, y: y - 3.5 };
+      }
+    } else if (tipo === 'pase' || tipo === 'lanzamiento') {
+      ball = {
+        x: f.x1 + (f.x2 - f.x1) * progress,
+        y: f.y1 + (f.y2 - f.y1) * progress,
+      };
+      if (progress >= 1) {
+        if (tipo === 'pase') {
+          ballOwner =
+            f.id_destino || nearestPiezaId(pos, f.x2, f.y2) || ballOwner;
+          if (ballOwner && pos[ballOwner]) {
+            ball = { x: pos[ballOwner].x + 3.5, y: pos[ballOwner].y - 3.5 };
+          }
+        } else {
+          ballOwner = null;
+        }
+      }
+    }
+  };
+
+  for (let i = 0; i < flechas.length; i += 1) {
+    if (i < actionIdx) apply(i, 1);
+    else if (i === actionIdx) apply(i, t);
+    else break;
+  }
+
+  return { pos, ball, ballOwner };
+}
+
 function fromApi(data) {
   const esDefensa = data.fase === 'defensa';
   return {
@@ -96,6 +161,7 @@ function fromApi(data) {
       flechas: (paso.flechas || []).map((f) => ({
         id_flecha: f.id_flecha || uid(),
         id_pieza: f.id_pieza,
+        id_destino: f.id_destino || null,
         x1: f.x1,
         y1: f.y1,
         x2: f.x2,
@@ -143,14 +209,18 @@ export default function JugadaEditor() {
   const { id } = useParams();
   const isNew = !id || id === 'nueva';
   const navigate = useNavigate();
+  const { canWriteJugadas } = useAuth();
 
   const [state, setState] = useState(() => blankJugada('ataque'));
   const [pasoIdx, setPasoIdx] = useState(0);
   const [modo, setModo] = useState('mover'); // mover | flecha | pase | lanzar
   const [flechaPieza, setFlechaPieza] = useState(null);
   const [paseFrom, setPaseFrom] = useState(null);
+  const [selectedFlechaId, setSelectedFlechaId] = useState(null);
   const [playing, setPlaying] = useState(false);
-  const [playT, setPlayT] = useState(0); // 0..1 between pasoIdx and next
+  const [playT, setPlayT] = useState(0); // 0..1
+  const [playActionIdx, setPlayActionIdx] = useState(0);
+  const [playPhase, setPlayPhase] = useState('idle'); // idle | action | between
   const [error, setError] = useState('');
   const [status, setStatus] = useState('');
   const [saving, setSaving] = useState(false);
@@ -158,6 +228,7 @@ export default function JugadaEditor() {
   const dragRef = useRef(null);
   const boardRef = useRef(null);
   const rafRef = useRef(null);
+  const playRef = useRef({ pasoIdx: 0, actionIdx: 0, phase: 'idle' });
 
   useEffect(() => {
     if (isNew) return undefined;
@@ -190,91 +261,263 @@ export default function JugadaEditor() {
     return map;
   }, [paso]);
 
+  const playSnap = useMemo(() => {
+    if (!playing || !paso) return null;
+    if (playPhase === 'action') {
+      return snapshotPlay(paso, playActionIdx, playT);
+    }
+    if (playPhase === 'between') {
+      const end = snapshotPlay(paso, (paso.flechas || []).length, 1);
+      return end;
+    }
+    return null;
+  }, [playing, paso, playPhase, playActionIdx, playT]);
+
   const displayPos = useCallback(
     (piezaId) => {
       const a = posMap[piezaId];
-      if (!playing || !nextPaso || !a) return a;
-      const b = nextPaso.posiciones.find((p) => p.id_pieza === piezaId);
-      if (!b) return a;
-      return {
-        id_pieza: piezaId,
-        x: a.x + (b.x - a.x) * playT,
-        y: a.y + (b.y - a.y) * playT,
-      };
-    },
-    [posMap, playing, nextPaso, playT],
-  );
+      if (!a) return a;
+      if (!playing || !playSnap) return a;
 
-  const nextPosMap = useMemo(() => {
-    const map = {};
-    for (const p of nextPaso?.posiciones || []) map[p.id_pieza] = p;
-    return map;
-  }, [nextPaso]);
+      if (playPhase === 'action') {
+        return playSnap.pos[piezaId] || a;
+      }
+
+      if (playPhase === 'between' && nextPaso) {
+        const from = playSnap.pos[piezaId] || a;
+        const b = nextPaso.posiciones.find((p) => p.id_pieza === piezaId) || from;
+        return {
+          id_pieza: piezaId,
+          x: from.x + (b.x - from.x) * playT,
+          y: from.y + (b.y - from.y) * playT,
+        };
+      }
+      return playSnap.pos[piezaId] || a;
+    },
+    [posMap, playing, playSnap, playPhase, nextPaso, playT],
+  );
 
   const displayBall = useMemo(() => {
     const from = ballCoords(paso, posMap);
-    if (!playing || !nextPaso) return from;
-    const trayectoria = (paso.flechas || []).find(
-      (f) => f.tipo === 'pase' || f.tipo === 'lanzamiento',
-    );
-    if (trayectoria) {
+    if (!playing || !playSnap) return from;
+
+    if (playPhase === 'action') return playSnap.ball;
+
+    if (playPhase === 'between' && nextPaso) {
+      const nextMap = {};
+      for (const p of nextPaso.posiciones || []) nextMap[p.id_pieza] = p;
+      const to = ballCoords(nextPaso, nextMap);
       return {
-        x: trayectoria.x1 + (trayectoria.x2 - trayectoria.x1) * playT,
-        y: trayectoria.y1 + (trayectoria.y2 - trayectoria.y1) * playT,
+        x: playSnap.ball.x + (to.x - playSnap.ball.x) * playT,
+        y: playSnap.ball.y + (to.y - playSnap.ball.y) * playT,
       };
     }
-    const to = ballCoords(nextPaso, nextPosMap);
-    return {
-      x: from.x + (to.x - from.x) * playT,
-      y: from.y + (to.y - from.y) * playT,
-    };
-  }, [paso, posMap, playing, nextPaso, nextPosMap, playT]);
+    return playSnap.ball;
+  }, [paso, posMap, playing, playSnap, playPhase, nextPaso, playT]);
 
   const stopPlay = () => {
     setPlaying(false);
     setPlayT(0);
+    setPlayActionIdx(0);
+    setPlayPhase('idle');
+    playRef.current = { pasoIdx: 0, actionIdx: 0, phase: 'idle' };
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
   };
 
+  const cancelPending = () => {
+    setFlechaPieza(null);
+    setPaseFrom(null);
+    setSelectedFlechaId(null);
+  };
+
+  const removeFlecha = (flechaId) => {
+    if (!flechaId || playing) return;
+    stopPlay();
+    setState((prev) => {
+      const pasos = [...prev.pasos];
+      const cur = { ...pasos[pasoIdx] };
+      const flechas = cur.flechas || [];
+      const flecha = flechas.find((f) => f.id_flecha === flechaId);
+      if (!flecha) return prev;
+
+      cur.flechas = flechas.filter((f) => f.id_flecha !== flechaId);
+      pasos[pasoIdx] = cur;
+
+      if (pasos[pasoIdx + 1]) {
+        const nxt = { ...pasos[pasoIdx + 1] };
+        const tipo = flecha.tipo || 'movimiento';
+        if (tipo === 'movimiento') {
+          const fromPos = (cur.posiciones || []).find((p) => p.id_pieza === flecha.id_pieza);
+          if (fromPos) {
+            const posiciones = [...(nxt.posiciones || [])];
+            const ix = posiciones.findIndex((p) => p.id_pieza === flecha.id_pieza);
+            const dest = { id_pieza: flecha.id_pieza, x: fromPos.x, y: fromPos.y };
+            if (ix >= 0) posiciones[ix] = dest;
+            else posiciones.push(dest);
+            nxt.posiciones = posiciones;
+          }
+        } else if (tipo === 'pase' || tipo === 'lanzamiento') {
+          nxt.id_pieza_balon = cur.id_pieza_balon;
+          nxt.balon_x = cur.balon_x;
+          nxt.balon_y = cur.balon_y;
+        }
+        pasos[pasoIdx + 1] = nxt;
+      }
+      return { ...prev, pasos };
+    });
+    setSelectedFlechaId(null);
+  };
+
+  const removeLastFlecha = () => {
+    const flechas = paso?.flechas || [];
+    if (!flechas.length) return;
+    removeFlecha(flechas[flechas.length - 1].id_flecha);
+  };
+
   const play = () => {
-    if (state.pasos.length < 2) {
-      setError('Añade al menos 2 pasos para reproducir');
+    const hasFlechas = state.pasos.some((p) => (p.flechas || []).length > 0);
+    if (!hasFlechas && state.pasos.length < 2) {
+      setError('Añade líneas (pase / desmarque / lanzamiento) o un segundo paso para reproducir');
       return;
     }
     setError('');
     setModo('mover');
     setFlechaPieza(null);
     setPaseFrom(null);
-    setPlaying(true);
-    setPlayT(0);
+    setSelectedFlechaId(null);
+
+    const ACTION_MS = 650;
+    const BETWEEN_MS = 700;
+    const pasos = state.pasos;
     let idx = pasoIdx;
+    let actionIdx = 0;
+    let phase =
+      (pasos[idx]?.flechas || []).length > 0
+        ? 'action'
+        : idx < pasos.length - 1
+          ? 'between'
+          : 'idle';
+
+    if (phase === 'idle') {
+      // empezar desde el primer paso con contenido
+      const startAt = pasos.findIndex(
+        (p, i) => (p.flechas || []).length > 0 || i < pasos.length - 1,
+      );
+      if (startAt < 0) {
+        setError('No hay movimientos que reproducir');
+        return;
+      }
+      idx = startAt;
+      phase = (pasos[idx]?.flechas || []).length > 0 ? 'action' : 'between';
+    }
+
+    setPasoIdx(idx);
+    setPlayActionIdx(0);
+    setPlayPhase(phase);
+    setPlayT(0);
+    setPlaying(true);
+    playRef.current = { pasoIdx: idx, actionIdx: 0, phase };
     let start = performance.now();
-    const dur = 900;
-    const total = state.pasos.length;
 
     const tick = (now) => {
+      const cur = playRef.current;
+      const dur = cur.phase === 'between' ? BETWEEN_MS : ACTION_MS;
       const t = Math.min(1, (now - start) / dur);
       setPlayT(t);
-      if (t >= 1) {
-        if (idx < total - 2) {
-          idx += 1;
-          setPasoIdx(idx);
+
+      if (t < 1) {
+        rafRef.current = requestAnimationFrame(tick);
+        return;
+      }
+
+      const pasoCur = pasos[cur.pasoIdx];
+      const flechas = pasoCur?.flechas || [];
+
+      if (cur.phase === 'action') {
+        const nextAction = cur.actionIdx + 1;
+        if (nextAction < flechas.length) {
+          playRef.current = { ...cur, actionIdx: nextAction, phase: 'action' };
+          setPlayActionIdx(nextAction);
           setPlayT(0);
           start = performance.now();
           rafRef.current = requestAnimationFrame(tick);
-        } else {
-          setPasoIdx(total - 1);
-          setPlaying(false);
-          setPlayT(0);
+          return;
         }
+        // fin de líneas del paso → transición al siguiente si existe
+        if (cur.pasoIdx < pasos.length - 1) {
+          playRef.current = { ...cur, phase: 'between', actionIdx: flechas.length };
+          setPlayPhase('between');
+          setPlayActionIdx(flechas.length);
+          setPlayT(0);
+          start = performance.now();
+          rafRef.current = requestAnimationFrame(tick);
+          return;
+        }
+        setPlaying(false);
+        setPlayPhase('idle');
+        setPlayT(0);
         return;
       }
-      rafRef.current = requestAnimationFrame(tick);
+
+      // between terminado → avanzar paso
+      const nextIdx = cur.pasoIdx + 1;
+      if (nextIdx >= pasos.length) {
+        setPasoIdx(pasos.length - 1);
+        setPlaying(false);
+        setPlayPhase('idle');
+        setPlayT(0);
+        return;
+      }
+      setPasoIdx(nextIdx);
+      const nextFlechas = pasos[nextIdx]?.flechas || [];
+      if (nextFlechas.length > 0) {
+        playRef.current = { pasoIdx: nextIdx, actionIdx: 0, phase: 'action' };
+        setPlayActionIdx(0);
+        setPlayPhase('action');
+        setPlayT(0);
+        start = performance.now();
+        rafRef.current = requestAnimationFrame(tick);
+        return;
+      }
+      if (nextIdx < pasos.length - 1) {
+        playRef.current = { pasoIdx: nextIdx, actionIdx: 0, phase: 'between' };
+        setPlayPhase('between');
+        setPlayActionIdx(0);
+        setPlayT(0);
+        start = performance.now();
+        rafRef.current = requestAnimationFrame(tick);
+        return;
+      }
+      setPasoIdx(nextIdx);
+      setPlaying(false);
+      setPlayPhase('idle');
+      setPlayT(0);
     };
+
     rafRef.current = requestAnimationFrame(tick);
   };
 
   useEffect(() => () => stopPlay(), []);
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        if (flechaPieza || paseFrom || selectedFlechaId) {
+          e.preventDefault();
+          cancelPending();
+        }
+        return;
+      }
+      if (playing) return;
+      if ((e.key === 'Backspace' || e.key === 'Delete') && selectedFlechaId) {
+        e.preventDefault();
+        removeFlecha(selectedFlechaId);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [flechaPieza, paseFrom, selectedFlechaId, playing, pasoIdx]);
+
 
   const updatePasoPos = (piezaId, x, y) => {
     setState((prev) => {
@@ -304,10 +547,11 @@ export default function JugadaEditor() {
     if (modo === 'pase') {
       if (!paseFrom) {
         setPaseFrom(piezaId);
-        // quien inicia el pase tiene el balón en este paso
+        // solo fija el balón del diagrama si aún no hay dueña en este paso
         setState((prev) => {
           const pasos = prev.pasos.map((p, i) => {
             if (i !== pasoIdx) return p;
+            if (p.id_pieza_balon) return p;
             const pos = p.posiciones.find((x) => x.id_pieza === piezaId);
             return {
               ...p,
@@ -324,19 +568,18 @@ export default function JugadaEditor() {
         setPaseFrom(null);
         return;
       }
-      // completar pase
+      // completar pase (puede haber varios en el mismo paso; Play los anima en orden)
       const from = posMap[paseFrom];
       const to = posMap[piezaId];
       if (!from || !to) return;
       setState((prev) => {
-        let pasos = [...prev.pasos];
+        const pasos = [...prev.pasos];
         const cur = { ...pasos[pasoIdx] };
-        const flechas = (cur.flechas || []).filter(
-          (f) => !(f.tipo === 'pase' && f.id_pieza === paseFrom),
-        );
+        const flechas = [...(cur.flechas || [])];
         flechas.push({
           id_flecha: uid(),
           id_pieza: paseFrom,
+          id_destino: piezaId,
           x1: from.x,
           y1: from.y,
           x2: to.x,
@@ -344,23 +587,16 @@ export default function JugadaEditor() {
           tipo: 'pase',
         });
         cur.flechas = flechas;
-        cur.id_pieza_balon = paseFrom;
-        cur.balon_x = from.x;
-        cur.balon_y = from.y;
+        // balón del diagrama: quien inicia la secuencia en este paso
+        if (!cur.id_pieza_balon) {
+          cur.id_pieza_balon = paseFrom;
+          cur.balon_x = from.x;
+          cur.balon_y = from.y;
+        }
         pasos[pasoIdx] = cur;
 
-        if (!pasos[pasoIdx + 1]) {
-          pasos.push({
-            id_paso: uid(),
-            orden: pasos.length,
-            titulo: `Paso ${pasos.length + 1}`,
-            posiciones: (cur.posiciones || []).map((p) => ({ ...p })),
-            flechas: [],
-            balon_x: to.x,
-            balon_y: to.y,
-            id_pieza_balon: piezaId,
-          });
-        } else {
+        // si ya hay paso siguiente, actualizar balón final (opcional)
+        if (pasos[pasoIdx + 1]) {
           const nxt = { ...pasos[pasoIdx + 1] };
           nxt.id_pieza_balon = piezaId;
           nxt.balon_x = to.x;
@@ -424,11 +660,10 @@ export default function JugadaEditor() {
     const tipoFlecha = modo === 'lanzar' ? 'lanzamiento' : 'movimiento';
 
     setState((prev) => {
-      let pasos = [...prev.pasos];
+      const pasos = [...prev.pasos];
       const cur = { ...pasos[pasoIdx] };
-      const flechas = (cur.flechas || []).filter(
-        (f) => !(f.id_pieza === flechaPieza && (f.tipo || 'movimiento') === tipoFlecha),
-      );
+      // varios desmarques/lanzamientos en el mismo paso; Play los anima en orden
+      const flechas = [...(cur.flechas || [])];
       flechas.push({
         id_flecha: uid(),
         id_pieza: flechaPieza,
@@ -439,43 +674,34 @@ export default function JugadaEditor() {
         tipo: tipoFlecha,
       });
       cur.flechas = flechas;
-      if (tipoFlecha === 'lanzamiento') {
+      if (tipoFlecha === 'lanzamiento' && !cur.id_pieza_balon) {
         cur.id_pieza_balon = flechaPieza;
         cur.balon_x = from.x;
         cur.balon_y = from.y;
       }
       pasos[pasoIdx] = cur;
 
-      if (!pasos[pasoIdx + 1]) {
-        const clonePos = (cur.posiciones || []).map((p) => ({ ...p }));
-        pasos.push({
-          id_paso: uid(),
-          orden: pasos.length,
-          titulo: `Paso ${pasos.length + 1}`,
-          posiciones: clonePos,
-          flechas: [],
-          balon_x: cur.balon_x,
-          balon_y: cur.balon_y,
-          id_pieza_balon: cur.id_pieza_balon,
-        });
+      // si ya existe paso siguiente, reflejar destino final
+      if (pasos[pasoIdx + 1]) {
+        const nxt = { ...pasos[pasoIdx + 1] };
+        if (tipoFlecha === 'lanzamiento') {
+          nxt.balon_x = x2;
+          nxt.balon_y = y2;
+          nxt.id_pieza_balon = null;
+        } else {
+          const posiciones = [...(nxt.posiciones || [])];
+          const ix = posiciones.findIndex((p) => p.id_pieza === flechaPieza);
+          const dest = { id_pieza: flechaPieza, x: x2, y: y2 };
+          if (ix >= 0) posiciones[ix] = dest;
+          else posiciones.push(dest);
+          nxt.posiciones = posiciones;
+        }
+        pasos[pasoIdx + 1] = nxt;
       }
-      const nxt = { ...pasos[pasoIdx + 1] };
-      if (tipoFlecha === 'lanzamiento') {
-        nxt.balon_x = x2;
-        nxt.balon_y = y2;
-        nxt.id_pieza_balon = null;
-      } else {
-        const posiciones = [...(nxt.posiciones || [])];
-        const ix = posiciones.findIndex((p) => p.id_pieza === flechaPieza);
-        const dest = { id_pieza: flechaPieza, x: x2, y: y2 };
-        if (ix >= 0) posiciones[ix] = dest;
-        else posiciones.push(dest);
-        nxt.posiciones = posiciones;
-      }
-      pasos[pasoIdx + 1] = nxt;
       return { ...prev, pasos };
     });
     setFlechaPieza(null);
+    setSelectedFlechaId(null);
   };
 
   const onPointerDownBall = (e) => {
@@ -660,17 +886,22 @@ export default function JugadaEditor() {
               Volver
             </button>
           </Link>
-          {!isNew && (
+          {!isNew && canWriteJugadas && (
             <button type="button" className="ghost" disabled={saving} onClick={copiar}>
               Copiar
             </button>
           )}
-          <button type="button" disabled={saving} onClick={guardar}>
-            {saving ? 'Guardando…' : 'Guardar'}
-          </button>
+          {canWriteJugadas && (
+            <button type="button" disabled={saving} onClick={guardar}>
+              {saving ? 'Guardando…' : 'Guardar'}
+            </button>
+          )}
         </div>
       </header>
 
+      {!canWriteJugadas && (
+        <p className="hint">Tu cargo solo permite consultar esta jugada.</p>
+      )}
       {error && <p className="error">{error}</p>}
       {status && <p className="club-status saved">{status}</p>}
 
@@ -712,6 +943,9 @@ export default function JugadaEditor() {
               onClick={() => {
                 stopPlay();
                 setPasoIdx(i);
+                setSelectedFlechaId(null);
+                setFlechaPieza(null);
+                setPaseFrom(null);
               }}
             >
               {i + 1}
@@ -781,6 +1015,20 @@ export default function JugadaEditor() {
           <button type="button" className="ghost" onClick={addPieza}>
             + Pieza
           </button>
+          <button
+            type="button"
+            className="ghost danger"
+            disabled={playing || !(paso?.flechas || []).length}
+            onClick={removeLastFlecha}
+            title="Elimina la última línea del paso (pase, desmarque o lanzamiento)"
+          >
+            Quitar línea
+          </button>
+          {(flechaPieza || paseFrom) && (
+            <button type="button" className="ghost" onClick={cancelPending}>
+              Cancelar
+            </button>
+          )}
           {!playing ? (
             <button type="button" className="btn-play" onClick={play}>
               ▶ Play
@@ -796,22 +1044,44 @@ export default function JugadaEditor() {
       {modo === 'flecha' && (
         <p className="muted jugada-hint">
           {flechaPieza
-            ? 'Clic en el campo = destino del desmarque'
-            : 'Elige una pieza y luego el destino'}
+            ? 'Clic en el campo = destino del desmarque · Esc cancela'
+            : 'Elige una pieza y luego el destino · Clic en una línea para seleccionarla'}
         </p>
       )}
       {modo === 'pase' && (
         <p className="muted jugada-hint">
           {paseFrom
-            ? 'Ahora elige a quién pasa el balón'
-            : 'Elige quién tiene el balón y luego la receptora'}
+            ? 'Ahora elige a quién pasa el balón · Esc cancela'
+            : 'Elige quién tiene el balón y luego la receptora · Clic en una línea para seleccionarla'}
         </p>
       )}
       {modo === 'lanzar' && (
         <p className="muted jugada-hint">
           {flechaPieza
-            ? 'Clic en el campo = destino del lanzamiento'
-            : 'Elige quién lanza y luego el destino'}
+            ? 'Clic en el campo = destino del lanzamiento · Esc cancela'
+            : 'Elige quién lanza y luego el destino · Clic en una línea para seleccionarla'}
+        </p>
+      )}
+      {selectedFlechaId && !playing && (
+        <p className="muted jugada-hint">
+          Línea seleccionada ·{' '}
+          <button type="button" className="linkish" onClick={() => removeFlecha(selectedFlechaId)}>
+            Eliminar
+          </button>
+          {' · Esc deselecciona · Supr elimina'}
+        </p>
+      )}
+      {modo === 'mover' && !selectedFlechaId && !playing && (paso?.flechas || []).length > 0 && (
+        <p className="muted jugada-hint">
+          Play anima todas las líneas de este paso en orden · Clic en una línea para eliminarla
+        </p>
+      )}
+      {playing && (
+        <p className="muted jugada-hint">
+          Reproduciendo
+          {playPhase === 'action'
+            ? ` · acción ${(playActionIdx || 0) + 1}/${(paso?.flechas || []).length || 1}`
+            : ' · transición al siguiente paso'}
         </p>
       )}
 
@@ -863,7 +1133,7 @@ export default function JugadaEditor() {
                 <path d="M0,0 L6,3 L0,6 Z" />
               </marker>
             </defs>
-            {(paso?.flechas || []).map((f) => {
+            {(paso?.flechas || []).map((f, fi) => {
               const tipo = f.tipo || 'movimiento';
               const marker =
                 tipo === 'lanzamiento'
@@ -871,17 +1141,49 @@ export default function JugadaEditor() {
                   : tipo === 'pase'
                     ? 'url(#jugada-arrowhead-pase)'
                     : 'url(#jugada-arrowhead)';
+              const selected =
+                selectedFlechaId === f.id_flecha ||
+                (playing && playPhase === 'action' && fi === playActionIdx);
+              const dimmed =
+                playing && playPhase === 'action' && fi > playActionIdx;
               return (
-                <line
-                  key={f.id_flecha || `${f.id_pieza}-${f.x2}-${tipo}`}
-                  className={`jugada-arrow jugada-arrow-${tipo === 'lanzamiento' ? 'lanz' : tipo === 'pase' ? 'pase' : 'mov'}`}
-                  x1={f.x1}
-                  y1={f.y1}
-                  x2={f.x2}
-                  y2={f.y2}
-                  markerEnd={marker}
-                  vectorEffect="non-scaling-stroke"
-                />
+                <g
+                  key={f.id_flecha || `${f.id_pieza}-${f.x2}-${tipo}-${fi}`}
+                  className={`jugada-arrow-group${selected ? ' selected' : ''}${dimmed ? ' dimmed' : ''}`}
+                >
+                  <line
+                    className="jugada-arrow-hit"
+                    x1={f.x1}
+                    y1={f.y1}
+                    x2={f.x2}
+                    y2={f.y2}
+                    vectorEffect="non-scaling-stroke"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (playing) return;
+                      setFlechaPieza(null);
+                      setPaseFrom(null);
+                      setSelectedFlechaId((cur) =>
+                        cur === f.id_flecha ? null : f.id_flecha,
+                      );
+                    }}
+                    onDoubleClick={(e) => {
+                      e.stopPropagation();
+                      if (playing) return;
+                      removeFlecha(f.id_flecha);
+                    }}
+                  />
+                  <line
+                    className={`jugada-arrow jugada-arrow-${tipo === 'lanzamiento' ? 'lanz' : tipo === 'pase' ? 'pase' : 'mov'}${selected ? ' selected' : ''}`}
+                    x1={f.x1}
+                    y1={f.y1}
+                    x2={f.x2}
+                    y2={f.y2}
+                    markerEnd={marker}
+                    vectorEffect="non-scaling-stroke"
+                    pointerEvents="none"
+                  />
+                </g>
               );
             })}
           </svg>
@@ -892,7 +1194,10 @@ export default function JugadaEditor() {
             const selected =
               flechaPieza === pieza.id_pieza || paseFrom === pieza.id_pieza;
             const tieneBalon =
-              state.fase !== 'defensa' && paso?.id_pieza_balon === pieza.id_pieza;
+              state.fase !== 'defensa' &&
+              (playing && playSnap
+                ? playSnap.ballOwner === pieza.id_pieza
+                : paso?.id_pieza_balon === pieza.id_pieza);
             return (
               <div
                 key={pieza.id_pieza}

@@ -4,22 +4,12 @@ import { api, mediaUrl } from '../api';
 import { useAuth } from '../auth';
 import { getSavedTema, saveTema } from '../theme';
 
-const TABS = [
+const TABS_BASE = [
   { id: 'cuenta', label: 'Cuenta' },
-  { id: 'club', label: 'Club' },
+  { id: 'club', label: 'Club', adminOnly: true },
   { id: 'notificaciones', label: 'Notificaciones' },
   { id: 'preferencias', label: 'Preferencias' },
   { id: 'seguridad', label: 'Seguridad' },
-];
-
-const TAB_IDS = new Set(TABS.map((t) => t.id));
-
-const ROLES = [
-  'Director / Gestor',
-  'Entrenador principal',
-  'Segundo entrenador',
-  'Analista',
-  'Delegado',
 ];
 
 const IDIOMAS = [
@@ -60,19 +50,6 @@ function loadPrefs(id) {
   }
 }
 
-function coachNameFromEquipo(equipo, saved = {}) {
-  const fromDb = (equipo?.datos?.entrenador_nombre || '').trim();
-  if (fromDb) return fromDb;
-
-  const teamNames = [equipo?.datos?.nombre, equipo?.datos?.nombre_corto]
-    .filter(Boolean)
-    .map((n) => n.trim().toLowerCase());
-  const savedName = (saved.nombre || '').trim();
-  if (savedName && !teamNames.includes(savedName.toLowerCase())) return savedName;
-
-  return '';
-}
-
 function escudoInitials(nombre = '') {
   const parts = nombre.trim().split(/\s+/).filter(Boolean);
   if (!parts.length) return 'EQ';
@@ -80,14 +57,17 @@ function escudoInitials(nombre = '') {
   return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
 }
 
-function defaultsFromEquipo(equipo, saved = {}) {
-  const mail = equipo?.correo || '';
+function defaultsFromSesion(equipo, miembro, saved = {}) {
   const d = equipo?.datos || {};
+  const isMember = Boolean(miembro);
   return {
-    nombre: coachNameFromEquipo(equipo, saved),
-    correo: mail,
+    nombre: isMember
+      ? miembro.nombre || ''
+      : (d.entrenador_nombre || saved.nombre || '').trim(),
+    correo: isMember ? miembro.correo || '' : equipo?.correo || '',
     idioma: saved.idioma || 'es',
-    rol: saved.rol || 'Entrenador principal',
+    cargo: isMember ? miembro.cargo || '' : 'Entrenador principal',
+    esAdmin: !miembro || miembro.permiso === 'administrador',
     notifEmail: saved.notifEmail !== false,
     notifDirecto: saved.notifDirecto !== false,
     notifResumen: !!saved.notifResumen,
@@ -107,11 +87,26 @@ function defaultsFromEquipo(equipo, saved = {}) {
 }
 
 export default function Ajustes() {
-  const { equipo, refreshEquipo, logout } = useAuth();
+  const {
+    equipo,
+    miembro,
+    canManageClub,
+    isOwner,
+    refreshEquipo,
+    refreshSesion,
+    logout,
+  } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
+  const tabs = useMemo(
+    () => TABS_BASE.filter((t) => !t.adminOnly || canManageClub),
+    [canManageClub],
+  );
+  const tabIds = useMemo(() => new Set(tabs.map((t) => t.id)), [tabs]);
   const tabParam = searchParams.get('tab');
-  const [tab, setTab] = useState(() => (TAB_IDS.has(tabParam) ? tabParam : 'cuenta'));
-  const [form, setForm] = useState(() => defaultsFromEquipo(equipo));
+  const [tab, setTab] = useState(() =>
+    tabIds.has(tabParam) ? tabParam : 'cuenta',
+  );
+  const [form, setForm] = useState(() => defaultsFromSesion(equipo, miembro));
   const [pass, setPass] = useState({ actual: '', nueva: '', confirmar: '' });
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -119,10 +114,13 @@ export default function Ajustes() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (TAB_IDS.has(tabParam) && tabParam !== tab) setTab(tabParam);
-    // Solo reaccionar a cambios de URL; no reentrar con `tab` en deps.
+    if (tabIds.has(tabParam) && tabParam !== tab) setTab(tabParam);
+    else if (tabParam && !tabIds.has(tabParam)) {
+      setTab('cuenta');
+      setSearchParams({}, { replace: true });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- sync URL → state
-  }, [tabParam]);
+  }, [tabParam, tabIds]);
 
   const selectTab = (id) => {
     setTab(id);
@@ -132,9 +130,9 @@ export default function Ajustes() {
   useEffect(() => {
     if (!equipo) return;
     const saved = loadPrefs(equipo.id_equipo) || {};
-    setForm(defaultsFromEquipo(equipo, saved));
+    setForm(defaultsFromSesion(equipo, miembro, saved));
     setDirty(false);
-  }, [equipo]);
+  }, [equipo, miembro]);
 
   const setField = (key, value) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -193,7 +191,6 @@ export default function Ajustes() {
         JSON.stringify({
           nombre: form.nombre,
           idioma: form.idioma,
-          rol: form.rol,
           notifEmail: form.notifEmail,
           notifDirecto: form.notifDirecto,
           notifResumen: form.notifResumen,
@@ -205,25 +202,6 @@ export default function Ajustes() {
       );
       saveTema(form.tema);
 
-      await api.updateDatosEquipo({
-        nombre: form.club_nombre.trim() || 'Mi equipo',
-        nombre_corto: form.nombre_corto || null,
-        entrenador_nombre: form.entrenador_nombre || form.nombre || null,
-        codigo_federativo: form.codigo_federativo || null,
-        categoria: form.categoria || null,
-        competicion: form.competicion || null,
-        pabellon: form.pabellon || null,
-        img_escudo: form.img_escudo || null,
-      });
-
-      const cuentaPayload = {};
-      if (form.correo && form.correo !== equipo?.correo) {
-        cuentaPayload.correo = form.correo;
-      }
-      if (form.nombre.trim()) {
-        cuentaPayload.entrenador_nombre = form.nombre.trim();
-      }
-
       if (pass.nueva) {
         if (pass.nueva.length < 8) {
           throw new Error('La nueva contraseña debe tener al menos 8 caracteres');
@@ -231,14 +209,46 @@ export default function Ajustes() {
         if (pass.nueva !== pass.confirmar) {
           throw new Error('Las contraseñas nuevas no coinciden');
         }
-        cuentaPayload.password_actual = pass.actual;
-        cuentaPayload.password_nueva = pass.nueva;
+        if (!pass.actual) {
+          throw new Error('Indica la contraseña actual');
+        }
+        await api.changePassword({
+          password_actual: pass.actual,
+          password_nueva: pass.nueva,
+        });
       }
 
-      if (Object.keys(cuentaPayload).length) {
-        await api.updateCuenta(cuentaPayload);
+      if (miembro) {
+        if (form.nombre.trim() && form.nombre.trim() !== miembro.nombre) {
+          await api.updatePerfilMiembro({ nombre: form.nombre.trim() });
+        }
+      } else if (canManageClub) {
+        const cuentaPayload = {};
+        if (form.correo && form.correo !== equipo?.correo) {
+          cuentaPayload.correo = form.correo;
+        }
+        if (form.nombre.trim()) {
+          cuentaPayload.entrenador_nombre = form.nombre.trim();
+        }
+        if (Object.keys(cuentaPayload).length) {
+          await api.updateCuenta(cuentaPayload);
+        }
       }
 
+      if (canManageClub && tab === 'club') {
+        await api.updateDatosEquipo({
+          nombre: form.club_nombre.trim() || 'Mi equipo',
+          nombre_corto: form.nombre_corto || null,
+          entrenador_nombre: form.entrenador_nombre || form.nombre || null,
+          codigo_federativo: form.codigo_federativo || null,
+          categoria: form.categoria || null,
+          competicion: form.competicion || null,
+          pabellon: form.pabellon || null,
+          img_escudo: form.img_escudo || null,
+        });
+      }
+
+      await refreshSesion();
       await refreshEquipo();
       setPass({ actual: '', nueva: '', confirmar: '' });
       setDirty(false);
@@ -263,7 +273,7 @@ export default function Ajustes() {
       </header>
 
       <div className="filters roster-filters">
-        {TABS.map((t) => (
+        {tabs.map((t) => (
           <button
             type="button"
             key={t.id}
@@ -284,15 +294,16 @@ export default function Ajustes() {
           <div className="ajustes-profile">
             <span className="ajustes-avatar">{avatarLetter}</span>
             <div>
-              <strong>{form.nombre || 'Sin nombre de entrenador'}</strong>
+              <strong>{form.nombre || 'Sin nombre'}</strong>
               <small>
-                {form.rol} · {clubName}
+                {form.cargo || 'Staff'}
+                {form.esAdmin ? ' · Admin del club' : ''} · {clubName}
               </small>
             </div>
           </div>
           <div className="form-grid club-form">
             <div className="field">
-              <label>Nombre del entrenador</label>
+              <label>{miembro ? 'Tu nombre' : 'Nombre del entrenador'}</label>
               <input
                 value={form.nombre}
                 onChange={(e) => setField('nombre', e.target.value)}
@@ -304,7 +315,13 @@ export default function Ajustes() {
               <input
                 type="email"
                 value={form.correo}
-                onChange={(e) => setField('correo', e.target.value)}
+                onChange={(e) => isOwner && setField('correo', e.target.value)}
+                readOnly={!isOwner}
+                title={
+                  !isOwner
+                    ? 'El correo lo gestiona el administrador del club'
+                    : undefined
+                }
               />
             </div>
             <div className="field">
@@ -318,20 +335,27 @@ export default function Ajustes() {
               </select>
             </div>
             <div className="field">
-              <label>Rol en el club</label>
-              <select value={form.rol} onChange={(e) => setField('rol', e.target.value)}>
-                {ROLES.map((r) => (
-                  <option key={r} value={r}>
-                    {r}
-                  </option>
-                ))}
-              </select>
+              <label>Cargo</label>
+              <input
+                value={
+                  form.esAdmin
+                    ? `${form.cargo || '—'} · Admin del club`
+                    : form.cargo || '—'
+                }
+                readOnly
+              />
             </div>
           </div>
+          {!isOwner && (
+            <p className="hint" style={{ marginTop: '0.75rem' }}>
+              Entraste como miembro. El cargo y la administración del club los define el
+              administrador.
+            </p>
+          )}
         </section>
       )}
 
-      {tab === 'club' && (
+      {tab === 'club' && canManageClub && (
         <div className="club-grid">
           <section className="panel club-card">
             <h2>Identidad del club</h2>

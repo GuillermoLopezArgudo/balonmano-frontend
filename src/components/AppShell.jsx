@@ -90,16 +90,24 @@ const links = [
 ];
 
 export default function AppShell() {
-  const { equipo, logout } = useAuth();
+  const { equipo, miembro, logout } = useAuth();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const navId = useId();
 
   const team = equipo?.datos?.nombre_corto || equipo?.datos?.nombre || 'Tu equipo';
   const subtitle = equipo?.datos?.categoria || '';
-  const mail = equipo?.correo || '';
-  const coach =
-    equipo?.datos?.entrenador_nombre || mail.split('@')[0] || 'Usuario';
+  const mail = miembro?.correo || equipo?.correo || '';
+  const userName =
+    miembro?.nombre ||
+    equipo?.datos?.entrenador_nombre ||
+    mail.split('@')[0] ||
+    'Usuario';
+  const userRole = miembro
+    ? `${miembro.cargo || 'Staff'}${
+        miembro.permiso === 'administrador' ? ' · Admin' : ''
+      }`
+    : 'Administrador del club';
 
   useEffect(() => {
     setMenuOpen(false);
@@ -192,11 +200,11 @@ export default function AppShell() {
         <div className="rail-footer">
           <div className="rail-user">
             <span className="avatar" style={{ background: 'var(--purple)', color: '#fff', marginRight: 0 }}>
-              {(coach[0] || 'U').toUpperCase()}
+              {(userName[0] || 'U').toUpperCase()}
             </span>
             <div>
-              <strong>{coach}</strong>
-              <small>{mail || 'club'}</small>
+              <strong>{userName}</strong>
+              <small>{mail || userRole || 'club'}</small>
             </div>
           </div>
           <button type="button" className="ghost full" onClick={logout}>

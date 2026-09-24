@@ -29,7 +29,7 @@ function clearJugadorDeMapa(map, jid) {
 
 export default function Convocatoria() {
   const { id } = useParams();
-  const { equipo } = useAuth();
+  const { equipo, canWriteConvocatoria } = useAuth();
   const [tab, setTab] = useState('convocatoria');
   const [partido, setPartido] = useState(null);
   const [jugadores, setJugadores] = useState([]);
@@ -44,6 +44,7 @@ export default function Convocatoria() {
   const [error, setError] = useState('');
   const [dragId, setDragId] = useState(null);
   const [dropZone, setDropZone] = useState(null);
+  const [fedOk, setFedOk] = useState({}); // id_jugador -> bool
 
   const tabMeta = TABS.find((t) => t.id === tab);
   const fase = tabMeta?.fase || null;
@@ -63,8 +64,9 @@ export default function Convocatoria() {
       api.getJugadores(),
       api.getConvocatoria(id).catch(() => ({ items: [] })),
       api.getAlineaciones().catch(() => []),
+      api.getFederacionEstados().catch(() => ({ estados: {} })),
     ])
-      .then(([partidos, jugs, conv, alins]) => {
+      .then(([partidos, jugs, conv, alins, fed]) => {
         setPartido(partidos.find((p) => p.id_partido === id) || null);
         setJugadores(jugs.filter((j) => j.activo !== false));
         const map = {};
@@ -80,6 +82,7 @@ export default function Convocatoria() {
         setZonasAtaque(za);
         setZonasDefensa(zd);
         setPlantillas(alins);
+        setFedOk(fed?.estados || {});
       })
       .catch((e) => setError(e.message));
   }, [id]);
@@ -151,6 +154,8 @@ export default function Convocatoria() {
     return next;
   };
 
+  const tieneFederacion = (jid) => Boolean(fedOk[jid]);
+
   const toggleConvocado = (jid) => {
     setSelected((prev) => {
       const next = { ...prev };
@@ -158,6 +163,10 @@ export default function Convocatoria() {
         delete next[jid];
         removeFromZonas(jid);
       } else {
+        if (!tieneFederacion(jid)) {
+          setError('Sin federación pagada no se puede convocar. Márcala en Club → Cuotas.');
+          return prev;
+        }
         if (Object.keys(next).length >= MAX_CONV) {
           setError(`Máximo ${MAX_CONV} convocados`);
           return prev;
@@ -195,6 +204,11 @@ export default function Convocatoria() {
 
       if ((rol === 'titular' || rol === 'banquillo') && !already) {
         setError('Solo jugadoras convocadas pueden ir a alineación o banquillo');
+        return prev;
+      }
+
+      if (!already && !tieneFederacion(jid)) {
+        setError('Sin federación pagada no se puede convocar. Márcala en Club → Cuotas.');
         return prev;
       }
 
@@ -314,6 +328,11 @@ export default function Convocatoria() {
   };
 
   const onDragStart = (e, jid) => {
+    if (tab === 'convocatoria' && !selected[jid] && !tieneFederacion(jid)) {
+      e.preventDefault();
+      setError('Sin federación pagada no se puede convocar. Márcala en Club → Cuotas.');
+      return;
+    }
     e.dataTransfer.setData(DND_TYPE, jid);
     e.dataTransfer.setData('text/plain', jid);
     e.dataTransfer.effectAllowed = 'move';
@@ -552,8 +571,12 @@ export default function Convocatoria() {
               Volver
             </button>
           </Link>
-          <button type="button" disabled={saving} onClick={() => persist(true)}>
-            {saving ? 'Guardando…' : 'Confirmar convocatoria'}
+          <button type="button" disabled={saving || !canWriteConvocatoria} onClick={() => persist(true)}>
+            {saving
+              ? 'Guardando…'
+              : canWriteConvocatoria
+                ? 'Confirmar convocatoria'
+                : 'Solo lectura'}
           </button>
         </div>
       </header>
@@ -588,6 +611,9 @@ export default function Convocatoria() {
         {partido && new Date(partido.fecha) > new Date() ? ' — Se aproxima el partido' : ''}
       </p>
       <p className="conv-dnd-hint muted">{hint}</p>
+      <p className="conv-dnd-hint muted">
+        Solo se pueden convocar jugadoras con <strong>federación pagada</strong> (Club → Cuotas).
+      </p>
 
       {error && <p className="error">{error}</p>}
       {status && <p className="club-status saved">{status}</p>}
@@ -617,11 +643,15 @@ export default function Convocatoria() {
               const za = zonaAtaqueDe[j.id_jugador];
               const zd = zonaDefensaDe[j.id_jugador];
               const esConvTab = tab === 'convocatoria';
+              const fed = tieneFederacion(j.id_jugador);
+              const bloqueada = esConvTab && !checked && !fed;
               return (
                 <div
                   key={j.id_jugador}
-                  className={`conv-player${checked ? ' on' : ''}${dragId === j.id_jugador ? ' dragging' : ''}`}
-                  draggable
+                  className={`conv-player${checked ? ' on' : ''}${dragId === j.id_jugador ? ' dragging' : ''}${
+                    bloqueada ? ' conv-player-blocked' : ''
+                  }`}
+                  draggable={!bloqueada}
                   onDragStart={(e) => onDragStart(e, j.id_jugador)}
                   onDragEnd={onDragEnd}
                 >
@@ -629,6 +659,7 @@ export default function Convocatoria() {
                     <input
                       type="checkbox"
                       checked={checked}
+                      disabled={bloqueada}
                       onChange={() => toggleConvocado(j.id_jugador)}
                       onClick={(e) => e.stopPropagation()}
                       aria-label={`Convocar a ${j.nombre} ${j.apellido}`}
@@ -643,6 +674,7 @@ export default function Convocatoria() {
                       {j.posiciones?.[0] || 'Sin posición'}
                       {za ? ` · ATK ${shortZona(za)}` : ''}
                       {zd ? ` · DEF ${shortZona(zd)}` : ''}
+                      {bloqueada ? ' · Sin federación' : ''}
                     </small>
                   </span>
                   <span className="conv-grip" aria-hidden="true">
@@ -693,7 +725,7 @@ export default function Convocatoria() {
                   placeholder={`Nombre alineación ${fase}…`}
                   maxLength={120}
                 />
-                <button type="button" disabled={saving} onClick={guardarPlantilla}>
+                <button type="button" disabled={saving || !canWriteConvocatoria} onClick={guardarPlantilla}>
                   Guardar {fase}
                 </button>
               </div>
@@ -765,10 +797,10 @@ export default function Convocatoria() {
             type="button"
             className="ghost full"
             style={{ marginTop: '1rem' }}
-            disabled={saving}
+            disabled={saving || !canWriteConvocatoria}
             onClick={() => persist(false)}
           >
-            Guardar borrador
+            {canWriteConvocatoria ? 'Guardar borrador' : 'Solo lectura'}
           </button>
         </section>
       </div>

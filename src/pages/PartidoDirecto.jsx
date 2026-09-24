@@ -106,7 +106,7 @@ function isPortera(j) {
 export default function PartidoDirecto() {
   const { id: routeId } = useParams();
   const navigate = useNavigate();
-  const { equipo } = useAuth();
+  const { equipo, canWriteDirecto } = useAuth();
   const [partidoId, setPartidoId] = useState(routeId || '');
   const [partido, setPartido] = useState(null);
   const [partidos, setPartidos] = useState([]);
@@ -706,11 +706,17 @@ export default function PartidoDirecto() {
           )}
 
           <div className="live-submit-row">
-            <button type="button" className="ghost" onClick={limpiar}>
+            <button type="button" className="ghost" onClick={limpiar} disabled={!canWriteDirecto}>
               Limpiar
             </button>
-            <button type="button" className="live-submit" disabled={saving} onClick={registrar}>
-              {saving ? '…' : 'Registrar →'}
+            <button
+              type="button"
+              className="live-submit"
+              disabled={saving || !canWriteDirecto}
+              onClick={registrar}
+              title={!canWriteDirecto ? 'Tu cargo no permite registrar' : undefined}
+            >
+              {saving ? '…' : canWriteDirecto ? 'Registrar →' : 'Solo lectura'}
             </button>
           </div>
         </section>

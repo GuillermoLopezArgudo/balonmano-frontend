@@ -7,6 +7,7 @@ import { useAbortable } from '../useAbortable';
 const TABS = [
   { id: 'datos', label: 'Datos del equipo' },
   { id: 'temporada', label: 'Temporada' },
+  { id: 'cuotas', label: 'Cuotas', to: '/club/cuotas' },
 ];
 
 function initials(nombre = '') {
@@ -26,7 +27,7 @@ function Field({ label, value }) {
 }
 
 export default function Club() {
-  const { equipo } = useAuth();
+  const { equipo, canManageClub } = useAuth();
   const [tab, setTab] = useState('datos');
   const [temporadas, setTemporadas] = useState([]);
   const [tempMsg, setTempMsg] = useState('');
@@ -77,12 +78,19 @@ export default function Club() {
           <h1>Datos del equipo</h1>
         </div>
         <div className="add-player-actions">
-          <Link to="/club/miembros">
+          <Link to="/club/cuotas">
             <button type="button" className="ghost">
-              Miembros
+              Cuotas
             </button>
           </Link>
-          {tab === 'datos' && (
+          {canManageClub && (
+            <Link to="/club/miembros">
+              <button type="button" className="ghost">
+                Miembros
+              </button>
+            </Link>
+          )}
+          {tab === 'datos' && canManageClub && (
             <Link to="/ajustes?tab=club">
               <button type="button">Editar en Ajustes</button>
             </Link>
@@ -91,16 +99,22 @@ export default function Club() {
       </header>
 
       <div className="filters roster-filters club-tabs">
-        {TABS.map((t) => (
-          <button
-            type="button"
-            key={t.id}
-            className={tab === t.id ? 'active' : ''}
-            onClick={() => setTab(t.id)}
-          >
-            {t.label}
-          </button>
-        ))}
+        {TABS.map((t) =>
+          t.to ? (
+            <Link key={t.id} to={t.to}>
+              <button type="button">{t.label}</button>
+            </Link>
+          ) : (
+            <button
+              type="button"
+              key={t.id}
+              className={tab === t.id ? 'active' : ''}
+              onClick={() => setTab(t.id)}
+            >
+              {t.label}
+            </button>
+          ),
+        )}
       </div>
 
       {tab === 'datos' && (
@@ -157,6 +171,8 @@ export default function Club() {
             hasta jugarlos; luego puedes archivarla.
           </p>
 
+          {canManageClub ? (
+            <>
           <div className="informes-fields" style={{ marginBottom: '1rem' }}>
             <div className="field">
               <label>Nombre</label>
@@ -208,6 +224,12 @@ export default function Club() {
               Abrir nueva temporada
             </button>
           </div>
+            </>
+          ) : (
+            <p className="hint" style={{ marginBottom: '1rem' }}>
+              Solo los administradores pueden abrir o cerrar temporadas.
+            </p>
+          )}
           {tempMsg && <p className="ok-msg">{tempMsg}</p>}
           {error && <p className="error">{error}</p>}
 
@@ -225,6 +247,7 @@ export default function Club() {
                       {t.pendientes ? ` · ${t.pendientes} pendiente(s)` : ''}
                     </small>
                   </div>
+                  {canManageClub && (
                   <div className="miembros-actions">
                     {t.estado === 'activa' && (
                       <button
@@ -239,9 +262,15 @@ export default function Club() {
                             )
                           )
                             return;
-                          await api.cerrarTemporada(t.id_temporada);
-                          await loadTemporadas();
-                          setTempMsg('Temporada cerrada');
+                          setError('');
+                          setTempMsg('');
+                          try {
+                            await api.cerrarTemporada(t.id_temporada);
+                            await loadTemporadas();
+                            setTempMsg('Temporada cerrada');
+                          } catch (e) {
+                            setError(e.message);
+                          }
                         }}
                       >
                         Cerrar
@@ -255,9 +284,15 @@ export default function Club() {
                           onClick={async () => {
                             if (!confirm(`¿Reactivar ${t.nombre}? Se cerrará la activa actual.`))
                               return;
-                            await api.activarTemporada(t.id_temporada);
-                            await loadTemporadas();
-                            setTempMsg('Temporada reactivada');
+                            setError('');
+                            setTempMsg('');
+                            try {
+                              await api.activarTemporada(t.id_temporada);
+                              await loadTemporadas();
+                              setTempMsg('Temporada reactivada');
+                            } catch (e) {
+                              setError(e.message);
+                            }
                           }}
                         >
                           Reactivar
@@ -266,6 +301,8 @@ export default function Club() {
                           type="button"
                           className="ghost"
                           onClick={async () => {
+                            setError('');
+                            setTempMsg('');
                             try {
                               await api.archivarTemporada(t.id_temporada);
                               await loadTemporadas();
@@ -277,9 +314,58 @@ export default function Club() {
                         >
                           Archivar
                         </button>
+                        <button
+                          type="button"
+                          className="ghost danger"
+                          onClick={async () => {
+                            if (
+                              !confirm(
+                                `¿Eliminar la temporada ${t.nombre}?\nSe borrarán también sus partidos y estadísticas. No se puede deshacer.`,
+                              )
+                            )
+                              return;
+                            setError('');
+                            setTempMsg('');
+                            try {
+                              await api.deleteTemporada(t.id_temporada);
+                              await loadTemporadas();
+                              setTempMsg('Temporada eliminada');
+                            } catch (e) {
+                              setError(e.message);
+                            }
+                          }}
+                        >
+                          Eliminar
+                        </button>
                       </>
                     )}
+                    {t.estado === 'archivada' && (
+                      <button
+                        type="button"
+                        className="ghost danger"
+                        onClick={async () => {
+                          if (
+                            !confirm(
+                              `¿Eliminar la temporada archivada ${t.nombre}?\nSe borrarán también sus partidos y estadísticas. No se puede deshacer.`,
+                            )
+                          )
+                            return;
+                          setError('');
+                          setTempMsg('');
+                          try {
+                            await api.deleteTemporada(t.id_temporada);
+                            await loadTemporadas();
+                            setTempMsg('Temporada eliminada');
+                          } catch (e) {
+                            setError(e.message);
+                          }
+                        }}
+                      >
+                        Eliminar
+                      </button>
+                    )}
                   </div>
+                  )}
                 </div>
               ))}
             </div>

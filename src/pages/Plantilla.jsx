@@ -63,10 +63,11 @@ function SancionChips({ s }) {
 }
 
 export default function Plantilla() {
-  const { equipo } = useAuth();
+  const { equipo, canWritePlantilla } = useAuth();
   const [jugadores, setJugadores] = useState([]);
   const [stats, setStats] = useState({});
   const [filtro, setFiltro] = useState('Todos');
+  const [q, setQ] = useState('');
   const [error, setError] = useState('');
 
   const applyLoad = (j, resumen) => {
@@ -113,8 +114,15 @@ export default function Plantilla() {
 
   const filtrados = useMemo(() => {
     const match = FILTROS.find((f) => f.key === filtro)?.match;
-    return jugadores.filter((j) => matchesFiltro(j, match));
-  }, [jugadores, filtro]);
+    const term = q.trim().toLowerCase();
+    return jugadores.filter((j) => {
+      if (!matchesFiltro(j, match)) return false;
+      if (!term) return true;
+      const hay =
+        `${j.nombre || ''} ${j.apellido || ''} ${j.dorsal ?? ''} ${(j.posiciones || []).join(' ')}`.toLowerCase();
+      return hay.includes(term);
+    });
+  }, [jugadores, filtro, q]);
 
   const eyebrow = [equipo?.datos?.competicion, equipo?.datos?.categoria]
     .filter(Boolean)
@@ -128,9 +136,11 @@ export default function Plantilla() {
           {eyebrow && <p className="page-kicker">{eyebrow}</p>}
           <h1>Plantilla</h1>
         </div>
-        <Link to="/plantilla/nuevo">
-          <button type="button">+ Añadir jugador</button>
-        </Link>
+        {canWritePlantilla && (
+          <Link to="/plantilla/nuevo">
+            <button type="button">+ Añadir jugador</button>
+          </Link>
+        )}
       </header>
 
       <div className="filters roster-filters">
@@ -144,6 +154,20 @@ export default function Plantilla() {
             {f.key}: {counts[f.key] ?? 0}
           </button>
         ))}
+      </div>
+
+      <div className="field roster-search">
+        <label htmlFor="plantilla-q" className="sr-only">
+          Buscar jugadora
+        </label>
+        <input
+          id="plantilla-q"
+          type="search"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Buscar por nombre, dorsal o posición…"
+          autoComplete="off"
+        />
       </div>
 
       {error && <p className="error">{error}</p>}
@@ -226,57 +250,61 @@ export default function Plantilla() {
                 <span className="roster-cell roster-cell-sanc" data-label="Sanciones">
                   <SancionChips s={s} />
                 </span>
-                <div className="roster-actions">
-                  <Link
-                    to={`/plantilla/${j.id_jugador}/editar`}
-                    className="roster-edit"
-                    title="Editar jugadora"
-                    aria-label={`Editar ${j.nombre} ${j.apellido}`}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                      <path
-                        d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3z"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                        strokeLinejoin="round"
-                      />
-                      <path
-                        d="M13.5 6.5l3 3"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                  </Link>
-                  <button
-                    type="button"
-                    className="roster-del"
-                    title="Eliminar jugadora"
-                    aria-label={`Eliminar ${j.nombre} ${j.apellido}`}
-                    onClick={async () => {
-                      if (!confirm('¿Borrar jugadora?')) return;
-                      await api.deleteJugador(j.id_jugador);
-                      await load();
-                    }}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                      <path
-                        d="M6 6l12 12M18 6L6 18"
-                        stroke="currentColor"
-                        strokeWidth="2.2"
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                  </button>
-                </div>
+                {canWritePlantilla && (
+                  <div className="roster-actions">
+                    <Link
+                      to={`/plantilla/${j.id_jugador}/editar`}
+                      className="roster-edit"
+                      title="Editar jugadora"
+                      aria-label={`Editar ${j.nombre} ${j.apellido}`}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path
+                          d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3z"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinejoin="round"
+                        />
+                        <path
+                          d="M13.5 6.5l3 3"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                        />
+                      </svg>
+                    </Link>
+                    <button
+                      type="button"
+                      className="roster-del"
+                      title="Eliminar jugadora"
+                      aria-label={`Eliminar ${j.nombre} ${j.apellido}`}
+                      onClick={async () => {
+                        if (!confirm('¿Borrar jugadora?')) return;
+                        await api.deleteJugador(j.id_jugador);
+                        await load();
+                      }}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path
+                          d="M6 6l12 12M18 6L6 18"
+                          stroke="currentColor"
+                          strokeWidth="2.2"
+                          strokeLinecap="round"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                )}
               </div>
             );
           })}
 
           {!filtrados.length && (
             <p className="muted" style={{ padding: '1.25rem' }}>
-              No hay jugadores en este filtro
+              {q.trim()
+                ? 'Ninguna jugadora coincide con la búsqueda'
+                : 'No hay jugadores en este filtro'}
             </p>
           )}
         </div>

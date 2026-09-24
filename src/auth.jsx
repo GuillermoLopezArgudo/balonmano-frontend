@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { api, isAbortError, setUnauthorizedHandler } from './api';
+import { permsFromSession } from './permisos';
 import { syncThemeFromPrefs } from './theme';
 
 const AuthContext = createContext(null);
@@ -7,6 +8,10 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [equipo, setEquipo] = useState(() => {
     const raw = localStorage.getItem('data_equipo');
+    return raw ? JSON.parse(raw) : null;
+  });
+  const [miembro, setMiembro] = useState(() => {
+    const raw = localStorage.getItem('data_miembro');
     return raw ? JSON.parse(raw) : null;
   });
   const [token, setToken] = useState(() => localStorage.getItem('data_token'));
@@ -19,8 +24,10 @@ export function AuthProvider({ children }) {
   const logout = useCallback(() => {
     localStorage.removeItem('data_token');
     localStorage.removeItem('data_equipo');
+    localStorage.removeItem('data_miembro');
     setToken(null);
     setEquipo(null);
+    setMiembro(null);
   }, []);
 
   useEffect(() => {
@@ -30,6 +37,21 @@ export function AuthProvider({ children }) {
     return () => setUnauthorizedHandler(null);
   }, [logout]);
 
+  const applySesion = useCallback((sesion) => {
+    if (sesion?.equipo) {
+      setEquipo(sesion.equipo);
+      localStorage.setItem('data_equipo', JSON.stringify(sesion.equipo));
+    }
+    if (sesion?.miembro) {
+      setMiembro(sesion.miembro);
+      localStorage.setItem('data_miembro', JSON.stringify(sesion.miembro));
+    } else {
+      setMiembro(null);
+      localStorage.removeItem('data_miembro');
+    }
+    return sesion;
+  }, []);
+
   useEffect(() => {
     if (!token) {
       setBooting(false);
@@ -37,41 +59,60 @@ export function AuthProvider({ children }) {
     }
     const ac = new AbortController();
     api
-      .me({ signal: ac.signal })
-      .then((eq) => {
-        setEquipo(eq);
-        localStorage.setItem('data_equipo', JSON.stringify(eq));
+      .sesion({ signal: ac.signal })
+      .then((sesion) => {
+        applySesion(sesion);
       })
       .catch((err) => {
         if (isAbortError(err) || ac.signal.aborted) return;
         localStorage.removeItem('data_token');
         localStorage.removeItem('data_equipo');
+        localStorage.removeItem('data_miembro');
         setToken(null);
         setEquipo(null);
+        setMiembro(null);
       })
       .finally(() => {
         if (!ac.signal.aborted) setBooting(false);
       });
     return () => ac.abort();
-  }, [token]);
+  }, [token, applySesion]);
 
-  const login = useCallback(async (correo, password) => {
-    const res = await api.login({ correo, password });
+  const applyAuth = useCallback((res) => {
     localStorage.setItem('data_token', res.token);
     localStorage.setItem('data_equipo', JSON.stringify(res.equipo));
+    if (res.miembro) {
+      localStorage.setItem('data_miembro', JSON.stringify(res.miembro));
+      setMiembro(res.miembro);
+    } else {
+      localStorage.removeItem('data_miembro');
+      setMiembro(null);
+    }
     setToken(res.token);
     setEquipo(res.equipo);
     return res;
   }, []);
 
-  const registro = useCallback(async (payload) => {
-    const res = await api.registro(payload);
-    localStorage.setItem('data_token', res.token);
-    localStorage.setItem('data_equipo', JSON.stringify(res.equipo));
-    setToken(res.token);
-    setEquipo(res.equipo);
-    return res;
-  }, []);
+  const login = useCallback(
+    async (correo, password) => {
+      const res = await api.login({ correo, password });
+      return applyAuth(res);
+    },
+    [applyAuth],
+  );
+
+  const loginWithAuthOut = useCallback(
+    async (res) => applyAuth(res),
+    [applyAuth],
+  );
+
+  const registro = useCallback(
+    async (payload) => {
+      const res = await api.registro(payload);
+      return applyAuth(res);
+    },
+    [applyAuth],
+  );
 
   const refreshEquipo = useCallback(async () => {
     const eq = await api.me();
@@ -80,18 +121,53 @@ export function AuthProvider({ children }) {
     return eq;
   }, []);
 
+  const refreshSesion = useCallback(async () => {
+    const sesion = await api.sesion();
+    return applySesion(sesion);
+  }, [applySesion]);
+
+  const canManageClub = !miembro || miembro.permiso === 'administrador';
+
+  const rolePerms = useMemo(
+    () =>
+      permsFromSession({
+        cargo: miembro?.cargo,
+        isAdmin: canManageClub,
+      }),
+    [miembro?.cargo, canManageClub],
+  );
+
   const value = useMemo(
     () => ({
       equipo,
+      miembro,
       token,
       booting,
       login,
+      loginWithAuthOut,
       registro,
       logout,
       refreshEquipo,
+      refreshSesion,
       isAuth: !!token,
+      permiso: canManageClub ? 'administrador' : 'miembro',
+      canManageClub,
+      ...rolePerms,
     }),
-    [equipo, token, booting, login, registro, logout, refreshEquipo],
+    [
+      equipo,
+      miembro,
+      token,
+      booting,
+      login,
+      loginWithAuthOut,
+      registro,
+      logout,
+      refreshEquipo,
+      refreshSesion,
+      canManageClub,
+      rolePerms,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

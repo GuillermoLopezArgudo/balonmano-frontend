@@ -919,6 +919,27 @@ button.full {
   color: #0a0a0a;
 }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.roster-search {
+  margin: 0 0 1rem;
+  max-width: 28rem;
+}
+
+.roster-search input[type='search'] {
+  margin: 0;
+}
+
 .roster-panel {
   background: var(--panel);
   border: 1px solid var(--line);
@@ -1503,7 +1524,7 @@ th {
 }
 
 .pwd-rules li::before {
-  content: 'ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ';
+  content: '\2713';
   color: inherit;
 }
 
@@ -1885,7 +1906,7 @@ th {
 }
 
 .check-list li::before {
-  content: 'ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ';
+  content: '\2713';
   width: 22px;
   height: 22px;
   border-radius: 50%;
@@ -4944,6 +4965,15 @@ button.ghost.danger:hover {
   }
 }
 
+.analitica-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem 1rem;
+  margin-bottom: 1.15rem;
+}
+
 .gk-anal-filters {
   display: flex;
   flex-wrap: wrap;
@@ -5049,6 +5079,10 @@ button.ghost.danger:hover {
   margin-bottom: 1rem;
 }
 
+.informes-field-wide {
+  grid-column: 1 / -1;
+}
+
 .informes-dates {
   display: flex;
   align-items: center;
@@ -5114,100 +5148,486 @@ button.ghost.danger:hover {
   }
 }
 
+.miembros-page {
+  width: 100%;
+  max-width: 960px;
+}
+
+.miembros-page-head {
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.miembros-head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.miembros-head-actions button,
+.miembros-head-actions a button {
+  min-height: 42px;
+}
+
+.miembros-lead {
+  margin: -0.15rem 0 1.1rem;
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.45;
+  max-width: 36rem;
+}
+
 .miembros-kpis {
+  display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
   margin-bottom: 1rem;
+}
+
+.miembros-kpi {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 0.9rem;
+  min-width: 0;
+}
+
+.miembros-kpi span {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.25rem;
+}
+
+.miembros-kpi strong {
+  display: block;
+  font-family: var(--display);
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.miembros-kpi-admin strong {
+  color: var(--purple);
+}
+
+.miembros-tabs {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+  padding: 0.3rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.miembros-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.miembros-tabs button {
+  flex: 1 1 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 40px;
+  padding: 0.45rem 0.85rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.miembros-tabs button em {
+  font-style: normal;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: var(--panel-2);
+  color: var(--muted);
+}
+
+.miembros-tabs button.active {
+  background: var(--lime);
+  color: #0b111b;
+}
+
+.miembros-tabs button.active em {
+  background: rgba(11, 17, 27, 0.18);
+  color: #0b111b;
+}
+
+[data-theme='claro'] .miembros-tabs button.active {
+  color: #0f172a;
 }
 
 .miembros-invite {
   margin-bottom: 1rem;
+  padding: 1.1rem 1.15rem;
 }
 
-.miembros-invite h2 {
-  margin: 0 0 0.85rem;
+.miembros-invite-top h2 {
+  margin: 0 0 0.25rem;
+  font-size: 1.05rem;
 }
 
-.miembros-head {
-  display: grid;
-  grid-template-columns: 1.4fr 1fr 1.2fr;
-  gap: 0.75rem;
-  padding: 0.65rem 1rem;
+.miembros-invite-top p {
+  margin: 0 0 1rem;
   color: var(--muted);
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-size: 0.88rem;
 }
 
-.miembros-row {
+.miembros-invite-grid {
   display: grid;
-  grid-template-columns: 1.4fr 1fr 1.2fr;
-  gap: 0.75rem;
-  align-items: center;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem;
 }
 
-.miembros-rol {
+.miembros-invite-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.miembros-invite-actions button {
+  min-height: 44px;
+}
+
+.miembros-invite-link {
+  margin-bottom: 1rem;
+  padding: 1.1rem 1.15rem;
+}
+
+.miembros-invite-link h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1.05rem;
+}
+
+.miembros-invite-link code {
+  display: block;
+  word-break: break-all;
+  margin: 0.75rem 0;
+  padding: 0.75rem 0.85rem;
+  border-radius: 10px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.miembros-invite-link button {
+  min-height: 44px;
+}
+
+.miembros-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.miembro-card {
   display: flex;
   flex-direction: column;
+  gap: 0.85rem;
+  padding: 1rem 1.05rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  min-width: 0;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.miembro-card.is-admin {
+  border-color: color-mix(in srgb, var(--purple) 45%, var(--line));
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--purple) 10%, transparent),
+      transparent 55%
+    ),
+    var(--panel);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--purple) 12%, transparent);
+}
+
+.miembro-card.is-pending {
+  border-style: dashed;
+}
+
+.miembro-card.is-baja {
+  opacity: 0.78;
+}
+
+.miembro-card-head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.miembro-avatar {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--panel-2);
+  color: var(--text);
+  font-family: var(--display);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.miembro-avatar.is-admin {
+  background: var(--purple);
+  color: #fff;
+}
+
+.miembro-card-id {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.miembro-card-id strong {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 0.35rem;
-  align-items: flex-start;
+  font-size: 1rem;
+  line-height: 1.25;
 }
 
-.miembros-rol strong {
-  font-size: 0.92rem;
+.miembro-card-id small {
+  display: block;
+  margin-top: 0.15rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.miembro-badge {
+.miembro-you {
   display: inline-flex;
-  padding: 0.15rem 0.55rem;
+  align-items: center;
+  padding: 0.08rem 0.4rem;
   border-radius: 999px;
-  font-size: 0.72rem;
-  font-weight: 600;
   background: var(--lime-soft);
   color: var(--lime);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
-.miembro-badge.administrador {
+.miembro-pill {
+  flex: 0 0 auto;
+  padding: 0.28rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.miembro-pill.admin {
   background: rgba(139, 92, 246, 0.18);
   color: var(--purple);
 }
 
-.miembro-badge.lector {
-  background: rgba(0, 209, 255, 0.12);
-  color: var(--cyan);
-}
-
-.miembros-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.45rem;
-}
-
-.miembro-estado {
-  font-size: 0.78rem;
-  color: var(--muted);
-}
-
-.miembro-estado.activo {
-  color: var(--lime);
-}
-
-.miembro-estado.pendiente {
+.miembro-pill.pending {
+  background: rgba(255, 122, 24, 0.16);
   color: var(--orange);
 }
 
-.miembro-estado.baja {
+.miembro-pill.baja {
+  background: rgba(255, 92, 122, 0.14);
   color: var(--danger);
 }
 
-@media (max-width: 800px) {
-  .miembros-head {
-    display: none;
+.miembro-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.miembro-field-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.miembro-select {
+  width: 100%;
+  max-width: none;
+  min-height: 44px;
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.miembros-static {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.miembro-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: auto;
+  padding-top: 0.15rem;
+}
+
+.miembro-card-actions button {
+  flex: 1 1 auto;
+  min-height: 42px;
+  min-width: calc(50% - 0.25rem);
+}
+
+.miembro-card-note {
+  margin: 0;
+  width: 100%;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.miembros-empty {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.85rem;
+  padding: 1.35rem 1.2rem;
+}
+
+.miembros-empty p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.miembros-empty button {
+  min-height: 44px;
+}
+
+/* Tablet */
+@media (max-width: 1024px) {
+  .miembros-page {
+    max-width: none;
   }
-  .miembros-row {
+
+  .miembros-invite-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .miembros-invite-grid .field:last-child {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Mobile + compact tablet */
+@media (max-width: 720px) {
+  .miembros-kpis {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+
+  .miembros-kpi {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.7rem 0.9rem;
+  }
+
+  .miembros-kpi span {
+    margin: 0;
+  }
+
+  .miembros-kpi strong {
+    font-size: 1.05rem;
+    text-align: right;
+  }
+
+  .miembros-tabs {
+    border-radius: var(--radius-sm);
+  }
+
+  .miembros-tabs button {
+    flex: 1 1 0;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding: 0.55rem 0.4rem;
+    font-size: 0.78rem;
+  }
+
+  .miembros-invite-grid {
     grid-template-columns: 1fr;
   }
-  .miembros-kpis {
+
+  .miembros-invite-grid .field:last-child {
+    grid-column: auto;
+  }
+
+  .miembros-invite-actions {
+    flex-direction: column;
+  }
+
+  .miembros-invite-actions button {
+    width: 100%;
+  }
+
+  .miembros-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .miembro-card-actions button {
+    min-width: 0;
+    width: 100%;
+    flex: 1 1 100%;
+  }
+
+  .miembros-page-head {
+    flex-direction: column;
+  }
+
+  .miembros-head-actions {
+    width: 100%;
+  }
+
+  .miembros-head-actions a,
+  .miembros-head-actions > button {
+    flex: 1;
+  }
+
+  .miembros-head-actions a button,
+  .miembros-head-actions > button {
+    width: 100%;
+  }
+}
+
+@media (min-width: 721px) and (max-width: 900px) {
+  .miembros-cards {
     grid-template-columns: 1fr;
   }
 }
@@ -5418,7 +5838,7 @@ button.ghost.danger:hover {
 }
 
 [data-theme='claro'] .brand-badge,
-[data-theme='claro'] button:not(.ghost):not(.btn-back):not(.step):not(.btn-seg):not(.btn-play):not(.jugada-paso-chip) {
+[data-theme='claro'] button:not(.ghost):not(.btn-back):not(.step):not(.btn-seg):not(.btn-play):not(.jugada-paso-chip):not(.cuota-cell) {
   color: #0a0a0a;
 }
 
@@ -5890,14 +6310,12 @@ button.ghost.danger:hover {
 
   /* Roster / listas: tarjetas legibles */
   .roster-head,
-  .miembros-head,
   .acta-table-head {
     display: none;
   }
 
   .roster-row,
   .roster-row.acta-player-row,
-  .roster-row.miembros-row,
   .roster-row.temporada-row {
     display: flex;
     flex-wrap: wrap;
@@ -5911,8 +6329,7 @@ button.ghost.danger:hover {
     min-width: 0;
   }
 
-  .roster-actions,
-  .miembros-actions {
+  .roster-actions {
     margin-left: auto;
     flex: 0 0 auto;
   }
@@ -5997,20 +6414,6 @@ button.ghost.danger:hover {
     flex: 1 1 calc(50% - 0.45rem);
     min-width: 0;
     min-height: 44px;
-  }
-
-  .miembros-row {
-    grid-template-columns: 1fr;
-  }
-
-  .miembros-rol,
-  .miembros-actions {
-    width: 100%;
-  }
-
-  .miembros-actions {
-    margin-left: 0;
-    justify-content: flex-start;
   }
 }
 
@@ -6361,6 +6764,98 @@ button.ghost.danger:hover {
   height: 100%;
   pointer-events: none;
   z-index: 1;
+  overflow: visible;
+}
+
+.jugada-arrow-group {
+  pointer-events: stroke;
+}
+
+.jugada-arrow-hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 12;
+  cursor: pointer;
+}
+
+.jugada-arrow {
+  fill: none;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.jugada-arrow-mov {
+  stroke: #fbbf24;
+  stroke-dasharray: 0;
+}
+
+.jugada-arrow-pase {
+  stroke: #38bdf8;
+  stroke-dasharray: 3.5 2.2;
+}
+
+.jugada-arrow-lanz {
+  stroke: #fb7185;
+  stroke-width: 2.8;
+}
+
+.jugada-marker-mov path {
+  fill: #fbbf24;
+}
+
+.jugada-marker-pase path {
+  fill: #38bdf8;
+}
+
+.jugada-marker-lanz path {
+  fill: #fb7185;
+}
+
+.jugada-arrow-group.dimmed {
+  opacity: 0.28;
+}
+
+.jugada-arrow-group.selected .jugada-arrow,
+.jugada-arrow.selected {
+  stroke-width: 3.4;
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.35));
+}
+
+[data-theme='claro'] .jugada-arrow-mov {
+  stroke: #d97706;
+}
+
+[data-theme='claro'] .jugada-arrow-pase {
+  stroke: #0284c7;
+}
+
+[data-theme='claro'] .jugada-arrow-lanz {
+  stroke: #e11d48;
+}
+
+[data-theme='claro'] .jugada-marker-mov path {
+  fill: #d97706;
+}
+
+[data-theme='claro'] .jugada-marker-pase path {
+  fill: #0284c7;
+}
+
+[data-theme='claro'] .jugada-marker-lanz path {
+  fill: #e11d48;
+}
+
+.jugada-hint .linkish {
+  display: inline;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: none;
+  color: var(--lime);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
 }
 
 .jugada-pieza {
@@ -6516,353 +7011,472 @@ button.ghost.danger:hover {
   }
 }
 
-
-/* ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Jugada / zonas: flechas, temas y responsive ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ */
-.jugada-arrow-mov {
-  stroke: rgba(255, 255, 255, 0.82);
-  stroke-width: 0.7;
+/*  Cuotas  */
+.cuotas-page {
+  width: 100%;
+  max-width: 1100px;
 }
 
-.jugada-arrow-pase {
-  stroke: #fb923c;
-  stroke-width: 1.1;
-  stroke-dasharray: 2 1.2;
+.cuotas-lead {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.4;
+  max-width: 36rem;
 }
 
-.jugada-arrow-lanz {
-  stroke: #ef4444;
-  stroke-width: 1.1;
-  stroke-dasharray: 3 1;
+.cuotas-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem 1rem;
+  margin-bottom: 1rem;
 }
 
-.jugada-marker-mov path {
-  fill: rgba(255, 255, 255, 0.9);
+.cuotas-temp-field {
+  margin: 0;
+  min-width: min(100%, 14rem);
+  flex: 1 1 12rem;
 }
 
-.jugada-marker-pase path {
-  fill: #fb923c;
+.cuotas-readonly {
+  margin: 0;
+  padding: 0.4rem 0.7rem;
+  border-radius: 999px;
+  background: var(--panel-2);
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
 }
 
-.jugada-marker-lanz path {
-  fill: #ef4444;
+.cuotas-config {
+  margin-bottom: 1rem;
+  padding: 1.1rem 1.15rem;
 }
 
-[data-theme='claro'] .jugada-arrow-mov {
-  stroke: rgba(15, 23, 42, 0.72);
+.cuotas-config h2 {
+  margin: 0 0 0.85rem;
+  font-size: 1.05rem;
 }
 
-[data-theme='claro'] .jugada-marker-mov path {
-  fill: rgba(15, 23, 42, 0.85);
+.cuotas-config-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem;
+  align-items: end;
 }
 
-[data-theme='claro'] .jugada-arrow-pase {
-  stroke: #c2410c;
+.cuotas-input-euro {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
 }
 
-[data-theme='claro'] .jugada-marker-pase path {
-  fill: #c2410c;
+.cuotas-input-euro input {
+  flex: 1;
+  min-width: 0;
 }
 
-[data-theme='claro'] .jugada-arrow-lanz {
-  stroke: #be123c;
+.cuotas-input-euro span {
+  color: var(--muted);
+  font-weight: 600;
 }
 
-[data-theme='claro'] .jugada-marker-lanz path {
-  fill: #be123c;
+.cuotas-config-actions button {
+  min-height: 44px;
+  width: 100%;
 }
 
-[data-theme='claro'] .hb-court {
-  background:
-    linear-gradient(180deg, rgba(120, 180, 90, 0.55), rgba(70, 130, 70, 0.72)),
-    repeating-linear-gradient(
-      90deg,
-      transparent,
-      transparent 24px,
-      rgba(255, 255, 255, 0.12) 24px,
-      rgba(255, 255, 255, 0.12) 25px
-    );
-  border-color: rgba(80, 130, 40, 0.35);
+.cuotas-config-hint {
+  margin: 0.75rem 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
 }
 
-[data-theme='claro'] .hb-court-defensa {
-  background:
-    linear-gradient(180deg, rgba(120, 160, 210, 0.55), rgba(70, 110, 170, 0.72)),
-    repeating-linear-gradient(
-      90deg,
-      transparent,
-      transparent 24px,
-      rgba(255, 255, 255, 0.14) 24px,
-      rgba(255, 255, 255, 0.14) 25px
-    );
-  border-color: rgba(59, 130, 246, 0.4);
+.cuotas-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin-bottom: 1rem;
 }
 
-[data-theme='claro'] .hb-court-mark {
-  border-color: rgba(15, 23, 42, 0.28);
-}
-
-[data-theme='claro'] .hb-fase-ataque {
-  background: rgba(107, 176, 0, 0.22);
-  color: #3f6b00;
-}
-
-[data-theme='claro'] .hb-fase-defensa {
-  background: rgba(59, 130, 246, 0.22);
-  color: #1d4ed8;
-}
-
-[data-theme='claro'] .jugada-board-wrap {
+.cuotas-metric {
   background: var(--panel);
   border: 1px solid var(--line);
-  box-shadow: 0 8px 24px var(--shadow);
+  border-radius: var(--radius-sm);
+  padding: 0.85rem 1rem;
+  min-width: 0;
 }
 
-[data-theme='claro'] .jugada-pieza {
-  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.22);
-  border-color: rgba(255, 255, 255, 0.7);
+.cuotas-metric span {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.3rem;
 }
 
-[data-theme='claro'] .jugada-pieza.selected {
-  outline-color: #0f172a;
+.cuotas-metric strong {
+  font-family: var(--display);
+  font-size: 1.45rem;
+  font-weight: 700;
+  line-height: 1.1;
 }
 
-[data-theme='claro'] .jugada-pieza.has-ball {
-  box-shadow: 0 0 0 3px #ea580c, 0 2px 10px rgba(15, 23, 42, 0.2);
+.cuotas-metric strong em {
+  font-style: normal;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--muted);
 }
 
-[data-theme='claro'] .jugada-pieza-del {
-  background: rgba(15, 23, 42, 0.7);
+.cuotas-metric small {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--muted);
+  font-size: 0.8rem;
 }
 
-[data-theme='claro'] .jugada-row {
+.cuotas-panel {
+  padding: 1.1rem 1.15rem 1.25rem;
+}
+
+.cuotas-panel-head h2 {
+  margin: 0 0 0.25rem;
+  font-size: 1.05rem;
+}
+
+.cuotas-panel-head .panel-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.cuotas-bulk-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.9rem 0;
+  padding: 0.65rem 0.75rem;
+  border-radius: var(--radius-sm);
   background: var(--panel-2);
   border: 1px solid var(--line);
 }
 
-[data-theme='claro'] .zone-eff-slot .zone-card {
-  background: color-mix(in srgb, #ffffff 88%, transparent);
-  box-shadow: 0 1px 5px rgba(15, 23, 42, 0.14);
-  border-color: color-mix(in srgb, var(--line) 80%, transparent);
+.cuotas-bulk-bar > span {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+  margin-right: 0.25rem;
 }
 
-[data-theme='claro'] .zone-eff-court {
-  box-shadow: 0 4px 18px var(--shadow);
+.cuotas-bulk-bar button {
+  min-height: 38px;
+}
+
+.cuotas-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-top: 0.85rem;
   border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
 }
 
-[data-theme='claro'] .zone-card.tone-good {
-  border-color: rgba(107, 176, 0, 0.55);
+.cuotas-cards {
+  display: none;
 }
 
-[data-theme='claro'] .zone-card.tone-mid {
-  border-color: rgba(232, 106, 16, 0.5);
+.cuotas-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 720px;
 }
 
-[data-theme='claro'] .zone-card.tone-bad {
-  border-color: rgba(225, 29, 72, 0.45);
+.cuotas-table th,
+.cuotas-table td {
+  padding: 0.45rem 0.35rem;
+  text-align: center;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
 }
 
-[data-theme='claro'] .ficha-sanc-card.sanc-2min strong { color: #c47a00; }
-[data-theme='claro'] .ficha-sanc-card.sanc-am strong { color: #a68a00; }
-[data-theme='claro'] .ficha-sanc-card.sanc-ro strong { color: #c62828; }
-[data-theme='claro'] .ficha-sanc-card.sanc-az strong { color: #1d4ed8; }
+.cuotas-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--panel-2);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
 
-[data-theme='claro'] .shot-map {
+.cuotas-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.cuotas-table tbody tr.is-selected {
+  background: color-mix(in srgb, var(--lime) 8%, transparent);
+}
+
+.cuotas-col-check {
+  width: 2.4rem;
+  padding-left: 0.65rem !important;
+  padding-right: 0.25rem !important;
+}
+
+.cuotas-col-name {
+  text-align: left !important;
+  padding-left: 0.5rem !important;
+  min-width: 9rem;
+}
+
+.cuotas-col-fed {
+  min-width: 3.2rem;
+}
+
+.cuotas-player {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  text-align: left;
+}
+
+.cuotas-dorsal {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.cuotas-player strong {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+button.cuota-cell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.15rem;
+  height: 2.15rem;
+  min-width: 2.15rem;
+  padding: 0;
+  margin: 0;
+  border-radius: 9px;
+  border: 1.5px solid var(--line);
+  background: var(--panel-2);
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: none;
+  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+
+button.cuota-cell:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--lime) 50%, var(--line));
+}
+
+button.cuota-cell:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+button.cuota-cell.is-pending {
+  background: var(--panel-2);
+  border-color: var(--line);
+  color: var(--muted);
+}
+
+button.cuota-cell.is-paid {
+  background: var(--lime-soft);
+  border-color: color-mix(in srgb, var(--lime) 55%, var(--line));
+  color: var(--lime);
+}
+
+button.cuota-cell.cuota-fed {
+  width: auto;
+  min-width: 2.6rem;
+  padding: 0 0.45rem;
+  font-size: 0.75rem;
+}
+
+button.cuota-cell.cuota-fed.is-paid {
+  background: color-mix(in srgb, var(--lime) 22%, transparent);
+}
+
+button.cuota-cell.cuota-fed.is-pending {
+  background: color-mix(in srgb, var(--orange) 12%, transparent);
+  border-color: color-mix(in srgb, var(--orange) 35%, var(--line));
+  color: var(--orange);
+}
+
+.cuota-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.55;
+}
+
+button.cuota-cell.is-paid .cuota-dot {
+  width: 8px;
+  height: 8px;
+  opacity: 1;
+  background: var(--lime);
+}
+
+.cuotas-empty {
+  margin: 1rem 0 0;
+}
+
+.cuotas-select-all {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 0.65rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.cuotas-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.95rem 1rem;
   background: var(--panel);
-  box-shadow: 0 2px 12px var(--shadow);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
 }
 
-/* Tablet */
+.cuotas-card.is-selected {
+  border-color: color-mix(in srgb, var(--lime) 45%, var(--line));
+  background: color-mix(in srgb, var(--lime) 6%, var(--panel));
+}
+
+.cuotas-card-head {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.cuotas-card-check {
+  flex: 0 0 auto;
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.cuotas-card-id {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.cuotas-card-id strong {
+  display: block;
+  font-size: 0.98rem;
+  line-height: 1.25;
+}
+
+.cuotas-card-id small {
+  display: block;
+  margin-top: 0.15rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.cuotas-card-head .cuota-fed {
+  flex: 0 0 auto;
+  height: 2.2rem;
+  min-width: 4.5rem;
+}
+
+.cuotas-card-meses {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+
+.cuotas-card-meses .cuota-cell.cuota-mes {
+  width: 100%;
+  min-width: 0;
+  height: 2.45rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+}
+
+.cuotas-card-meses .cuota-cell.cuota-mes.is-paid {
+  color: var(--lime);
+  font-weight: 800;
+}
+
 @media (max-width: 1024px) {
-  .jugada-editor-meta {
+  .cuotas-config-grid {
     grid-template-columns: 1fr 1fr;
   }
 
-  .jugada-editor-meta label:last-child {
+  .cuotas-config-actions {
     grid-column: 1 / -1;
   }
-
-  .zone-eff-court {
-    max-width: 100%;
-  }
-
-  .shot-maps {
-    gap: 0.75rem;
-  }
 }
 
-@media (max-width: 900px) {
-  .jugada-pasos {
-    overflow-x: auto;
-    flex-wrap: nowrap;
-    -webkit-overflow-scrolling: touch;
-    padding-bottom: 0.15rem;
-  }
-
-  .jugada-paso-chip {
-    flex: 0 0 auto;
-  }
-
-  .jugada-modes {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    width: 100%;
-  }
-
-  .jugada-modes .btn-seg,
-  .jugada-modes .btn-play,
-  .jugada-modes button.ghost {
-    flex: unset;
-    width: 100%;
-  }
-
-  .jugada-board {
-    min-height: min(72vw, 420px);
-    aspect-ratio: 16 / 11;
-  }
-
-  .zone-card-compact span {
-    font-size: 0.55rem;
-  }
-
-  .zone-card-compact strong {
-    font-size: clamp(0.7rem, 2.2vw, 0.95rem);
-  }
-}
-
-@media (max-width: 720px) {
-  .jugada-editor-meta {
-    grid-template-columns: 1fr;
-  }
-
-  .jugada-modes {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .ficha-sanciones {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .ficha-bars {
-    gap: 0.4rem;
-    height: 150px;
-    overflow-x: auto;
-  }
-
-  .ficha-bar {
-    min-width: 2.4rem;
-  }
-
-  .zone-eff-slot {
-    padding: 1px;
-  }
-
-  .zone-eff-slot .zone-card {
-    padding: 0.12rem 0.08rem;
-    border-radius: 6px;
-  }
-
-  .zone-eff-slot[data-zone='7m'] .zone-card-compact small {
+@media (max-width: 860px) {
+  .cuotas-table-wrap {
     display: none;
   }
 
-  .zone-eff-contra .zone-card {
-    min-width: 0;
-    max-width: none;
+  .cuotas-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    margin-top: 0.85rem;
   }
 
-  .jugada-board-wrap {
-    padding: 0.45rem;
-    margin-inline: -0.15rem;
-  }
-
-  .hb-fase-tag {
-    font-size: 0.6rem;
-    top: 0.4rem;
-    right: 0.45rem;
-  }
-}
-
-@media (max-width: 520px) {
-  .jugada-modes {
+  .cuotas-metrics {
     grid-template-columns: 1fr;
   }
 
-  .jugada-modes .btn-seg,
-  .jugada-modes .btn-play,
-  .jugada-modes button.ghost {
-    min-height: 2.65rem;
+  .cuotas-bulk-bar {
+    position: sticky;
+    bottom: 0.75rem;
+    z-index: 5;
+    box-shadow: 0 8px 24px var(--shadow);
   }
 
-  .jugada-board {
-    min-height: 280px;
-    aspect-ratio: 5 / 4;
-  }
-
-  .jugada-pieza {
-    width: 40px;
-    height: 40px;
-    margin-left: -20px;
-    margin-top: -20px;
-    font-size: 0.65rem;
-  }
-
-  .zone-eff-slot[data-zone='ext_izq'] .zone-card-compact span,
-  .zone-eff-slot[data-zone='ext_der'] .zone-card-compact span,
-  .zone-eff-slot[data-zone='9m_izq'] .zone-card-compact span,
-  .zone-eff-slot[data-zone='9m_cen'] .zone-card-compact span,
-  .zone-eff-slot[data-zone='9m_der'] .zone-card-compact span {
-    font-size: 0.48rem;
-  }
-
-  .ficha-sanciones {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .shot-map {
-    padding: 0.65rem;
-  }
-
-  .shot-map-head {
-    flex-wrap: wrap;
+  .cuotas-bulk-bar button {
+    flex: 1 1 calc(50% - 0.25rem);
   }
 }
 
-@media (min-width: 721px) and (max-width: 1024px) {
-  .jugada-modes {
-    display: flex;
+@media (max-width: 560px) {
+  .cuotas-config-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cuotas-card-meses {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.35rem;
+  }
+
+  .cuotas-card-head {
     flex-wrap: wrap;
   }
 
-  .jugada-modes .btn-seg,
-  .jugada-modes .btn-play,
-  .jugada-modes button.ghost {
-    flex: 1 1 auto;
-    min-width: 6.5rem;
+  .cuotas-card-head .cuota-fed {
+    width: 100%;
+    min-width: 0;
   }
 
-  .zone-eff-court {
-    max-width: 560px;
-  }
-
-  .metrics,
-  .analitica-kpis {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .grid-2,
-  .gk-summary,
-  .dash-main.grid-2,
-  .analitica-mid.grid-2 {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .partido-portada-actions {
-    flex-wrap: wrap;
-  }
-
-  .partido-portada-actions button,
-  .partido-portada-actions label {
-    flex: 1 1 auto;
+  .cuotas-bulk-bar button {
+    flex: 1 1 100%;
   }
 }

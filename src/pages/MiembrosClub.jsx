@@ -1,23 +1,9 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { api, isAbortError } from '../api';
 import { useAuth } from '../auth';
+import { CARGOS, CARGOS_UNICOS } from '../permisos';
 import { useAbortable } from '../useAbortable';
-
-const CARGOS = [
-  'Entrenador principal',
-  'Segundo entrenador',
-  'Preparador físico',
-  'Delegado',
-  'Analista',
-  'Staff',
-];
-
-const PERMISOS = [
-  { value: 'administrador', label: 'Administrador' },
-  { value: 'editor', label: 'Editor' },
-  { value: 'lector', label: 'Lector' },
-];
 
 function initials(nombre = '') {
   const parts = nombre.trim().split(/\s+/).filter(Boolean);
@@ -26,28 +12,60 @@ function initials(nombre = '') {
   return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
 }
 
-function permisoLabel(p) {
-  return PERMISOS.find((x) => x.value === p)?.label || p;
+function absoluteInviteUrl(path) {
+  if (!path) return '';
+  if (path.startsWith('http')) return path;
+  return `${window.location.origin}${path}`;
+}
+
+function cargoHint(cargo) {
+  if (CARGOS_UNICOS.has(cargo)) return 'Solo uno en el club';
+  return 'Varios permitidos';
+}
+
+function CargoSelect({ value, disabled, onChange, name, occupied }) {
+  const current = CARGOS.includes(value) ? value : value || 'Staff';
+  return (
+    <select
+      className="miembro-select"
+      value={CARGOS.includes(current) ? current : current}
+      disabled={disabled}
+      onChange={(e) => onChange(e.target.value)}
+      aria-label={`Cargo de ${name}`}
+    >
+      {!CARGOS.includes(current) && <option value={current}>{current}</option>}
+      {CARGOS.map((c) => {
+        const taken = occupied?.has(c) && c !== current;
+        return (
+          <option key={c} value={c} disabled={taken}>
+            {c}
+            {CARGOS_UNICOS.has(c) ? ' · único' : ''}
+            {taken ? ' · ocupado' : ''}
+          </option>
+        );
+      })}
+    </select>
+  );
 }
 
 export default function MiembrosClub() {
-  const { equipo } = useAuth();
+  const { equipo, canManageClub, refreshSesion } = useAuth();
   const [tab, setTab] = useState('miembros');
   const [miembros, setMiembros] = useState([]);
   const [error, setError] = useState('');
   const [msg, setMsg] = useState('');
+  const [lastInviteUrl, setLastInviteUrl] = useState('');
   const [showInvite, setShowInvite] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [busyId, setBusyId] = useState('');
   const [form, setForm] = useState({
     nombre: '',
     correo: '',
-    cargo: 'Segundo entrenador',
-    permiso: 'editor',
+    cargo: 'Staff',
   });
 
   const load = async () => {
-    const list = await api.getMiembros();
-    setMiembros(list);
+    setMiembros(await api.getMiembros());
   };
 
   useAbortable(async ({ signal, alive }) => {
@@ -60,50 +78,77 @@ export default function MiembrosClub() {
     }
   }, []);
 
+  const adminActual = useMemo(
+    () => miembros.find((m) => m.permiso === 'administrador' && m.estado === 'activo'),
+    [miembros],
+  );
+
+  const ocupados = useMemo(() => {
+    const set = new Set();
+    for (const m of miembros) {
+      if (m.estado === 'baja') continue;
+      if (CARGOS_UNICOS.has(m.cargo)) set.add(m.cargo);
+    }
+    return set;
+  }, [miembros]);
+
   const counts = useMemo(() => {
     const activos = miembros.filter((m) => m.estado === 'activo');
     return {
       miembros: activos.length,
-      administradores: activos.filter((m) => m.permiso === 'administrador').length,
-      entrenadores: activos.filter((m) =>
-        (m.cargo || '').toLowerCase().includes('entrenador'),
-      ).length,
+      administrador: adminActual?.nombre || '—',
       invitaciones: miembros.filter((m) => m.estado === 'pendiente').length,
       bajas: miembros.filter((m) => m.estado === 'baja').length,
     };
-  }, [miembros]);
+  }, [miembros, adminActual]);
 
   const listado = useMemo(() => {
     if (tab === 'invitaciones') return miembros.filter((m) => m.estado === 'pendiente');
-    if (tab === 'bajas') return miembros.filter((m) => m.estado !== 'activo');
+    if (tab === 'bajas') return miembros.filter((m) => m.estado === 'baja');
     return miembros.filter((m) => m.estado === 'activo');
   }, [miembros, tab]);
 
   const setField = (k, v) => setForm((prev) => ({ ...prev, [k]: v }));
+
+  const cargosInvite = useMemo(
+    () => CARGOS.filter((c) => !CARGOS_UNICOS.has(c) || !ocupados.has(c)),
+    [ocupados],
+  );
+
+  const copiarEnlace = async (url) => {
+    const full = absoluteInviteUrl(url);
+    try {
+      await navigator.clipboard.writeText(full);
+      setMsg('Enlace copiado. Envíaselo para que cree su contraseña.');
+    } catch {
+      setLastInviteUrl(full);
+      setMsg(`Copia este enlace: ${full}`);
+    }
+  };
 
   const invitar = async (e) => {
     e.preventDefault();
     setSaving(true);
     setError('');
     setMsg('');
+    setLastInviteUrl('');
     try {
-      await api.createMiembro({
+      const created = await api.createMiembro({
         nombre: form.nombre,
         correo: form.correo,
         cargo: form.cargo,
-        permiso: form.permiso,
         estado: 'pendiente',
       });
-      setForm({
-        nombre: '',
-        correo: '',
-        cargo: 'Segundo entrenador',
-        permiso: 'editor',
-      });
+      setForm({ nombre: '', correo: '', cargo: cargosInvite[0] || 'Staff' });
       setShowInvite(false);
-      setMsg('Invitación enviada');
       await load();
       setTab('invitaciones');
+      if (created.invite_url) {
+        setLastInviteUrl(absoluteInviteUrl(created.invite_url));
+        await copiarEnlace(created.invite_url);
+      } else {
+        setMsg('Invitación creada');
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -111,137 +156,194 @@ export default function MiembrosClub() {
     }
   };
 
-  const aceptar = async (id) => {
-    await api.updateMiembro(id, { estado: 'activo' });
-    await load();
-    setMsg('Miembro activado');
+  const withBusy = async (id, fn) => {
+    setError('');
+    setBusyId(id);
+    try {
+      await fn();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusyId('');
+    }
   };
 
-  const darBaja = async (id) => {
-    await api.updateMiembro(id, { estado: 'baja' });
-    await load();
-    setMsg('Miembro dado de baja');
+  const reinvitar = (id) =>
+    withBusy(id, async () => {
+      const updated = await api.reinvitarMiembro(id);
+      await load();
+      setTab('invitaciones');
+      if (updated.invite_url) {
+        setLastInviteUrl(absoluteInviteUrl(updated.invite_url));
+        await copiarEnlace(updated.invite_url);
+      }
+    });
+
+  const darBaja = (id) =>
+    withBusy(id, async () => {
+      await api.updateMiembro(id, { estado: 'baja' });
+      await load();
+      setMsg('Miembro dado de baja');
+    });
+
+  const reactivar = (id) =>
+    withBusy(id, async () => {
+      await api.updateMiembro(id, { estado: 'activo' });
+      await load();
+      setMsg('Miembro reactivado');
+    });
+
+  const cambiarCargo = (id, cargo) =>
+    withBusy(id, async () => {
+      await api.updateMiembro(id, { cargo });
+      await load();
+      setMsg('Cargo actualizado');
+      await refreshSesion();
+    });
+
+  const traspasarAdmin = async (m) => {
+    if (
+      !window.confirm(
+        `¿Traspasar la administración a ${m.nombre}?\n\nPerderás la gestión del club. Su cargo (${m.cargo}) define qué páginas puede editar.`,
+      )
+    ) {
+      return;
+    }
+    setSaving(true);
+    await withBusy(m.id_miembro, async () => {
+      await api.hacerAdministrador(m.id_miembro);
+      setMsg(`Administración traspasada a ${m.nombre}`);
+      await refreshSesion();
+      await load();
+    });
+    setSaving(false);
   };
 
-  const reactivar = async (id) => {
-    await api.updateMiembro(id, { estado: 'activo' });
-    await load();
-    setMsg('Miembro reactivado');
-  };
+  if (!canManageClub) {
+    return <Navigate to="/club" replace />;
+  }
 
-  const cambiarPermiso = async (id, permiso) => {
-    await api.updateMiembro(id, { permiso });
-    await load();
-  };
+  const emptyCopy =
+    tab === 'invitaciones'
+      ? 'No hay invitaciones pendientes'
+      : tab === 'bajas'
+        ? 'Sin bajas'
+        : 'Aún no hay miembros activos';
 
   return (
-    <>
-      <header className="page-head">
+    <div className="miembros-page">
+      <header className="page-head miembros-page-head">
         <div>
-          <p className="page-kicker">CLUB / EQUIPO TÉCNICO</p>
-          <h1>Miembros del club</h1>
+          <p className="page-kicker">CLUB · EQUIPO TÉCNICO</p>
+          <h1>Miembros</h1>
         </div>
-        <div className="add-player-actions">
+        <div className="add-player-actions miembros-head-actions">
           <Link to="/club">
             <button type="button" className="ghost">
-              Datos del equipo
+              Club
             </button>
           </Link>
-          <button type="button" onClick={() => setShowInvite((v) => !v)}>
-            + Invitar miembro
+          <button
+            type="button"
+            className={showInvite ? 'ghost' : ''}
+            onClick={() => setShowInvite((v) => !v)}
+          >
+            {showInvite ? 'Cerrar' : 'Invitar'}
           </button>
         </div>
       </header>
 
-      <div className="metrics miembros-kpis">
-        <div className="metric">
-          <span>Miembros</span>
-          <strong className="c-lime">{counts.miembros}</strong>
+      <p className="miembros-lead">
+        El cargo define los permisos. Solo un entrenador principal y un segundo. Un
+        administrador gestiona el club.
+      </p>
+
+      <div className="miembros-kpis">
+        <div className="miembros-kpi">
+          <span>Activos</span>
+          <strong>{counts.miembros}</strong>
         </div>
-        <div className="metric">
-          <span>Administradores</span>
-          <strong className="c-purple">{counts.administradores}</strong>
+        <div className="miembros-kpi miembros-kpi-admin">
+          <span>Admin</span>
+          <strong title={counts.administrador}>{counts.administrador}</strong>
         </div>
-        <div className="metric">
-          <span>Entrenadores</span>
-          <strong className="c-lime">{counts.entrenadores}</strong>
+        <div className="miembros-kpi">
+          <span>Pendientes</span>
+          <strong>{counts.invitaciones}</strong>
         </div>
       </div>
 
-      <div className="filters roster-filters">
-        <button
-          type="button"
-          className={tab === 'miembros' ? 'active' : ''}
-          onClick={() => setTab('miembros')}
-        >
-          Miembros ({counts.miembros})
-        </button>
-        <button
-          type="button"
-          className={tab === 'invitaciones' ? 'active' : ''}
-          onClick={() => setTab('invitaciones')}
-        >
-          Invitaciones ({counts.invitaciones})
-        </button>
-        <button
-          type="button"
-          className={tab === 'bajas' ? 'active' : ''}
-          onClick={() => setTab('bajas')}
-        >
-          Bajas y permisos
-        </button>
+      <div className="miembros-tabs" role="tablist">
+        {[
+          { id: 'miembros', label: 'Activos', n: counts.miembros },
+          { id: 'invitaciones', label: 'Invitaciones', n: counts.invitaciones },
+          { id: 'bajas', label: 'Bajas', n: counts.bajas },
+        ].map((t) => (
+          <button
+            type="button"
+            role="tab"
+            key={t.id}
+            aria-selected={tab === t.id}
+            className={tab === t.id ? 'active' : ''}
+            onClick={() => setTab(t.id)}
+          >
+            <span>{t.label}</span>
+            <em>{t.n}</em>
+          </button>
+        ))}
       </div>
 
       {showInvite && (
         <form className="panel miembros-invite" onSubmit={invitar}>
-          <h2>Invitar miembro</h2>
-          <div className="informes-fields">
+          <div className="miembros-invite-top">
+            <h2>Invitar miembro</h2>
+            <p>Recibirá un enlace para crear su contraseña.</p>
+          </div>
+          <div className="miembros-invite-grid">
             <div className="field">
-              <label>Nombre</label>
+              <label htmlFor="inv-nombre">Nombre</label>
               <input
+                id="inv-nombre"
                 required
                 value={form.nombre}
                 onChange={(e) => setField('nombre', e.target.value)}
                 placeholder="Laura Sanz"
+                autoComplete="name"
               />
             </div>
             <div className="field">
-              <label>Correo</label>
+              <label htmlFor="inv-correo">Correo</label>
               <input
+                id="inv-correo"
                 required
                 type="email"
                 value={form.correo}
                 onChange={(e) => setField('correo', e.target.value)}
                 placeholder="laura@club.com"
+                autoComplete="email"
+                inputMode="email"
               />
             </div>
             <div className="field">
-              <label>Cargo</label>
-              <select value={form.cargo} onChange={(e) => setField('cargo', e.target.value)}>
-                {CARGOS.map((c) => (
+              <label htmlFor="inv-cargo">Cargo</label>
+              <select
+                id="inv-cargo"
+                value={cargosInvite.includes(form.cargo) ? form.cargo : cargosInvite[0] || 'Staff'}
+                onChange={(e) => setField('cargo', e.target.value)}
+              >
+                {cargosInvite.map((c) => (
                   <option key={c} value={c}>
                     {c}
+                    {CARGOS_UNICOS.has(c) ? ' (único)' : ''}
                   </option>
                 ))}
               </select>
-            </div>
-            <div className="field">
-              <label>Permiso</label>
-              <select
-                value={form.permiso}
-                onChange={(e) => setField('permiso', e.target.value)}
-              >
-                {PERMISOS.map((p) => (
-                  <option key={p.value} value={p.value}>
-                    {p.label}
-                  </option>
-                ))}
-              </select>
+              <small className="hint">{cargoHint(form.cargo)}</small>
             </div>
           </div>
-          <div className="informes-actions">
-            <button type="submit" disabled={saving}>
-              {saving ? 'Enviando…' : 'Enviar invitación'}
+          <div className="miembros-invite-actions">
+            <button type="submit" disabled={saving || !cargosInvite.length}>
+              {saving ? 'Creando…' : 'Crear invitación'}
             </button>
             <button type="button" className="ghost" onClick={() => setShowInvite(false)}>
               Cancelar
@@ -250,75 +352,114 @@ export default function MiembrosClub() {
         </form>
       )}
 
+      {lastInviteUrl && (
+        <div className="panel miembros-invite-link">
+          <h2>Enlace listo</h2>
+          <p className="muted">Caduca en 7 días. Compártelo solo con esa persona.</p>
+          <code>{lastInviteUrl}</code>
+          <button type="button" onClick={() => copiarEnlace(lastInviteUrl)}>
+            Copiar enlace
+          </button>
+        </div>
+      )}
+
       {msg && <p className="ok-msg">{msg}</p>}
       {error && <p className="error">{error}</p>}
 
-      <section className="panel roster-panel">
-        <div className="roster-head miembros-head">
-          <span>Nombre</span>
-          <span>Rol</span>
-          <span>Estado / Acción</span>
-        </div>
-        <div className="roster-list">
-          {listado.map((m) => (
-            <div className="roster-row miembros-row" key={m.id_miembro}>
-              <div className="roster-player">
-                <span
-                  className="avatar"
-                  style={{
-                    background: m.permiso === 'administrador' ? 'var(--purple)' : 'var(--panel-2)',
-                    color: '#fff',
-                  }}
-                >
+      <div className="miembros-cards">
+        {listado.map((m) => {
+          const isAdmin = m.permiso === 'administrador';
+          const isYou = m.correo === equipo?.correo;
+          const rowBusy = busyId === m.id_miembro || saving;
+          return (
+            <article
+              key={m.id_miembro}
+              className={`miembro-card${isAdmin ? ' is-admin' : ''}${
+                m.estado === 'pendiente' ? ' is-pending' : ''
+              }${m.estado === 'baja' ? ' is-baja' : ''}`}
+            >
+              <header className="miembro-card-head">
+                <span className={`miembro-avatar${isAdmin ? ' is-admin' : ''}`}>
                   {initials(m.nombre)}
                 </span>
-                <span>
-                  <strong>{m.nombre}</strong>
+                <div className="miembro-card-id">
+                  <strong>
+                    {m.nombre}
+                    {isYou ? <span className="miembro-you">tú</span> : null}
+                  </strong>
                   <small>{m.correo}</small>
-                </span>
+                </div>
+                {isAdmin && <span className="miembro-pill admin">Admin</span>}
+                {m.estado === 'pendiente' && (
+                  <span className="miembro-pill pending">Pendiente</span>
+                )}
+                {m.estado === 'baja' && <span className="miembro-pill baja">Baja</span>}
+              </header>
+
+              <div className="miembro-card-body">
+                <label className="miembro-field-label" htmlFor={`cargo-${m.id_miembro}`}>
+                  Cargo
+                </label>
+                {m.estado === 'baja' ? (
+                  <p className="miembros-static">{m.cargo || '—'}</p>
+                ) : (
+                  <CargoSelect
+                    value={m.cargo}
+                    name={m.nombre}
+                    disabled={rowBusy}
+                    occupied={ocupados}
+                    onChange={(cargo) => cambiarCargo(m.id_miembro, cargo)}
+                  />
+                )}
               </div>
-              <div className="miembros-rol">
-                <strong>{m.cargo}</strong>
-                <span className={`miembro-badge ${m.permiso}`}>
-                  {permisoLabel(m.permiso)}
-                </span>
-              </div>
-              <div className="miembros-actions">
-                {m.estado === 'activo' && (
+
+              <footer className="miembro-card-actions">
+                {m.estado === 'activo' && isAdmin && (
+                  <p className="miembro-card-note">Administra el club · único</p>
+                )}
+                {m.estado === 'activo' && !isAdmin && (
                   <>
-                    <span className="miembro-estado activo">Activo</span>
-                    {tab === 'bajas' && (
-                      <select
-                        value={m.permiso}
-                        onChange={(e) => cambiarPermiso(m.id_miembro, e.target.value)}
-                      >
-                        {PERMISOS.map((p) => (
-                          <option key={p.value} value={p.value}>
-                            {p.label}
-                          </option>
-                        ))}
-                      </select>
-                    )}
-                    {m.correo !== equipo?.correo && (
+                    {!m.tiene_acceso && (
                       <button
                         type="button"
                         className="ghost"
-                        onClick={() => darBaja(m.id_miembro)}
+                        disabled={rowBusy}
+                        onClick={() => reinvitar(m.id_miembro)}
                       >
-                        Dar de baja
+                        Enlace
                       </button>
                     )}
+                    <button
+                      type="button"
+                      className="ghost"
+                      disabled={rowBusy}
+                      onClick={() => traspasarAdmin(m)}
+                    >
+                      Hacer admin
+                    </button>
+                    <button
+                      type="button"
+                      className="ghost danger"
+                      disabled={rowBusy}
+                      onClick={() => darBaja(m.id_miembro)}
+                    >
+                      Baja
+                    </button>
                   </>
                 )}
                 {m.estado === 'pendiente' && (
                   <>
-                    <span className="miembro-estado pendiente">Pendiente</span>
-                    <button type="button" onClick={() => aceptar(m.id_miembro)}>
-                      Aceptar
+                    <button
+                      type="button"
+                      disabled={rowBusy}
+                      onClick={() => reinvitar(m.id_miembro)}
+                    >
+                      Copiar enlace
                     </button>
                     <button
                       type="button"
-                      className="ghost"
+                      className="ghost danger"
+                      disabled={rowBusy}
                       onClick={() => darBaja(m.id_miembro)}
                     >
                       Cancelar
@@ -327,26 +468,39 @@ export default function MiembrosClub() {
                 )}
                 {m.estado === 'baja' && (
                   <>
-                    <span className="miembro-estado baja">Baja</span>
-                    <button type="button" className="ghost" onClick={() => reactivar(m.id_miembro)}>
+                    <button
+                      type="button"
+                      disabled={rowBusy}
+                      onClick={() => reactivar(m.id_miembro)}
+                    >
                       Reactivar
+                    </button>
+                    <button
+                      type="button"
+                      className="ghost"
+                      disabled={rowBusy}
+                      onClick={() => reinvitar(m.id_miembro)}
+                    >
+                      Nuevo enlace
                     </button>
                   </>
                 )}
-              </div>
-            </div>
-          ))}
-          {!listado.length && (
-            <p className="muted" style={{ padding: '1rem' }}>
-              {tab === 'invitaciones'
-                ? 'No hay invitaciones pendientes'
-                : tab === 'bajas'
-                  ? 'Sin bajas ni cambios de permiso'
-                  : 'Aún no hay miembros activos'}
-            </p>
-          )}
-        </div>
-      </section>
-    </>
+              </footer>
+            </article>
+          );
+        })}
+
+        {!listado.length && (
+          <div className="miembros-empty panel">
+            <p>{emptyCopy}</p>
+            {tab === 'miembros' && (
+              <button type="button" onClick={() => setShowInvite(true)}>
+                Invitar miembro
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

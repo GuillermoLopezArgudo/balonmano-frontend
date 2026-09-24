@@ -1,10 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api';
+import { useAuth } from '../auth';
 
 export default function Jugadas() {
+  const { canWriteJugadas } = useAuth();
   const [items, setItems] = useState([]);
   const [fase, setFase] = useState('');
+  const [q, setQ] = useState('');
   const [error, setError] = useState('');
   const [status, setStatus] = useState('');
   const [busy, setBusy] = useState(false);
@@ -29,6 +32,15 @@ export default function Jugadas() {
       cancelled = true;
     };
   }, [fase]);
+
+  const filtrados = useMemo(() => {
+    const term = q.trim().toLowerCase();
+    if (!term) return items;
+    return items.filter((j) => {
+      const hay = `${j.nombre || ''} ${j.descripcion || ''} ${j.fase || ''}`.toLowerCase();
+      return hay.includes(term);
+    });
+  }, [items, q]);
 
   const copiar = async (j) => {
     setBusy(true);
@@ -66,11 +78,13 @@ export default function Jugadas() {
           <p className="page-kicker">TACTICA</p>
           <h1>Jugadas</h1>
         </div>
-        <div className="add-player-actions">
-          <Link to="/jugadas/nueva">
-            <button type="button">Nueva jugada</button>
-          </Link>
-        </div>
+        {canWriteJugadas && (
+          <div className="add-player-actions">
+            <Link to="/jugadas/nueva">
+              <button type="button">Nueva jugada</button>
+            </Link>
+          </div>
+        )}
       </header>
 
       <div className="filters roster-filters" style={{ marginBottom: '1rem' }}>
@@ -93,6 +107,20 @@ export default function Jugadas() {
         </button>
       </div>
 
+      <div className="field roster-search">
+        <label htmlFor="jugadas-q" className="sr-only">
+          Buscar jugada
+        </label>
+        <input
+          id="jugadas-q"
+          type="search"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Buscar por nombre, descripción o fase…"
+          autoComplete="off"
+        />
+      </div>
+
       {error && <p className="error">{error}</p>}
       {status && <p className="club-status saved">{status}</p>}
 
@@ -102,8 +130,11 @@ export default function Jugadas() {
             Aún no hay jugadas. Crea una para dibujar movimientos paso a paso.
           </p>
         )}
+        {Boolean(items.length) && !filtrados.length && (
+          <p className="muted">Ninguna jugada coincide con la búsqueda</p>
+        )}
         <div className="jugadas-list">
-          {items.map((j) => (
+          {filtrados.map((j) => (
             <div className="jugada-row" key={j.id_jugada}>
               <div>
                 <strong>{j.nombre}</strong>
@@ -122,20 +153,24 @@ export default function Jugadas() {
               <div className="jugada-row-actions">
                 <Link to={`/jugadas/${j.id_jugada}`}>
                   <button type="button" className="ghost">
-                    Abrir
+                    {canWriteJugadas ? 'Abrir' : 'Ver'}
                   </button>
                 </Link>
-                <button type="button" className="ghost" disabled={busy} onClick={() => copiar(j)}>
-                  Copiar
-                </button>
-                <button
-                  type="button"
-                  className="ghost danger"
-                  disabled={busy}
-                  onClick={() => borrar(j)}
-                >
-                  Eliminar
-                </button>
+                {canWriteJugadas && (
+                  <>
+                    <button type="button" className="ghost" disabled={busy} onClick={() => copiar(j)}>
+                      Copiar
+                    </button>
+                    <button
+                      type="button"
+                      className="ghost danger"
+                      disabled={busy}
+                      onClick={() => borrar(j)}
+                    >
+                      Eliminar
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           ))}

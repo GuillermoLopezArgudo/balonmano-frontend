@@ -82,7 +82,7 @@ async function ensureTemporadaActual() {
 
 export default function CrearPartido() {
   const navigate = useNavigate();
-  const { equipo } = useAuth();
+  const { equipo, canWritePartidos } = useAuth();
   const [step, setStep] = useState(1);
   const [rivales, setRivales] = useState([]);
   const [temporadas, setTemporadas] = useState([]);
@@ -228,6 +228,23 @@ export default function CrearPartido() {
 
   return (
     <>
+      {!canWritePartidos ? (
+        <>
+          <header className="page-head">
+            <div>
+              <p className="page-kicker">PARTIDO NUEVO</p>
+              <h1>Crear partido</h1>
+            </div>
+            <Link to="/partidos">
+              <button type="button" className="ghost">
+                Volver
+              </button>
+            </Link>
+          </header>
+          <p className="error">Tu cargo no permite crear partidos.</p>
+        </>
+      ) : (
+        <>
       <header className="page-head">
         <div>
           <p className="page-kicker">PARTIDO NUEVO</p>
@@ -551,6 +568,8 @@ export default function CrearPartido() {
             </button>
           </div>
         </section>
+      )}
+        </>
       )}
     </>
   );

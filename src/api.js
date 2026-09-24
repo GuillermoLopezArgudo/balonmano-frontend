@@ -64,7 +64,13 @@ async function request(path, options = {}) {
   }
   if (res.status === 401) {
     // Login/registro fallidos también pueden ser 401: solo cerrar si había sesión
-    if (localStorage.getItem('data_token') && !path.startsWith('/auth/login') && !path.startsWith('/auth/registro')) {
+    if (
+      localStorage.getItem('data_token') &&
+      !path.startsWith('/auth/login') &&
+      !path.startsWith('/auth/registro') &&
+      !path.startsWith('/auth/invitacion') &&
+      !path.startsWith('/auth/aceptar-invitacion')
+    ) {
       unauthorizedHandler?.();
     }
     const err = await res.json().catch(() => ({ detail: 'No autorizado' }));
@@ -97,11 +103,19 @@ export const api = {
   login: (data, opts) => request('/auth/login', { method: 'POST', body: JSON.stringify(data), ...opts }),
   registro: (data, opts) =>
     request('/auth/registro', { method: 'POST', body: JSON.stringify(data), ...opts }),
+  getInvitacion: (token, opts) => request(`/auth/invitacion/${token}`, opts),
+  aceptarInvitacion: (data, opts) =>
+    request('/auth/aceptar-invitacion', { method: 'POST', body: JSON.stringify(data), ...opts }),
   me: (opts) => request('/auth/me', opts),
+  sesion: (opts) => request('/auth/sesion', opts),
   updateCuenta: (data, opts) =>
     request('/auth/me', { method: 'PATCH', body: JSON.stringify(data), ...opts }),
   updateDatosEquipo: (data, opts) =>
     request('/auth/me/datos', { method: 'PATCH', body: JSON.stringify(data), ...opts }),
+  updatePerfilMiembro: (data, opts) =>
+    request('/auth/me/perfil', { method: 'PATCH', body: JSON.stringify(data), ...opts }),
+  changePassword: (data, opts) =>
+    request('/auth/me/password', { method: 'PATCH', body: JSON.stringify(data), ...opts }),
 
   uploadImagen: async (file, tipo = 'jugador') => {
     const body = new FormData();
@@ -226,7 +240,60 @@ export const api = {
   getMiembros: (opts) => request('/miembros/', opts),
   createMiembro: (data, opts) =>
     request('/miembros/', { method: 'POST', body: JSON.stringify(data), ...opts }),
+  reinvitarMiembro: (id, opts) =>
+    request(`/miembros/${id}/reinvitar`, { method: 'POST', body: '{}', ...opts }),
+  hacerAdministrador: (id, opts) =>
+    request(`/miembros/${id}/hacer-administrador`, { method: 'POST', body: '{}', ...opts }),
   updateMiembro: (id, data, opts) =>
     request(`/miembros/${id}`, { method: 'PATCH', body: JSON.stringify(data), ...opts }),
   deleteMiembro: (id, opts) => request(`/miembros/${id}`, { method: 'DELETE', ...opts }),
+
+  getCuotas: (opts = {}) => {
+    const { id_temporada, ...rest } = opts;
+    const path = id_temporada
+      ? `/cuotas/?id_temporada=${encodeURIComponent(id_temporada)}`
+      : '/cuotas/';
+    return request(path, rest);
+  },
+  updateCuotasConfig: (data, opts = {}) => {
+    const { id_temporada, ...rest } = opts;
+    const q = id_temporada ? `?id_temporada=${encodeURIComponent(id_temporada)}` : '';
+    return request(`/cuotas/config${q}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+      ...rest,
+    });
+  },
+  patchCuotaMensual: (data, opts = {}) => {
+    const { id_temporada, ...rest } = opts;
+    const q = id_temporada ? `?id_temporada=${encodeURIComponent(id_temporada)}` : '';
+    return request(`/cuotas/mensual${q}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+      ...rest,
+    });
+  },
+  patchFederacion: (data, opts = {}) => {
+    const { id_temporada, ...rest } = opts;
+    const q = id_temporada ? `?id_temporada=${encodeURIComponent(id_temporada)}` : '';
+    return request(`/cuotas/federacion${q}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+      ...rest,
+    });
+  },
+  bulkCuotas: (data, opts = {}) => {
+    const { id_temporada, ...rest } = opts;
+    const q = id_temporada ? `?id_temporada=${encodeURIComponent(id_temporada)}` : '';
+    return request(`/cuotas/bulk${q}`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+      ...rest,
+    });
+  },
+  getFederacionEstados: (opts = {}) => {
+    const { id_temporada, ...rest } = opts;
+    const q = id_temporada ? `?id_temporada=${encodeURIComponent(id_temporada)}` : '';
+    return request(`/cuotas/federacion/estado${q}`, rest);
+  },
 };
