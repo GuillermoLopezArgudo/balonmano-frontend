@@ -1,0 +1,265 @@
+/* Plantilla / roster */
+
+.panel,
+.roster-panel,
+.metric,
+.match-card,
+.club-card {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.filters button.active,
+.roster-filters button.active,
+.filters a.active,
+.roster-filters a.active {
+  background: var(--lime);
+  color: #0a0a0a;
+  border-color: var(--lime);
+  font-weight: 800;
+}
+
+.filters button.active:hover,
+.roster-filters button.active:hover,
+.filters a.active:hover,
+.roster-filters a.active:hover {
+  background: var(--lime-hover);
+  color: #0a0a0a;
+}
+
+.roster-search {
+  margin: 0 0 1rem;
+  max-width: 28rem;
+}
+
+.roster-search input[type='search'] {
+  margin: 0;
+}
+
+.roster-panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.roster-head,
+.roster-row {
+  display: grid;
+  grid-template-columns: minmax(160px, 1.7fr) 0.55fr 0.65fr 0.65fr minmax(110px, 1.1fr) 72px;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.85rem 1.15rem;
+}
+
+.roster-head {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--line);
+}
+
+.roster-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 0.75rem;
+}
+
+.roster-row {
+  border-radius: 12px;
+  background: var(--panel-2);
+  border: 1px solid transparent;
+  padding: 0.75rem 1rem;
+}
+
+.roster-row.is-gk {
+  border-color: rgba(255, 122, 24, 0.75);
+  box-shadow: 0 0 0 1px rgba(255, 122, 24, 0.2);
+}
+
+.roster-player {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.roster-player strong {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 650;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.roster-player small {
+  display: block;
+  margin-top: 0.15rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.roster-cell {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.roster-cell.accent-warn {
+  color: var(--orange);
+  font-weight: 700;
+}
+
+.roster-sanciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.28rem;
+}
+
+.roster-sanc-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.4rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+.roster-sanc-chip.sanc-2min {
+  background: rgba(255, 176, 32, 0.22);
+  color: #c47a00;
+}
+
+.roster-sanc-chip.sanc-am {
+  background: rgba(245, 208, 0, 0.28);
+  color: #8a7400;
+}
+
+.roster-sanc-chip.sanc-ro {
+  background: rgba(224, 64, 64, 0.2);
+  color: #d04040;
+}
+
+.roster-sanc-chip.sanc-az {
+  background: rgba(47, 111, 237, 0.2);
+  color: #2f6fed;
+}
+
+.roster-cell.valor {
+  color: var(--lime);
+  font-family: var(--display);
+}
+
+.roster-cell.accent-orange,
+.roster-cell.valor.accent-orange {
+  color: var(--orange);
+}
+
+.roster-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.4rem;
+}
+
+.roster-edit,
+.roster-del {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 10px;
+  font-size: 1rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+
+.roster-edit {
+  border: 1.5px solid rgba(191, 255, 0, 0.55);
+  color: var(--lime);
+  background: rgba(191, 255, 0, 0.08);
+}
+
+.roster-edit:hover {
+  border-color: var(--lime);
+  background: rgba(191, 255, 0, 0.16);
+}
+
+.roster-del {
+  border: 1.5px solid rgba(255, 92, 122, 0.5);
+  color: #ff8fa3;
+  background: rgba(255, 92, 122, 0.08);
+}
+
+.roster-del:hover {
+  border-color: rgba(255, 92, 122, 0.9);
+  background: rgba(255, 92, 122, 0.16);
+  color: #ffb0be;
+}
+
+.add-player-actions {
+  display: flex;
+  gap: 0.65rem;
+  align-items: center;
+}
+
+.add-player-grid {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 1rem;
+  align-items: start;
+}
+
+.add-player-side h2 {
+  margin: 0 0 1rem;
+}
+
+.add-player-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.95rem;
+}
+
+.add-player-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+}
+
+@media (max-width: 860px) {
+  .add-player-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+[data-theme='claro'] .roster-edit {
+  color: #4d7c0f;
+  border-color: #a3b86a;
+  background: #f4f7ec;
+}
+
+[data-theme='claro'] .roster-edit:hover {
+  color: #3f6212;
+  border-color: #6bb000;
+  background: #e8f0d4;
+}
+
+[data-theme='claro'] .roster-del {
+  color: #be123c;
+  border-color: #e8a0b0;
+  background: #fff5f7;
+}
+
+[data-theme='claro'] .roster-del:hover {
+  color: #9f1239;
+  border-color: #e11d48;
+  background: #ffe4e9;
+}

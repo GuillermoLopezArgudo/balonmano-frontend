@@ -1,0 +1,187 @@
+/* Design tokens, fonts, themes */
+
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
+
+:root,
+[data-theme='oscuro'] {
+  --bg: #0b111b;
+  --bg-elevated: #0d1320;
+  --sidebar: #080d16;
+  --panel: #121a28;
+  --panel-2: #182235;
+  --line: #243049;
+  --text: #ffffff;
+  --muted: #9aa6bd;
+  --lime: #bfff00;
+  --lime-hover: #d8ff3d;
+  --lime-soft: rgba(191, 255, 0, 0.12);
+  --orange: #ff7a18;
+  --teal: #2dd4bf;
+  --cyan: #00d1ff;
+  --purple: #8b5cf6;
+  --pink: #f472b6;
+  --blue: #38bdf8;
+  --danger: #ff5c7a;
+  --radius: 16px;
+  --radius-sm: 12px;
+  --font: 'Outfit', sans-serif;
+  --display: 'Space Grotesk', 'Outfit', sans-serif;
+  --sidebar-w: 240px;
+  --input-bg: #0f1624;
+  --shadow: rgba(0, 0, 0, 0.35);
+  --bar-track: #1c2740;
+  --scroll-track: #0b111b;
+  --scroll-thumb: #2a3854;
+  --scroll-thumb-hover: #3a4d6e;
+}
+
+[data-theme='claro'] {
+  --bg: #f3f5f8;
+  --bg-elevated: #ffffff;
+  --sidebar: #ffffff;
+  --panel: #ffffff;
+  --panel-2: #eef1f6;
+  --line: #d5dbe6;
+  --text: #0f172a;
+  --muted: #475569;
+  --lime: #6bb000;
+  --lime-hover: #5a9600;
+  --lime-soft: rgba(107, 176, 0, 0.14);
+  --orange: #e86a10;
+  --teal: #0d9488;
+  --cyan: #0891b2;
+  --purple: #7c3aed;
+  --pink: #db2777;
+  --blue: #0284c8;
+  --danger: #e11d48;
+  --input-bg: #ffffff;
+  --shadow: rgba(15, 23, 42, 0.08);
+  --bar-track: #e2e8f0;
+  --scroll-track: #eef1f6;
+  --scroll-thumb: #b8c2d1;
+  --scroll-thumb-hover: #94a3b8;
+}
+
+* {
+  box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: var(--scroll-thumb) var(--scroll-track);
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--scroll-thumb);
+  border-radius: 999px;
+  border: 2px solid var(--scroll-track);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--scroll-thumb-hover);
+}
+
+*::-webkit-scrollbar-corner {
+  background: var(--scroll-track);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  min-height: 100%;
+  max-width: 100%;
+}
+
+html {
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font);
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
+}
+
+[data-theme='claro'] .partido-portada-preview {
+  background:
+    linear-gradient(160deg, rgba(15, 23, 42, 0.05), rgba(15, 23, 42, 0.2)),
+    var(--panel-2);
+}
+
+[data-theme='claro'] .court-floor-stop-a {
+  stop-color: #d8e8cf;
+}
+
+[data-theme='claro'] .court-floor-stop-b {
+  stop-color: #c5dcb8;
+}
+
+[data-theme='claro'] .goal-map-frame {
+  background: #f1f5f0;
+  border-color: #94a3b8;
+}
+
+[data-theme='claro'] .goal-map-cell {
+  background: #fff !important;
+}
+
+[data-theme='claro'] .goal-map-cell.selected {
+  background: var(--lime) !important;
+  color: #0a0a0a !important;
+}
+
+[data-theme='claro'] .goal-map-out {
+  background: #fff7ed !important;
+  color: #c2410c !important;
+  border-color: #fdba74 !important;
+}
+
+[data-theme='claro'] .goal-map-out.selected {
+  background: #ea580c !important;
+  color: #fff !important;
+  border-color: #ea580c !important;
+}
+
+[data-theme='claro'] .btn-outline {
+  background: #fff;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+[data-theme='claro'] input,
+[data-theme='claro'] select,
+[data-theme='claro'] textarea {
+  background: var(--input-bg);
+}
+
+[data-theme='claro'] .match-card-photo {
+  background:
+    linear-gradient(160deg, rgba(15, 23, 42, 0.08), rgba(15, 23, 42, 0.55)),
+    url('https://images.unsplash.com/photo-1554068865-24cecd4e79c4?auto=format&fit=crop&w=900&q=80')
+      center/cover;
+}
+
+[data-theme='claro'] .match-card-photo p {
+  color: #fff;
+}
+
+[data-theme='claro'] .match-teams strong {
+  color: #475569;
+}
+
+[data-theme='claro'] .mobile-top {
+  background: color-mix(in srgb, #ffffff 90%, transparent);
+}
+
+[data-theme='claro'] .mobile-menu-btn {
+  background: #fff;
+  color: #0f172a;
+}

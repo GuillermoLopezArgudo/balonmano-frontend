@@ -1,0 +1,10 @@
+/* SIETE styles — split by domain; import order matters for cascade */
+@import './tokens.css';
+@import './base.css';
+@import './layout.css';
+@import './auth.css';
+@import './plantilla.css';
+@import './partidos.css';
+@import './analitica.css';
+@import './club.css';
+@import './jugadas.css';

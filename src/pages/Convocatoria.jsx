@@ -2,7 +2,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../api';
 import { useAuth } from '../auth';
-import CampoAlineacion, { ZONAS_CAMPO, zonasParaFase } from '../components/CampoAlineacion';
+import CampoAlineacion, {
+  ZONAS_CAMPO,
+  zonasParaFase,
+  usePointerDnD,
+} from '../components/CampoAlineacion';
 
 const MAX_CONV = 16;
 const MAX_TIT = 7;
@@ -347,62 +351,80 @@ export default function Convocatoria() {
   const readDragId = (e) =>
     e.dataTransfer.getData(DND_TYPE) || e.dataTransfer.getData('text/plain') || dragId;
 
-  const onDropPlantilla = (e) => {
-    e.preventDefault();
-    const jid = readDragId(e);
-    if (!jid) {
+  const applyDrop = (target, jid) => {
+    if (!jid || !target) {
       onDragEnd();
       return;
     }
-    if (esCampo) {
-      // Quitar solo de la fase actual
-      const nextMap = clearJugadorDeMapa(zonasActivas, jid);
-      setZonasActivas(nextMap);
-      setSelected((prev) => {
-        if (!prev[jid]) return prev;
-        const other = fase === 'defensa' ? zonasAtaque : zonasDefensa;
-        if (Object.values(other).includes(jid)) return { ...prev, [jid]: 'titular' };
-        return { ...prev, [jid]: 'banquillo' };
-      });
-    } else if (tab === 'banquillo') {
-      setRol(jid, 'convocado');
-    } else {
-      removePlayer(jid);
+    if (target === 'plantilla') {
+      if (esCampo) {
+        const nextMap = clearJugadorDeMapa(zonasActivas, jid);
+        setZonasActivas(nextMap);
+        setSelected((prev) => {
+          if (!prev[jid]) return prev;
+          const other = fase === 'defensa' ? zonasAtaque : zonasDefensa;
+          if (Object.values(other).includes(jid)) return { ...prev, [jid]: 'titular' };
+          return { ...prev, [jid]: 'banquillo' };
+        });
+      } else if (tab === 'banquillo') {
+        setRol(jid, 'convocado');
+      } else {
+        removePlayer(jid);
+      }
+    } else if (target === 'seleccion') {
+      assignPlayer(jid, roleForTab());
+    } else if (target.startsWith('zona:')) {
+      placeInZone(jid, target.slice(5));
+    } else if (target.startsWith('row:')) {
+      const targetId = target.slice(4);
+      if (selected[jid]) {
+        if (tab !== 'convocatoria') assignPlayer(jid, roleForTab(), targetId);
+        else reorderSelected(jid, targetId);
+      } else {
+        assignPlayer(jid, roleForTab(), targetId);
+      }
     }
     onDragEnd();
   };
 
+  const onDropPlantilla = (e) => {
+    e.preventDefault();
+    applyDrop('plantilla', readDragId(e));
+  };
+
   const onDropSeleccion = (e) => {
     e.preventDefault();
-    const jid = readDragId(e);
-    if (jid) assignPlayer(jid, roleForTab());
-    onDragEnd();
+    applyDrop('seleccion', readDragId(e));
   };
 
   const onDropSelectedRow = (e, targetId) => {
     e.preventDefault();
     e.stopPropagation();
-    const jid = readDragId(e);
-    if (!jid) {
-      onDragEnd();
-      return;
-    }
-    if (selected[jid]) {
-      if (tab !== 'convocatoria') assignPlayer(jid, roleForTab(), targetId);
-      else reorderSelected(jid, targetId);
-    } else {
-      assignPlayer(jid, roleForTab(), targetId);
-    }
-    onDragEnd();
+    applyDrop(`row:${targetId}`, readDragId(e));
   };
 
   const onDropZone = (e, zonaId) => {
     e.preventDefault();
     e.stopPropagation();
-    const jid = readDragId(e);
-    if (jid) placeInZone(jid, zonaId);
-    onDragEnd();
+    applyDrop(`zona:${zonaId}`, readDragId(e));
   };
+
+  const { onPointerDragStart, ghost } = usePointerDnD({
+    canStart: (jid) => {
+      if (tab === 'convocatoria' && !selected[jid] && !tieneFederacion(jid)) {
+        setError('Sin federación pagada no se puede convocar. Márcala en Club → Cuotas.');
+        return false;
+      }
+      return true;
+    },
+    onDropTarget: applyDrop,
+    setDragId,
+    setDropZone,
+    labelFor: (jid) => {
+      const j = byId[jid];
+      return j ? `#${j.dorsal ?? '—'} ${j.nombre}` : '…';
+    },
+  });
 
   const buildItemsPayload = () =>
     Object.entries(selected).map(([id_jugador, rol]) => {
@@ -551,9 +573,9 @@ export default function Convocatoria() {
 
   const hint =
     fase === 'ataque'
-      ? 'Alineación de ataque · solo convocadas'
+      ? 'Alineación de ataque · mantén pulsado y arrastra a una zona'
       : fase === 'defensa'
-        ? 'Alineación de defensa · solo convocadas'
+        ? 'Alineación de defensa · mantén pulsado y arrastra a una zona'
         : tab === 'banquillo'
           ? 'Solo convocadas. Arrástralas al banquillo.'
           : 'Arrastra jugadoras entre plantilla y selección, o reordénalas en la lista.';
@@ -630,6 +652,7 @@ export default function Convocatoria() {
           </div>
           <div
             className={`conv-list${dropZone === 'plantilla' ? ' drop-ready' : ''}`}
+            data-drop-target="plantilla"
             onDragOver={(e) => {
               e.preventDefault();
               e.dataTransfer.dropEffect = 'move';
@@ -651,9 +674,15 @@ export default function Convocatoria() {
                   className={`conv-player${checked ? ' on' : ''}${dragId === j.id_jugador ? ' dragging' : ''}${
                     bloqueada ? ' conv-player-blocked' : ''
                   }`}
+                  data-drag-id={j.id_jugador}
                   draggable={!bloqueada}
                   onDragStart={(e) => onDragStart(e, j.id_jugador)}
                   onDragEnd={onDragEnd}
+                  onPointerDown={
+                    bloqueada
+                      ? undefined
+                      : (e) => onPointerDragStart(e, j.id_jugador, { allowScrollCancel: true })
+                  }
                 >
                   {esConvTab && (
                     <input
@@ -662,6 +691,7 @@ export default function Convocatoria() {
                       disabled={bloqueada}
                       onChange={() => toggleConvocado(j.id_jugador)}
                       onClick={(e) => e.stopPropagation()}
+                      onPointerDown={(e) => e.stopPropagation()}
                       aria-label={`Convocar a ${j.nombre} ${j.apellido}`}
                     />
                   )}
@@ -717,6 +747,7 @@ export default function Convocatoria() {
                 onDragOverZone={(zonaId) => setDropZone(`zona:${zonaId}`)}
                 onDropZone={onDropZone}
                 onClearZone={clearZone}
+                onPointerDragStart={onPointerDragStart}
               />
               <div className="alin-save-row">
                 <input
@@ -733,6 +764,7 @@ export default function Convocatoria() {
           ) : (
             <div
               className={`conv-selected${dropZone === 'seleccion' ? ' drop-ready' : ''}`}
+              data-drop-target="seleccion"
               onDragOver={(e) => {
                 e.preventDefault();
                 e.dataTransfer.dropEffect = 'move';
@@ -746,16 +778,21 @@ export default function Convocatoria() {
                 if (!j) return null;
                 return (
                   <div
-                    className={`conv-selected-row${dragId === jid ? ' dragging' : ''}${dropZone === jid ? ' drag-over' : ''}`}
+                    className={`conv-selected-row${dragId === jid ? ' dragging' : ''}${
+                      dropZone === jid || dropZone === `row:${jid}` ? ' drag-over' : ''
+                    }`}
                     key={jid}
+                    data-drag-id={jid}
+                    data-drop-target={`row:${jid}`}
                     draggable
                     onDragStart={(e) => onDragStart(e, jid)}
                     onDragEnd={onDragEnd}
+                    onPointerDown={(e) => onPointerDragStart(e, jid, { allowScrollCancel: true })}
                     onDragOver={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
                       e.dataTransfer.dropEffect = 'move';
-                      setDropZone(jid);
+                      setDropZone(`row:${jid}`);
                     }}
                     onDrop={(e) => onDropSelectedRow(e, jid)}
                   >
@@ -771,6 +808,7 @@ export default function Convocatoria() {
                         onChange={(e) => setRol(jid, e.target.value)}
                         onMouseDown={(e) => e.stopPropagation()}
                         onClick={(e) => e.stopPropagation()}
+                        onPointerDown={(e) => e.stopPropagation()}
                       >
                         <option value="convocado">Convocado</option>
                         <option value="titular">Titular</option>
@@ -865,6 +903,16 @@ export default function Convocatoria() {
           </div>
         </div>
       </section>
+
+      {ghost && (
+        <div
+          className="conv-drag-ghost"
+          style={{ left: ghost.x, top: ghost.y }}
+          aria-hidden="true"
+        >
+          {ghost.label}
+        </div>
+      )}
     </>
   );
 }

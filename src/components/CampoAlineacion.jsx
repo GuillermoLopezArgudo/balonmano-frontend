@@ -1,3 +1,5 @@
+import { useEffect, useRef, useState } from 'react';
+
 export const ZONAS_CAMPO = [
   { id: 'extremo_izq', label: 'Extremo izq.', short: 'EI', area: 'ei' },
   { id: 'extremo_der', label: 'Extremo der.', short: 'ED', area: 'ed' },
@@ -33,6 +35,7 @@ export default function CampoAlineacion({
   onDragOverZone,
   onDropZone,
   onClearZone,
+  onPointerDragStart,
 }) {
   const slots = zonasParaFase(fase);
 
@@ -54,6 +57,7 @@ export default function CampoAlineacion({
           <div
             key={zona.id}
             className={`hb-zone hb-zone-${zona.area}${isOver ? ' drop-ready' : ''}${j ? ' filled' : ''}`}
+            data-drop-target={`zona:${zona.id}`}
             onDragOver={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -66,9 +70,11 @@ export default function CampoAlineacion({
             {j ? (
               <div
                 className={`hb-zone-player${dragId === jid ? ' dragging' : ''}`}
+                data-drag-id={jid}
                 draggable
                 onDragStart={(e) => onDragStart(e, jid)}
                 onDragEnd={onDragEnd}
+                onPointerDown={(e) => onPointerDragStart?.(e, jid, { allowScrollCancel: false })}
               >
                 <strong>
                   #{j.dorsal ?? '—'} {j.nombre}
@@ -81,6 +87,7 @@ export default function CampoAlineacion({
                     e.stopPropagation();
                     onClearZone(zona.id);
                   }}
+                  onPointerDown={(e) => e.stopPropagation()}
                   aria-label={`Quitar de ${labelZona(zona, fase)}`}
                 >
                   ×
@@ -94,4 +101,115 @@ export default function CampoAlineacion({
       })}
     </div>
   );
+}
+
+/**
+ * Arrastre táctil / pointer para convocatoria y alineación.
+ * HTML5 DnD no funciona en la mayoría de móviles.
+ */
+export function usePointerDnD({
+  canStart,
+  onDropTarget,
+  setDragId,
+  setDropZone,
+  labelFor,
+}) {
+  const [ghost, setGhost] = useState(null);
+  const stateRef = useRef(null);
+
+  useEffect(() => () => {
+    const s = stateRef.current;
+    if (s) {
+      window.removeEventListener('pointermove', s.onMove);
+      window.removeEventListener('pointerup', s.onUp);
+      window.removeEventListener('pointercancel', s.onUp);
+    }
+  }, []);
+
+  const onPointerDragStart = (e, jid, opts = {}) => {
+    if (e.button != null && e.button !== 0) return;
+    if (e.pointerType === 'mouse' && e.detail > 1) return;
+    // En ratón dejamos HTML5 DnD; pointer solo para touch/pen
+    if (e.pointerType === 'mouse') return;
+    if (e.target?.closest?.('button, input, a, label')) return;
+    if (canStart && !canStart(jid)) return;
+
+    const allowScrollCancel = opts.allowScrollCancel !== false;
+    const startX = e.clientX;
+    const startY = e.clientY;
+    let active = false;
+    const pointerId = e.pointerId;
+
+    const cleanup = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onUp);
+      stateRef.current = null;
+      setGhost(null);
+      setDragId(null);
+      setDropZone(null);
+      document.body.classList.remove('conv-pointer-dragging');
+    };
+
+    const hitTarget = (x, y) => {
+      const stack = document.elementsFromPoint?.(x, y) || [document.elementFromPoint(x, y)];
+      for (const el of stack) {
+        if (!el || el.nodeType !== 1) continue;
+        if (el.classList?.contains('conv-drag-ghost')) continue;
+        const dragEl = el.closest?.('[data-drag-id]');
+        if (dragEl?.getAttribute('data-drag-id') === jid) continue;
+        const node = el.closest?.('[data-drop-target]');
+        if (node) return node.getAttribute('data-drop-target');
+      }
+      return null;
+    };
+
+    const onMove = (ev) => {
+      if (ev.pointerId !== pointerId) return;
+      const dx = ev.clientX - startX;
+      const dy = ev.clientY - startY;
+      const dist = Math.hypot(dx, dy);
+
+      if (!active) {
+        if (dist < 10) return;
+        if (allowScrollCancel && Math.abs(dy) > Math.abs(dx) * 1.35) {
+          cleanup();
+          return;
+        }
+        active = true;
+        setDragId(jid);
+        document.body.classList.add('conv-pointer-dragging');
+        try {
+          e.currentTarget?.setPointerCapture?.(pointerId);
+        } catch {
+          /* ignore */
+        }
+      }
+
+      ev.preventDefault();
+      const target = hitTarget(ev.clientX, ev.clientY);
+      setDropZone(target);
+      setGhost({
+        x: ev.clientX,
+        y: ev.clientY,
+        label: labelFor?.(jid) || '…',
+      });
+    };
+
+    const onUp = (ev) => {
+      if (ev.pointerId !== pointerId) return;
+      if (active) {
+        const target = hitTarget(ev.clientX, ev.clientY);
+        if (target) onDropTarget(target, jid);
+      }
+      cleanup();
+    };
+
+    stateRef.current = { onMove, onUp };
+    window.addEventListener('pointermove', onMove, { passive: false });
+    window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', onUp);
+  };
+
+  return { onPointerDragStart, ghost };
 }

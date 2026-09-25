@@ -1,0 +1,385 @@
+/* Jugadas / entrenamientos editor */
+
+.jugadas-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.jugada-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.85rem;
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  background: var(--panel-2);
+  flex-wrap: wrap;
+}
+
+.jugada-row strong {
+  display: block;
+  font-size: 1rem;
+}
+
+.jugada-row small {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.jugada-desc {
+  margin: 0.35rem 0 0;
+  font-size: 0.85rem;
+}
+
+.jugada-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.jugada-editor-meta {
+  display: grid;
+  grid-template-columns: 1.4fr 0.7fr 1.4fr;
+  gap: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.jugada-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.jugada-pasos,
+.jugada-modes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.jugada-paso-chip {
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.8rem;
+}
+
+.jugada-modes .btn-seg,
+.jugada-modes .btn-play,
+.jugada-modes button.ghost {
+  min-height: 2.4rem;
+}
+
+.jugada-hint {
+  margin: 0 0 0.65rem;
+  font-size: 0.85rem;
+}
+
+.jugada-board-wrap {
+  padding: 0.75rem;
+}
+
+.jugada-board {
+  display: block;
+  position: relative;
+  min-height: 440px;
+  width: 100%;
+  touch-action: none;
+  user-select: none;
+}
+
+.jugada-arrows {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+  overflow: visible;
+}
+
+.jugada-arrow-group {
+  pointer-events: stroke;
+}
+
+.jugada-arrow-hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 12;
+  cursor: pointer;
+}
+
+.jugada-arrow {
+  fill: none;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.jugada-arrow-mov {
+  stroke: #fbbf24;
+  stroke-dasharray: 0;
+}
+
+.jugada-arrow-pase {
+  stroke: #38bdf8;
+  stroke-dasharray: 3.5 2.2;
+}
+
+.jugada-arrow-lanz {
+  stroke: #fb7185;
+  stroke-width: 2.8;
+}
+
+.jugada-marker-mov path {
+  fill: #fbbf24;
+}
+
+.jugada-marker-pase path {
+  fill: #38bdf8;
+}
+
+.jugada-marker-lanz path {
+  fill: #fb7185;
+}
+
+.jugada-arrow-group.dimmed {
+  opacity: 0.28;
+}
+
+.jugada-arrow-group.selected .jugada-arrow,
+.jugada-arrow.selected {
+  stroke-width: 3.4;
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.35));
+}
+
+[data-theme='claro'] .jugada-arrow-mov {
+  stroke: #d97706;
+}
+
+[data-theme='claro'] .jugada-arrow-pase {
+  stroke: #0284c7;
+}
+
+[data-theme='claro'] .jugada-arrow-lanz {
+  stroke: #e11d48;
+}
+
+[data-theme='claro'] .jugada-marker-mov path {
+  fill: #d97706;
+}
+
+[data-theme='claro'] .jugada-marker-pase path {
+  fill: #0284c7;
+}
+
+[data-theme='claro'] .jugada-marker-lanz path {
+  fill: #e11d48;
+}
+
+.jugada-hint .linkish {
+  display: inline;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: none;
+  color: var(--lime);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.jugada-pieza {
+  position: absolute;
+  z-index: 2;
+  width: 52px;
+  height: 52px;
+  margin-left: -26px;
+  margin-top: -26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0a0a0a;
+  font-weight: 800;
+  font-size: 0.78rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  cursor: grab;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.jugada-board-full .jugada-pieza {
+  width: 48px;
+  height: 48px;
+  margin-left: -24px;
+  margin-top: -24px;
+  font-size: 0.62rem;
+  letter-spacing: -0.02em;
+}
+
+.jugada-pieza.movable:active {
+  cursor: grabbing;
+}
+
+.jugada-pieza.selected {
+  outline: 3px solid #fff;
+  outline-offset: 2px;
+}
+
+.jugada-pieza-del {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 1.15rem;
+  height: 1.15rem;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 0.8rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+@media (max-width: 900px) {
+  .jugada-editor-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .jugada-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.55rem;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .jugada-pasos,
+  .jugada-modes,
+  .btn-seg-group {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .jugada-modes.btn-seg-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.4rem;
+  }
+
+  .jugada-modes .btn-seg,
+  .jugada-modes .btn-play,
+  .jugada-modes button.ghost {
+    flex: unset;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    justify-content: center;
+    box-sizing: border-box;
+    padding: 0.5rem 0.45rem;
+    font-size: 0.78rem;
+  }
+
+  .jugada-pasos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+
+  .jugada-paso-chip,
+  .jugada-pasos > button {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .jugada-board-wrap {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .jugada-board:not(.jugada-board-full) {
+    min-height: min(78vw, 400px);
+  }
+
+  .jugada-pieza {
+    width: 44px;
+    height: 44px;
+    margin-left: -22px;
+    margin-top: -22px;
+    font-size: 0.7rem;
+  }
+
+  .jugada-row-actions {
+    width: 100%;
+  }
+
+  .jugada-row-actions a,
+  .jugada-row-actions button {
+    flex: 1;
+  }
+}
+
+.jugada-pieza.has-ball {
+  box-shadow: 0 0 0 3px #fb923c, 0 2px 10px rgba(0, 0, 0, 0.35);
+}
+
+.jugada-ball {
+  position: absolute;
+  z-index: 3;
+  width: 22px;
+  height: 22px;
+  margin-left: -11px;
+  margin-top: -11px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 30% 30%, #fff7ed, #fb923c 45%, #c2410c 100%);
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  pointer-events: auto;
+}
+
+.jugada-ball.movable {
+  cursor: grab;
+}
+
+.jugada-ball.movable:active {
+  cursor: grabbing;
+}
+
+.jugada-board-wrap-full {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+.jugada-board.jugada-board-full .hb-fase-tag {
+  top: 0.45rem;
+  right: 0.55rem;
+}
+
+/* Campo completo entrenamiento (marcas) */
+.jugada-board.jugada-board-full {
+  aspect-ratio: 2 / 1;
+  min-height: min(56vw, 420px);
+  width: 100%;
+  max-width: 100%;
+  padding: 0;
+  display: block;
+  grid-template-columns: none;
+  grid-template-rows: none;
+  gap: 0;
+}
