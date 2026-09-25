@@ -1,6 +1,7 @@
 import { useEffect, useId, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth';
+import LiveClockBanner from './LiveClockBanner';
 
 function Icon({ children }) {
   return (
@@ -240,6 +241,7 @@ export default function AppShell() {
       </aside>
 
       <div className="workspace">
+        <LiveClockBanner />
         <Outlet />
       </div>
     </div>

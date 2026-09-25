@@ -268,6 +268,14 @@ export const api = {
     request('/estadisticas/porteros/', { method: 'PUT', body: JSON.stringify(data), ...opts }),
   createAccion: (data, opts) =>
     request('/estadisticas/acciones/', { method: 'POST', body: JSON.stringify(data), ...opts }),
+  updateAccion: (id, data, opts) =>
+    request(`/estadisticas/acciones/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+      ...opts,
+    }),
+  deleteAccion: (id, opts) =>
+    request(`/estadisticas/acciones/${id}`, { method: 'DELETE', ...opts }),
   getAcciones: (opts) => request('/estadisticas/acciones/', opts),
 
   getEquipos: (opts) => request('/equipos/me', opts),

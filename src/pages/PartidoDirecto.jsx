@@ -9,6 +9,14 @@ import {
   labelPista,
   labelPorteria,
 } from '../components/ShotMaps';
+import {
+  HALF_MINUTES,
+  HALF_SEC,
+  fmtClock,
+  loadClock,
+  saveClock,
+  setActiveLive,
+} from '../liveClock';
 
 const ACCIONES = [
   { key: 'lanzamiento', label: 'Lanzamiento', needsShotMap: true },
@@ -36,71 +44,62 @@ function tipoNombrePara(accionKey, zonaPorteria, sancionTipo) {
   return ACCIONES.find((a) => a.key === accionKey)?.tipo || null;
 }
 
-function fmtTime(totalSec) {
-  const m = Math.floor(totalSec / 60);
-  const s = totalSec % 60;
-  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-}
-
-/** Duración de cada parte (balonmano oficial). */
-const HALF_MINUTES = 30;
-const HALF_SEC = HALF_MINUTES * 60;
-
-function clockStorageKey(partidoId) {
-  return `siete:directo-clock:${partidoId}`;
-}
-
-function loadClock(partidoId) {
-  if (!partidoId) return { parte: 1, elapsedSec: 0, running: false };
-  try {
-    const raw = localStorage.getItem(clockStorageKey(partidoId));
-    if (!raw) return { parte: 1, elapsedSec: 0, running: false };
-    const data = JSON.parse(raw);
-    let elapsed = Math.max(0, Number(data.elapsedSec) || 0);
-    let running = Boolean(data.running);
-    const parte = data.parte === 2 ? 2 : 1;
-    if (running && data.updatedAt) {
-      const delta = Math.floor((Date.now() - Number(data.updatedAt)) / 1000);
-      if (delta > 0) elapsed += delta;
-    }
-    if (elapsed >= HALF_SEC) {
-      elapsed = HALF_SEC;
-      running = false;
-    }
-    return { parte, elapsedSec: elapsed, running };
-  } catch {
-    return { parte: 1, elapsedSec: 0, running: false };
-  }
-}
-
-function saveClock(partidoId, { parte, elapsedSec, running }) {
-  if (!partidoId) return;
-  try {
-    localStorage.setItem(
-      clockStorageKey(partidoId),
-      JSON.stringify({
-        parte,
-        elapsedSec: Math.min(HALF_SEC, Math.max(0, elapsedSec)),
-        running,
-        updatedAt: Date.now(),
-      }),
-    );
-  } catch {
-    /* ignore quota */
-  }
-}
-
 function zonaFeed(a) {
   const parts = [];
   if (a.rival_dorsal != null) parts.push(`#${a.rival_dorsal}`);
-  if (a.es_contraataque) parts.push('Contraataque');
+  // Contraataque se muestra aparte en el feed (live-feed-contra)
   if (a.zona) parts.push(labelPista(a.zona) || a.zona);
   if (a.zona_porteria) parts.push(`→ ${labelPorteria(a.zona_porteria) || a.zona_porteria}`);
-  return parts.length ? ` · ${parts.join(' ')}` : '';
+  return parts.length ? ` · ${parts.join(' · ')}` : '';
 }
 
 function isPortera(j) {
   return (j.posiciones || []).some((p) => String(p).toLowerCase().includes('portero'));
+}
+
+function mapTipoToForm(tipoNombre) {
+  const n = (tipoNombre || '').toLowerCase();
+  if (n === 'gol' || n.includes('lanzamiento')) {
+    return { accion: 'lanzamiento', sancionTipo: '2min' };
+  }
+  if (n.includes('parada')) return { accion: 'parada', sancionTipo: '2min' };
+  if (n.includes('recibid')) return { accion: 'gol_rival', sancionTipo: '2min' };
+  if (n.includes('pérdida') || n.includes('perdida')) {
+    return { accion: 'perdida', sancionTipo: '2min' };
+  }
+  if (n.includes('exclusión') || n.includes('exclusion') || n.includes("2")) {
+    return { accion: 'sancion', sancionTipo: '2min' };
+  }
+  if (n.includes('amarilla')) return { accion: 'sancion', sancionTipo: 'amarilla' };
+  if (n.includes('roja')) return { accion: 'sancion', sancionTipo: 'roja' };
+  if (n.includes('azul')) return { accion: 'sancion', sancionTipo: 'azul' };
+  return { accion: 'lanzamiento', sancionTipo: '2min' };
+}
+
+function scorePatchForTipo(nombre, partido, equipoId, dir = 1) {
+  if (!partido || !nombre) return null;
+  const n = nombre.toLowerCase();
+  const esGol = n.includes('gol') && !n.includes('recibid');
+  const esRecibido = n.includes('gol') && n.includes('recibid');
+  if (!esGol && !esRecibido) return null;
+  const soyLocal = partido.id_equipo_local === equipoId;
+  const d = dir >= 0 ? 1 : -1;
+  if (esGol) {
+    return soyLocal
+      ? { local: d, visitante: 0 }
+      : { local: 0, visitante: d };
+  }
+  return soyLocal
+    ? { local: 0, visitante: d }
+    : { local: d, visitante: 0 };
+}
+
+function applyScorePatch(score, patch) {
+  if (!patch) return score;
+  return {
+    local: Math.max(0, score.local + patch.local),
+    visitante: Math.max(0, score.visitante + patch.visitante),
+  };
 }
 
 export default function PartidoDirecto() {
@@ -130,6 +129,7 @@ export default function PartidoDirecto() {
   const [nuevoNombreRival, setNuevoNombreRival] = useState('');
   const [goleadorasRival, setGoleadorasRival] = useState([]);
   const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [flash, setFlash] = useState('');
   const [error, setError] = useState('');
   const tickRef = useRef(null);
@@ -246,7 +246,16 @@ export default function PartidoDirecto() {
   useEffect(() => {
     if (!partidoId || clockForId !== partidoId) return;
     saveClock(partidoId, { parte, elapsedSec: seconds, running });
-  }, [partidoId, clockForId, parte, seconds, running]);
+    if (partido) {
+      setActiveLive({
+        id_partido: partidoId,
+        local: partido.equipo_local_nombre,
+        visitante: partido.equipo_visitante_nombre,
+        goles_local: score.local,
+        goles_visitante: score.visitante,
+      });
+    }
+  }, [partidoId, clockForId, parte, seconds, running, partido, score]);
 
   useEffect(() => {
     if (!running) return undefined;
@@ -289,6 +298,58 @@ export default function PartidoDirecto() {
     setRivalJugadorId('');
     setNuevoDorsal('');
     setNuevoNombreRival('');
+    setEditingId(null);
+  };
+
+  const persistScore = async (nextScore) => {
+    setScore(nextScore);
+    try {
+      await api.updatePartido(partidoId, {
+        goles_local: nextScore.local,
+        goles_visitante: nextScore.visitante,
+      });
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const empezarEdicion = (a) => {
+    const t = tipos.find((x) => x.id_tipo_accion === a.id_tipo_accion);
+    const mapped = mapTipoToForm(t?.nombre);
+    setEditingId(a.id_accion);
+    setAccion(mapped.accion);
+    setSancionTipo(mapped.sancionTipo);
+    setJugadorId(a.id_jugador || '');
+    setZona(a.zona || '');
+    setZonaPorteria(a.zona_porteria || '');
+    setEsContraataque(Boolean(a.es_contraataque));
+    setRivalJugadorId(a.id_rival_jugador || '');
+    setError('');
+    setFlash('Editando acción — guarda o cancela');
+    setTimeout(() => setFlash(''), 1800);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const borrarAccion = async (a) => {
+    if (!canWriteDirecto) return;
+    const t = tipos.find((x) => x.id_tipo_accion === a.id_tipo_accion);
+    if (!confirm(`¿Borrar «${t?.nombre || 'acción'}» del ${a.minuto}'?`)) return;
+    setSaving(true);
+    setError('');
+    try {
+      await api.deleteAccion(a.id_accion);
+      const patch = scorePatchForTipo(t?.nombre, partido, equipo?.id_equipo, -1);
+      if (patch) await persistScore(applyScorePatch(score, patch));
+      setAcciones((prev) => prev.filter((x) => x.id_accion !== a.id_accion));
+      if (editingId === a.id_accion) limpiar();
+      if (t?.nombre === 'Gol recibido') await refreshGoleadoras();
+      setFlash('Acción borrada');
+      setTimeout(() => setFlash(''), 1200);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const refreshGoleadoras = async (pid = partidoId) => {
@@ -359,8 +420,11 @@ export default function PartidoDirecto() {
       );
       return;
     }
-    const esGolPropio = tipoSeleccionado.nombre === 'Gol';
-    const esGolRecibido = tipoSeleccionado.nombre === 'Gol recibido';
+    const prev = editingId ? acciones.find((x) => x.id_accion === editingId) : null;
+    const prevTipo = prev
+      ? tipos.find((x) => x.id_tipo_accion === prev.id_tipo_accion)
+      : null;
+
     setSaving(true);
     setError('');
     try {
@@ -373,49 +437,63 @@ export default function PartidoDirecto() {
         }
       }
 
-      const created = await api.createAccion({
-        id_partido: partidoId,
+      const payload = {
         id_jugador: jugadorId,
         id_tipo_accion: tipoSeleccionado.id_tipo_accion,
-        minuto,
-        segundo,
+        minuto: editingId && prev ? prev.minuto : minuto,
+        segundo: editingId && prev ? prev.segundo : segundo,
         zona: needsShotMap ? zona : null,
         zona_porteria: needsShotMap ? zonaPorteria : null,
         es_contraataque: needsShotMap && (esLanzamiento || esGolRival) ? esContraataque : false,
         id_rival_jugador: idRivalJug,
-      });
+      };
 
-      if ((esGolPropio || esGolRecibido) && partido) {
-        const soyLocal = partido.id_equipo_local === equipo?.id_equipo;
-        let nextScore = { ...score };
-        if (esGolPropio) {
-          nextScore = soyLocal
-            ? { ...score, local: score.local + 1 }
-            : { ...score, visitante: score.visitante + 1 };
-        } else {
-          nextScore = soyLocal
-            ? { ...score, visitante: score.visitante + 1 }
-            : { ...score, local: score.local + 1 };
+      let saved;
+      if (editingId) {
+        saved = await api.updateAccion(editingId, payload);
+        let nextScore = score;
+        const rem = scorePatchForTipo(prevTipo?.nombre, partido, equipo?.id_equipo, -1);
+        const add = scorePatchForTipo(tipoSeleccionado.nombre, partido, equipo?.id_equipo, 1);
+        if (rem || add) {
+          nextScore = applyScorePatch(applyScorePatch(score, rem), add);
+          await persistScore(nextScore);
         }
-        setScore(nextScore);
-        try {
-          await api.updatePartido(partidoId, {
-            goles_local: nextScore.local,
-            goles_visitante: nextScore.visitante,
-          });
-        } catch {
-          /* la acción ya está guardada */
-        }
+        setAcciones((prevList) =>
+          prevList.map((x) =>
+            x.id_accion === editingId
+              ? {
+                  ...saved,
+                  es_contraataque: Boolean(
+                    saved?.es_contraataque ?? payload.es_contraataque,
+                  ),
+                }
+              : x,
+          ),
+        );
+        setFlash('Acción actualizada');
+      } else {
+        saved = await api.createAccion({
+          id_partido: partidoId,
+          ...payload,
+        });
+        const add = scorePatchForTipo(tipoSeleccionado.nombre, partido, equipo?.id_equipo, 1);
+        if (add) await persistScore(applyScorePatch(score, add));
+        setAcciones((prevList) => [
+          ...prevList,
+          {
+            ...saved,
+            es_contraataque: Boolean(
+              saved?.es_contraataque ?? payload.es_contraataque,
+            ),
+          },
+        ]);
+        setFlash(
+          `${tipoSeleccionado.nombre}${esContraataque && needsShotMap ? ' (contraataque)' : ''} registrado`,
+        );
       }
 
-      setAcciones((prev) => [...prev, created]);
       if (esGolRival) await refreshGoleadoras();
-      setFlash(
-        `${tipoSeleccionado.nombre}${esContraataque && needsShotMap ? ' (contraataque)' : ''} registrado`,
-      );
-      setZona('');
-      setZonaPorteria('');
-      setEsContraataque(false);
+      limpiar();
       setTimeout(() => setFlash(''), 1200);
     } catch (err) {
       if (err?.name === 'AbortError') return;
@@ -477,7 +555,7 @@ export default function PartidoDirecto() {
           </div>
           <div className="live-board-meta">
             <span className="live-dot" />
-            EN DIRECTO {fmtTime(remaining)}
+            EN DIRECTO {fmtClock(remaining)}
             <span className="muted" style={{ marginLeft: '0.35rem', fontSize: '0.75rem' }}>
               / {HALF_MINUTES}&apos;
             </span>
@@ -707,7 +785,7 @@ export default function PartidoDirecto() {
 
           <div className="live-submit-row">
             <button type="button" className="ghost" onClick={limpiar} disabled={!canWriteDirecto}>
-              Limpiar
+              {editingId ? 'Cancelar' : 'Limpiar'}
             </button>
             <button
               type="button"
@@ -716,7 +794,13 @@ export default function PartidoDirecto() {
               onClick={registrar}
               title={!canWriteDirecto ? 'Tu cargo no permite registrar' : undefined}
             >
-              {saving ? '…' : canWriteDirecto ? 'Registrar →' : 'Solo lectura'}
+              {saving
+                ? '…'
+                : !canWriteDirecto
+                  ? 'Solo lectura'
+                  : editingId
+                    ? 'Guardar cambios'
+                    : 'Registrar →'}
             </button>
           </div>
         </section>
@@ -727,19 +811,48 @@ export default function PartidoDirecto() {
             {recent.map((a) => {
               const j = jugadores.find((x) => x.id_jugador === a.id_jugador);
               const t = tipos.find((x) => x.id_tipo_accion === a.id_tipo_accion);
+              const isEditing = editingId === a.id_accion;
               return (
-                <div className="live-feed-item" key={a.id_accion}>
+                <div
+                  className={`live-feed-item${isEditing ? ' is-editing' : ''}`}
+                  key={a.id_accion}
+                >
                   <strong>
                     {a.minuto}&apos;{String(a.segundo || 0).padStart(2, '0')}
                   </strong>
                   <span>
                     {t?.nombre || 'Acción'}
+                    {a.es_contraataque ? (
+                      <em className="live-feed-contra"> · Contraataque</em>
+                    ) : null}
                     {zonaFeed(a)}
                   </span>
                   <small>
                     {j ? `#${j.dorsal ?? '—'} ${j.nombre}` : '—'}
                     {a.rival_dorsal != null ? ` · rival #${a.rival_dorsal}` : ''}
                   </small>
+                  {canWriteDirecto && (
+                    <div className="live-feed-actions">
+                      <button
+                        type="button"
+                        className="ghost live-feed-btn"
+                        disabled={saving}
+                        onClick={() => empezarEdicion(a)}
+                        title="Editar"
+                      >
+                        Editar
+                      </button>
+                      <button
+                        type="button"
+                        className="ghost live-feed-btn live-feed-btn-del"
+                        disabled={saving}
+                        onClick={() => borrarAccion(a)}
+                        title="Borrar"
+                      >
+                        Borrar
+                      </button>
+                    </div>
+                  )}
                 </div>
               );
             })}
