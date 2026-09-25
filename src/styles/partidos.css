@@ -313,6 +313,59 @@
 
 .crear-partido-form {
   margin-top: 0.35rem;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.crear-partido-form .field {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* date/time: en iOS/Android el control nativo desborda el panel */
+.crear-partido-form input[type='date'],
+.crear-partido-form input[type='time'],
+.crear-partido-form input[type='datetime-local'],
+.crear-partido-form select,
+.crear-partido-form input[type='text'],
+.crear-partido-form input:not([type]) {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.crear-partido-form input[type='date'],
+.crear-partido-form input[type='time'],
+.crear-partido-form input[type='datetime-local'] {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+}
+
+.crear-partido-form input[type='date']::-webkit-date-and-time-value,
+.crear-partido-form input[type='time']::-webkit-date-and-time-value {
+  text-align: left;
+  min-width: 0;
+}
+
+@media (max-width: 720px) {
+  .crear-partido-form {
+    grid-template-columns: 1fr !important;
+  }
+
+  .crear-partido-form input[type='date'],
+  .crear-partido-form input[type='time'] {
+    padding-inline: 0.75rem;
+    font-size: 1rem; /* evita zoom iOS y reduce layout raro */
+  }
+
+  .panel.club-card:has(.crear-partido-form) {
+    overflow-x: hidden;
+    max-width: 100%;
+  }
 }
 
 .rival-list {
@@ -937,6 +990,14 @@
 
 .hb-zone-player {
   touch-action: none;
+}
+
+/* Feedback táctil: “cogido” tras mantener pulsado */
+body.conv-pointer-dragging .conv-player.dragging,
+body.conv-pointer-dragging .conv-selected-row.dragging,
+body.conv-pointer-dragging .hb-zone-player.dragging {
+  opacity: 0.35;
+  transform: scale(0.96);
 }
 
 .conv-drag-ghost {

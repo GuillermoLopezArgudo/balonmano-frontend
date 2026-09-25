@@ -573,12 +573,12 @@ export default function Convocatoria() {
 
   const hint =
     fase === 'ataque'
-      ? 'Alineación de ataque · mantén pulsado y arrastra a una zona'
+      ? 'Ataque · mantén pulsado y arrastra a una zona (en móvil puedes bajar al campo sin soltar)'
       : fase === 'defensa'
-        ? 'Alineación de defensa · mantén pulsado y arrastra a una zona'
+        ? 'Defensa · mantén pulsado y arrastra a una zona (en móvil puedes bajar al campo sin soltar)'
         : tab === 'banquillo'
-          ? 'Solo convocadas. Arrástralas al banquillo.'
-          : 'Arrastra jugadoras entre plantilla y selección, o reordénalas en la lista.';
+          ? 'Banquillo · mantén pulsado y arrastra aquí a las no titulares'
+          : 'Mantén pulsado un jugador y arrástralo. Si deslizas sin mantener, la lista hace scroll.';
 
   return (
     <>
@@ -681,7 +681,7 @@ export default function Convocatoria() {
                   onPointerDown={
                     bloqueada
                       ? undefined
-                      : (e) => onPointerDragStart(e, j.id_jugador, { allowScrollCancel: true })
+                      : (e) => onPointerDragStart(e, j.id_jugador)
                   }
                 >
                   {esConvTab && (
@@ -787,7 +787,7 @@ export default function Convocatoria() {
                     draggable
                     onDragStart={(e) => onDragStart(e, jid)}
                     onDragEnd={onDragEnd}
-                    onPointerDown={(e) => onPointerDragStart(e, jid, { allowScrollCancel: true })}
+                    onPointerDown={(e) => onPointerDragStart(e, jid)}
                     onDragOver={(e) => {
                       e.preventDefault();
                       e.stopPropagation();

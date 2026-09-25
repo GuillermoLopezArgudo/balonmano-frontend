@@ -74,7 +74,7 @@ export default function CampoAlineacion({
                 draggable
                 onDragStart={(e) => onDragStart(e, jid)}
                 onDragEnd={onDragEnd}
-                onPointerDown={(e) => onPointerDragStart?.(e, jid, { allowScrollCancel: false })}
+                onPointerDown={(e) => onPointerDragStart?.(e, jid)}
               >
                 <strong>
                   #{j.dorsal ?? '—'} {j.nombre}
@@ -106,6 +106,10 @@ export default function CampoAlineacion({
 /**
  * Arrastre táctil / pointer para convocatoria y alineación.
  * HTML5 DnD no funciona en la mayoría de móviles.
+ *
+ * En touch: mantener ~220ms para “coger” al jugador; así el scroll vertical
+ * de la lista sigue funcionando y luego se puede arrastrar en cualquier dirección
+ * (en móvil plantilla está encima del campo → el gesto es hacia abajo).
  */
 export function usePointerDnD({
   canStart,
@@ -117,14 +121,19 @@ export function usePointerDnD({
   const [ghost, setGhost] = useState(null);
   const stateRef = useRef(null);
 
-  useEffect(() => () => {
-    const s = stateRef.current;
-    if (s) {
-      window.removeEventListener('pointermove', s.onMove);
-      window.removeEventListener('pointerup', s.onUp);
-      window.removeEventListener('pointercancel', s.onUp);
-    }
-  }, []);
+  useEffect(
+    () => () => {
+      const s = stateRef.current;
+      if (s?.holdTimer) clearTimeout(s.holdTimer);
+      if (s) {
+        window.removeEventListener('pointermove', s.onMove);
+        window.removeEventListener('pointerup', s.onUp);
+        window.removeEventListener('pointercancel', s.onUp);
+      }
+      document.body.classList.remove('conv-pointer-dragging');
+    },
+    [],
+  );
 
   const onPointerDragStart = (e, jid, opts = {}) => {
     if (e.button != null && e.button !== 0) return;
@@ -134,13 +143,17 @@ export function usePointerDnD({
     if (e.target?.closest?.('button, input, a, label')) return;
     if (canStart && !canStart(jid)) return;
 
-    const allowScrollCancel = opts.allowScrollCancel !== false;
+    const holdMs = opts.holdMs ?? 280;
     const startX = e.clientX;
     const startY = e.clientY;
+    const originEl = e.currentTarget;
     let active = false;
+    let cancelled = false;
     const pointerId = e.pointerId;
 
     const cleanup = () => {
+      const s = stateRef.current;
+      if (s?.holdTimer) clearTimeout(s.holdTimer);
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
       window.removeEventListener('pointercancel', onUp);
@@ -149,6 +162,11 @@ export function usePointerDnD({
       setDragId(null);
       setDropZone(null);
       document.body.classList.remove('conv-pointer-dragging');
+      try {
+        originEl?.releasePointerCapture?.(pointerId);
+      } catch {
+        /* ignore */
+      }
     };
 
     const hitTarget = (x, y) => {
@@ -164,6 +182,25 @@ export function usePointerDnD({
       return null;
     };
 
+    const activate = () => {
+      if (active || cancelled) return;
+      active = true;
+      setDragId(jid);
+      document.body.classList.add('conv-pointer-dragging');
+      try {
+        originEl?.setPointerCapture?.(pointerId);
+      } catch {
+        /* ignore */
+      }
+      setGhost({
+        x: startX,
+        y: startY,
+        label: labelFor?.(jid) || '…',
+      });
+    };
+
+    const holdTimer = setTimeout(activate, holdMs);
+
     const onMove = (ev) => {
       if (ev.pointerId !== pointerId) return;
       const dx = ev.clientX - startX;
@@ -171,19 +208,12 @@ export function usePointerDnD({
       const dist = Math.hypot(dx, dy);
 
       if (!active) {
-        if (dist < 10) return;
-        if (allowScrollCancel && Math.abs(dy) > Math.abs(dx) * 1.35) {
+        // Antes de coger: si el dedo se mueve, es scroll → cancelar hold
+        if (dist > 8) {
+          cancelled = true;
           cleanup();
-          return;
         }
-        active = true;
-        setDragId(jid);
-        document.body.classList.add('conv-pointer-dragging');
-        try {
-          e.currentTarget?.setPointerCapture?.(pointerId);
-        } catch {
-          /* ignore */
-        }
+        return;
       }
 
       ev.preventDefault();
@@ -205,7 +235,7 @@ export function usePointerDnD({
       cleanup();
     };
 
-    stateRef.current = { onMove, onUp };
+    stateRef.current = { onMove, onUp, holdTimer };
     window.addEventListener('pointermove', onMove, { passive: false });
     window.addEventListener('pointerup', onUp);
     window.addEventListener('pointercancel', onUp);

@@ -21,12 +21,21 @@ select,
 textarea {
   width: 100%;
   max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   background: var(--bg-elevated);
   border: 1px solid var(--line);
   color: var(--text);
   border-radius: var(--radius-sm);
   padding: 0.85rem 1rem;
   outline: none;
+}
+
+input[type='date'],
+input[type='time'],
+input[type='datetime-local'] {
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 input[type='checkbox'],
