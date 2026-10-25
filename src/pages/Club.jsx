@@ -102,7 +102,7 @@ export default function Club() {
         {TABS.map((t) =>
           t.to ? (
             <Link key={t.id} to={t.to}>
-              <button type="button">{t.label}</button>
+              {t.label}
             </Link>
           ) : (
             <button

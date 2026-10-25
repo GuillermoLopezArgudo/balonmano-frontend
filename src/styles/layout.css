@@ -568,6 +568,17 @@ button.full {
   text-decoration: none;
 }
 
+.filters a > button {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  min-height: 0;
+  border-radius: 0;
+  color: inherit;
+  font: inherit;
+  box-shadow: none;
+}
+
 .filters button:hover:not(.active),
 .filters a:hover:not(.active) {
   background: var(--lime-soft);
@@ -943,7 +954,7 @@ button.ghost.danger:hover {
 /* Lanzamiento: fuera alto + FI | marco | FD en un solo grid */
 .goal-map-with-out {
   display: grid;
-  grid-template-columns: 40px minmax(0, 1fr) 40px;
+  grid-template-columns: 2.25rem minmax(8.75rem, 1fr) 2.25rem;
   grid-template-rows: auto minmax(132px, auto);
   grid-template-areas:
     'out-top out-top out-top'
@@ -970,15 +981,23 @@ button.ghost.danger:hover {
   grid-area: out-right;
 }
 
+.goal-map-with-out > .goal-map-out,
+.goal-map-with-out > .goal-map-frame {
+  width: auto !important;
+  max-width: none !important;
+  min-width: 0 !important;
+}
+
 .goal-map-with-out > .goal-map-frame {
   grid-area: frame;
-  min-width: 0;
-  width: 100%;
+  width: 100% !important;
+  min-width: 8.75rem !important;
   height: 100%;
   min-height: 132px;
   aspect-ratio: auto;
   gap: 5px;
   padding: 8px;
+  container-type: inline-size;
 }
 
 .goal-map-save {
@@ -1038,12 +1057,15 @@ button.ghost.danger:hover {
   border-radius: 6px !important;
   background: var(--panel) !important;
   color: var(--muted) !important;
-  font-size: 0.78rem !important;
+  font-size: clamp(0.62rem, 28cqw, 0.8rem) !important;
   font-weight: 700 !important;
+  letter-spacing: 0 !important;
   padding: 0 !important;
   margin: 0 !important;
   min-height: 0 !important;
   height: 100% !important;
+  overflow: hidden;
+  white-space: nowrap !important;
   display: flex !important;
   align-items: center;
   justify-content: center;

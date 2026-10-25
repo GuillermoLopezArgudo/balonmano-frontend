@@ -181,6 +181,8 @@ export default function Cuotas() {
       setData(res);
       setSelected(new Set());
       if (accion === 'limpiar') setStatus('Pagos borrados');
+      else if (accion === 'cuotas_pagadas') setStatus('Cuotas marcadas como pagadas');
+      else if (accion === 'cuotas_pendientes') setStatus('Cuotas marcadas como pendientes');
       else if (accion === 'federacion_pagada') setStatus('Federación marcada como pagada');
       else setStatus('Federación marcada como pendiente');
     } catch (err) {
@@ -317,48 +319,74 @@ export default function Cuotas() {
               <div>
                 <h2>Control de pagos</h2>
                 <p className="panel-hint">
-                  Toca una celda: verde = pagado, gris = pendiente.
+                  Selecciona jugadoras para marcar todas sus cuotas, o toca una celda.
+                  Verde = pagado.
                 </p>
               </div>
             </div>
 
-            {!soloLectura && someSelected && (
+            {!soloLectura && (
               <div className="cuotas-bulk-bar" role="toolbar" aria-label="Acciones en masa">
-                <span>
-                  {selected.size} sel.
-                </span>
-                <button
-                  type="button"
-                  className="ghost"
-                  disabled={busy}
-                  onClick={() => runBulk('federacion_pagada')}
-                >
-                  Fed. pagada
-                </button>
-                <button
-                  type="button"
-                  className="ghost"
-                  disabled={busy}
-                  onClick={() => runBulk('federacion_pendiente')}
-                >
-                  Fed. pendiente
-                </button>
-                <button
-                  type="button"
-                  className="ghost danger"
-                  disabled={busy}
-                  onClick={() => runBulk('limpiar')}
-                >
-                  Borrar
-                </button>
-                <button
-                  type="button"
-                  className="ghost"
-                  disabled={busy}
-                  onClick={() => setSelected(new Set())}
-                >
-                  Quitar
-                </button>
+                <p className="cuotas-bulk-count">
+                  {someSelected
+                    ? `${selected.size} seleccionada${selected.size === 1 ? '' : 's'}`
+                    : 'Ninguna seleccionada'}
+                </p>
+                <div className="cuotas-bulk-actions">
+                  <div className="cuotas-bulk-group">
+                    <button
+                      type="button"
+                      disabled={busy || !someSelected}
+                      onClick={() => runBulk('cuotas_pagadas')}
+                    >
+                      Cuotas pagadas
+                    </button>
+                    <button
+                      type="button"
+                      className="ghost"
+                      disabled={busy || !someSelected}
+                      onClick={() => runBulk('cuotas_pendientes')}
+                    >
+                      Cuotas pendientes
+                    </button>
+                  </div>
+                  <div className="cuotas-bulk-group">
+                    <button
+                      type="button"
+                      className="ghost"
+                      disabled={busy || !someSelected}
+                      onClick={() => runBulk('federacion_pagada')}
+                    >
+                      Fed. pagada
+                    </button>
+                    <button
+                      type="button"
+                      className="ghost"
+                      disabled={busy || !someSelected}
+                      onClick={() => runBulk('federacion_pendiente')}
+                    >
+                      Fed. pendiente
+                    </button>
+                  </div>
+                  <div className="cuotas-bulk-group cuotas-bulk-group-end">
+                    <button
+                      type="button"
+                      className="ghost danger"
+                      disabled={busy || !someSelected}
+                      onClick={() => runBulk('limpiar')}
+                    >
+                      Borrar
+                    </button>
+                    <button
+                      type="button"
+                      className="ghost"
+                      disabled={busy || !someSelected}
+                      onClick={() => setSelected(new Set())}
+                    >
+                      Quitar
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -442,10 +470,10 @@ export default function Cuotas() {
                                 aria-pressed={pagado}
                                 onClick={() => toggleMes(j.id_jugador, m, pagado)}
                               >
-                                <span className="cuota-dot" aria-hidden="true" />
                                 <span className="sr-only">
                                   {MES_LABEL[m]} {pagado ? 'pagado' : 'pendiente'}
                                 </span>
+                                {pagado ? '✓' : ''}
                               </button>
                             </td>
                           );
