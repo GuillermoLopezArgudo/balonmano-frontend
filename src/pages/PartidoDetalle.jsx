@@ -173,7 +173,7 @@ export default function PartidoDetalle() {
     canRead('directo')
       ? {
           to: `/partidos/${id}/directo`,
-          title: closed ? 'Ver registro' : 'Directo',
+          title: 'Directo',
           hint: closed
             ? 'Repasa o completa las acciones del partido'
             : 'Registra el partido en vivo',

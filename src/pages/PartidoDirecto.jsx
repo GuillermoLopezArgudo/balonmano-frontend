@@ -640,8 +640,9 @@ export default function PartidoDirecto() {
                 </button>
               </Link>
               {canWritePartidos &&
-                partido?.estado !== 'jugado' &&
-                partido?.estado !== 'sin_resultado' && (
+                partido &&
+                partido.estado !== 'jugado' &&
+                partido.estado !== 'sin_resultado' && (
                 <button
                   type="button"
                   className="live-cerrar-btn"
