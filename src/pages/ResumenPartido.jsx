@@ -260,135 +260,9 @@ export default function ResumenPartido() {
             Volver
           </button>
         </Link>
-        <div className="add-player-actions">
-          {canRead('directo') && (
-            <Link to={`/partidos/${id}/directo`}>
-              <button type="button" className="ghost">
-                Directo
-              </button>
-            </Link>
-          )}
-          <button type="button" onClick={exportarPdf}>
-            Exportar acta PDF
-          </button>
-        </div>
       </header>
 
-      {error && <p className="error no-print">{error}</p>}
-      {status && <p className="club-status saved no-print">{status}</p>}
-
-      <section className="panel match-cierre no-print">
-        <div className="match-cierre-head">
-          <h2>Cierre del partido</h2>
-          <span className={pendientes ? 'match-cierre-badge warn' : 'match-cierre-badge ok'}>
-            {pendientes ? `${pendientes} pendiente${pendientes === 1 ? '' : 's'}` : 'Listo'}
-          </span>
-        </div>
-        <ul className="match-cierre-list">
-          {checklist.map((c) => (
-            <li key={c.id} className={c.ok ? 'is-ok' : 'is-pending'}>
-              <span className="match-cierre-check" aria-hidden="true">
-                {c.ok ? '✓' : '!'}
-              </span>
-              <div>
-                <strong>{c.label}</strong>
-                <small>{c.hint}</small>
-              </div>
-            </li>
-          ))}
-        </ul>
-        <div className="match-cierre-actions">
-          {canWritePartidos &&
-            partido.estado !== 'jugado' &&
-            partido.estado !== 'sin_resultado' && (
-            <button type="button" disabled={closing} onClick={marcarJugado}>
-              {closing
-                ? 'Cerrando…'
-                : (Number(partido.goles_local) || 0) > 0 ||
-                    (Number(partido.goles_visitante) || 0) > 0
-                  ? 'Marcar como jugado'
-                  : 'Cerrar sin resultado'}
-            </button>
-          )}
-          {!acciones.length && canRead('directo') && (
-            <Link to={`/partidos/${id}/directo`}>
-              <button type="button" className="ghost">
-                Seguir en directo
-              </button>
-            </Link>
-          )}
-          <Link to="/analitica">
-            <button type="button" className="ghost">
-              Ver analítica
-            </button>
-          </Link>
-        </div>
-      </section>
-
-      <section className="panel match-result-card">
-        <div className="match-result-side">
-          <strong>{partido.equipo_local_nombre}</strong>
-        </div>
-        <div className="match-result-score">
-          {partido.goles_local} – {partido.goles_visitante}
-        </div>
-        <div className="match-result-side right">
-          <strong>{partido.equipo_visitante_nombre}</strong>
-        </div>
-      </section>
-
-      <div className="acta-stat-rows">
-        <div className="acta-stat-row">
-          <strong className="c-lime">{resumen.goles}</strong>
-          <div>
-            <span>Goles</span>
-            <small>
-              {resumen.goles} a favor · {resumen.golesContra} en contra
-            </small>
-          </div>
-        </div>
-        <div className="acta-stat-row">
-          <strong className="c-cyan">{resumen.lanzamientos}</strong>
-          <div>
-            <span>Lanzamientos</span>
-            <small>
-              {resumen.aPorteria} a portería / {resumen.fuera} fuera
-            </small>
-          </div>
-        </div>
-        <div className="acta-stat-row">
-          <strong className="c-orange">{resumen.paradas}</strong>
-          <div>
-            <span>Paradas</span>
-            <small>{resumen.efiParadas}% efectividad</small>
-          </div>
-        </div>
-        <div className="acta-stat-row">
-          <strong className="c-purple">{resumen.perdidas}</strong>
-          <div>
-            <span>Pérdidas</span>
-            <small>Registradas en el partido</small>
-          </div>
-        </div>
-        <div className="acta-stat-row">
-          <strong className="c-lime">{resumen.recuperaciones}</strong>
-          <div>
-            <span>Recuperaciones</span>
-            <small>Balones recuperados</small>
-          </div>
-        </div>
-        <div className="acta-stat-row">
-          <strong className="c-orange">
-            {resumen.faltasCometidas}/{resumen.faltasRecibidas}
-          </strong>
-          <div>
-            <span>Faltas</span>
-            <small>Cometidas / recibidas</small>
-          </div>
-        </div>
-      </div>
-
-      <div className="filters roster-filters no-print" style={{ marginTop: '1.15rem' }}>
+      <div className="filters roster-filters no-print">
         {TABS.map((t) => (
           <button
             type="button"
@@ -399,37 +273,96 @@ export default function ResumenPartido() {
             {t.label}
           </button>
         ))}
+        <button type="button" className="filters-end" onClick={exportarPdf}>
+          Exportar acta PDF
+        </button>
       </div>
 
+      {error && <p className="error no-print">{error}</p>}
+      {status && <p className="club-status saved no-print">{status}</p>}
+
       {tab === 'resumen' && (
-        <section className="panel forma-panel">
-          <h2>Resumen</h2>
-          <p className="muted">
-            {new Date(partido.fecha).toLocaleString('es-ES')}
-            {partido.competicion ? ` · ${partido.competicion}` : ''}
-            {partido.pabellon ? ` · ${partido.pabellon}` : ''}
-          </p>
-          <div className="confirm-grid" style={{ marginTop: '1rem' }}>
-            <div>
-              <dt>Resultado</dt>
-              <dd>
-                {partido.goles_local} – {partido.goles_visitante}
-              </dd>
+        <>
+          <section className="panel forma-panel">
+            <h2>Resumen</h2>
+            <p className="muted">
+              {new Date(partido.fecha).toLocaleString('es-ES')}
+              {partido.competicion ? ` · ${partido.competicion}` : ''}
+              {partido.pabellon ? ` · ${partido.pabellon}` : ''}
+            </p>
+            <div className="confirm-grid" style={{ marginTop: '1rem' }}>
+              <div>
+                <dt>Resultado</dt>
+                <dd>
+                  {partido.goles_local} – {partido.goles_visitante}
+                </dd>
+              </div>
+              <div>
+                <dt>Temporada</dt>
+                <dd>{partido.temporada_nombre || '—'}</dd>
+              </div>
+              <div>
+                <dt>Acciones registradas</dt>
+                <dd>{acciones.length}</dd>
+              </div>
+              <div>
+                <dt>Jugadores con stats</dt>
+                <dd>{porJugador.length}</dd>
+              </div>
             </div>
-            <div>
-              <dt>Temporada</dt>
-              <dd>{partido.temporada_nombre || '—'}</dd>
+          </section>
+
+          <div className="acta-stat-rows">
+            <div className="acta-stat-row">
+              <strong className="c-lime">{resumen.goles}</strong>
+              <div>
+                <span>Goles</span>
+                <small>
+                  {resumen.goles} a favor · {resumen.golesContra} en contra
+                </small>
+              </div>
             </div>
-            <div>
-              <dt>Acciones registradas</dt>
-              <dd>{acciones.length}</dd>
+            <div className="acta-stat-row">
+              <strong className="c-cyan">{resumen.lanzamientos}</strong>
+              <div>
+                <span>Lanzamientos</span>
+                <small>
+                  {resumen.aPorteria} a portería / {resumen.fuera} fuera
+                </small>
+              </div>
             </div>
-            <div>
-              <dt>Jugadores con stats</dt>
-              <dd>{porJugador.length}</dd>
+            <div className="acta-stat-row">
+              <strong className="c-orange">{resumen.paradas}</strong>
+              <div>
+                <span>Paradas</span>
+                <small>{resumen.efiParadas}% efectividad</small>
+              </div>
+            </div>
+            <div className="acta-stat-row">
+              <strong className="c-purple">{resumen.perdidas}</strong>
+              <div>
+                <span>Pérdidas</span>
+                <small>Registradas en el partido</small>
+              </div>
+            </div>
+            <div className="acta-stat-row">
+              <strong className="c-lime">{resumen.recuperaciones}</strong>
+              <div>
+                <span>Recuperaciones</span>
+                <small>Balones recuperados</small>
+              </div>
+            </div>
+            <div className="acta-stat-row">
+              <strong className="c-orange">
+                {resumen.faltasCometidas}/{resumen.faltasRecibidas}
+              </strong>
+              <div>
+                <span>Faltas</span>
+                <small>Cometidas / recibidas</small>
+              </div>
             </div>
           </div>
-        </section>
+        </>
       )}
 
       {tab === 'jugadores' && (
@@ -534,6 +467,54 @@ export default function ResumenPartido() {
           </ul>
         </section>
       )}
+
+      <section className="panel match-cierre no-print">
+        <div className="match-cierre-head">
+          <h2>Cierre del partido</h2>
+          <span className={pendientes ? 'match-cierre-badge warn' : 'match-cierre-badge ok'}>
+            {pendientes ? `${pendientes} pendiente${pendientes === 1 ? '' : 's'}` : 'Listo'}
+          </span>
+        </div>
+        <ul className="match-cierre-list">
+          {checklist.map((c) => (
+            <li key={c.id} className={c.ok ? 'is-ok' : 'is-pending'}>
+              <span className="match-cierre-check" aria-hidden="true">
+                {c.ok ? '✓' : '!'}
+              </span>
+              <div>
+                <strong>{c.label}</strong>
+                <small>{c.hint}</small>
+              </div>
+            </li>
+          ))}
+        </ul>
+        <div className="match-cierre-actions">
+          {canWritePartidos &&
+            partido.estado !== 'jugado' &&
+            partido.estado !== 'sin_resultado' && (
+            <button type="button" disabled={closing} onClick={marcarJugado}>
+              {closing
+                ? 'Cerrando…'
+                : (Number(partido.goles_local) || 0) > 0 ||
+                    (Number(partido.goles_visitante) || 0) > 0
+                  ? 'Marcar como jugado'
+                  : 'Cerrar sin resultado'}
+            </button>
+          )}
+          {!acciones.length && canRead('directo') && (
+            <Link to={`/partidos/${id}/directo`}>
+              <button type="button" className="ghost">
+                Seguir en directo
+              </button>
+            </Link>
+          )}
+          <Link to="/analitica">
+            <button type="button" className="ghost">
+              Ver analítica
+            </button>
+          </Link>
+        </div>
+      </section>
     </div>
   );
 }

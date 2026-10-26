@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api';
 import { useAuth } from '../auth';
-import { IcoBasura, IcoLapiz } from '../components/ActionIcons';
+import { IcoBasura, IcoFlecha, IcoLapiz } from '../components/ActionIcons';
 import SinAcceso from '../components/SinAcceso';
 import {
   CourtHeatMap,
@@ -617,6 +617,12 @@ export default function PartidoDirecto() {
           </p>
           <h1>Partido en directo</h1>
         </div>
+        <Link className="page-back" to={partidoId ? `/partidos/${partidoId}` : '/partidos'}>
+          <button type="button" className="ghost">
+            <IcoFlecha />
+            Volver
+          </button>
+        </Link>
         <div className="add-player-actions">
           {!routeId && (
             <select
@@ -632,61 +638,48 @@ export default function PartidoDirecto() {
               ))}
             </select>
           )}
-          {partidoId && (
-            <>
-              <Link to={`/partidos/${partidoId}/resumen`}>
-                <button type="button" className="ghost">
-                  Resumen
-                </button>
-              </Link>
-              {canWritePartidos &&
-                partido &&
-                partido.estado !== 'jugado' &&
-                partido.estado !== 'sin_resultado' && (
-                <button
-                  type="button"
-                  className="live-cerrar-btn"
-                  disabled={saving}
-                  onClick={async () => {
-                    const conGoles = (score.local || 0) > 0 || (score.visitante || 0) > 0;
-                    const estado = conGoles ? 'jugado' : 'sin_resultado';
-                    if (
-                      !window.confirm(
-                        conGoles
-                          ? '¿Cerrar el partido? Se marcará como jugado y irás al resumen.'
-                          : '¿Cerrar sin resultado? No sumará en analítica. Irás al resumen.',
-                      )
-                    ) {
-                      return;
-                    }
-                    setSaving(true);
-                    setError('');
-                    try {
-                      setRunning(false);
-                      await api.updatePartido(partidoId, {
-                        estado,
-                        goles_local: score.local,
-                        goles_visitante: score.visitante,
-                      });
-                      clearActiveLiveIfPartido(partidoId);
-                      navigate(`/partidos/${partidoId}/resumen`);
-                    } catch (err) {
-                      setError(err.message);
-                    } finally {
-                      setSaving(false);
-                    }
-                  }}
-                >
-                  Cerrar partido
-                </button>
-              )}
-            </>
-          )}
-          <Link to={partidoId ? `/partidos/${partidoId}` : '/partidos'}>
-            <button type="button" className="ghost">
-              Salir
-            </button>
-          </Link>
+          {partidoId &&
+            canWritePartidos &&
+            partido &&
+            partido.estado !== 'jugado' &&
+            partido.estado !== 'sin_resultado' && (
+              <button
+                type="button"
+                className="live-cerrar-btn"
+                disabled={saving}
+                onClick={async () => {
+                  const conGoles = (score.local || 0) > 0 || (score.visitante || 0) > 0;
+                  const estado = conGoles ? 'jugado' : 'sin_resultado';
+                  if (
+                    !window.confirm(
+                      conGoles
+                        ? '¿Cerrar el partido? Se marcará como jugado y irás al resumen.'
+                        : '¿Cerrar sin resultado? No sumará en analítica. Irás al resumen.',
+                    )
+                  ) {
+                    return;
+                  }
+                  setSaving(true);
+                  setError('');
+                  try {
+                    setRunning(false);
+                    await api.updatePartido(partidoId, {
+                      estado,
+                      goles_local: score.local,
+                      goles_visitante: score.visitante,
+                    });
+                    clearActiveLiveIfPartido(partidoId);
+                    navigate(`/partidos/${partidoId}/resumen`);
+                  } catch (err) {
+                    setError(err.message);
+                  } finally {
+                    setSaving(false);
+                  }
+                }}
+              >
+                Cerrar partido
+              </button>
+            )}
         </div>
       </header>
 

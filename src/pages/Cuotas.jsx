@@ -208,9 +208,6 @@ export default function Cuotas() {
         <div>
           <p className="page-kicker">{kicker}</p>
           <h1>Cuotas y federación</h1>
-          <p className="cuotas-lead">
-            Cuota mensual (sep–jun) y licencia federativa. Sin federación no se puede convocar.
-          </p>
         </div>
         <Link className="page-back" to="/club">
           <button type="button" className="ghost">
@@ -219,6 +216,9 @@ export default function Cuotas() {
           </button>
         </Link>
       </header>
+      <p className="cuotas-lead">
+        Cuota mensual (sep–jun) y licencia federativa. Sin federación no se puede convocar.
+      </p>
 
       <div className="cuotas-toolbar">
         <div className="field cuotas-temp-field">

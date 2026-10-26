@@ -768,6 +768,7 @@
   .gk-zone-head {
     flex-direction: column;
     align-items: stretch;
+    gap: 0.65rem;
   }
 
   .analitica-toolbar > *,
@@ -779,6 +780,44 @@
     margin-left: 0;
   }
 
+  .analitica-export {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.45rem;
+    margin-left: 0;
+  }
+
+  .analitica-export button {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .analitica-toolbar-period {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.55rem;
+  }
+
+  .analitica-toolbar-period .filters {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.4rem;
+    width: 100%;
+  }
+
+  .analitica-toolbar-period .filters button {
+    width: 100%;
+    max-width: none;
+    flex: none;
+    min-height: 44px;
+  }
+
+  .analitica-toolbar-period .filters button:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+
+  .analitica-temp-field,
   .analitica-temp-field select {
     max-width: none;
     width: 100%;
@@ -1056,14 +1095,17 @@
     min-height: 44px;
   }
 
-  .analitica-toolbar .filters {
+  .analitica-toolbar > .filters {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 0.4rem;
+    width: 100%;
   }
 
-  .analitica-toolbar .filters button {
+  .analitica-toolbar > .filters button {
     width: 100%;
+    max-width: none;
+    flex: none;
     min-height: 44px;
   }
 
@@ -1103,7 +1145,7 @@
 /* Cuotas: tabla en escritorio, tarjetas en móvil y tablet */
 
 .cuotas-lead {
-  margin: 0.35rem 0 0;
+  margin: -0.75rem 0 1.15rem;
   max-width: 38rem;
   color: var(--muted);
   line-height: 1.45;

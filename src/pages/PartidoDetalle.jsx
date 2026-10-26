@@ -198,13 +198,14 @@ export default function PartidoDetalle() {
           </p>
           <h1>Ficha del partido</h1>
         </div>
-        <div className="add-player-actions">
-          <Link to="/partidos">
-            <button type="button" className="ghost">
-              Calendario
-            </button>
-          </Link>
-          {canWritePartidos && !closed && (
+        <Link className="page-back" to="/partidos">
+          <button type="button" className="ghost">
+            <IcoFlecha />
+            Volver
+          </button>
+        </Link>
+        {canWritePartidos && !closed && (
+          <div className="add-player-actions">
             <Link
               to={`/partidos/${id}/editar`}
               className="btn-icon-edit"
@@ -213,8 +214,8 @@ export default function PartidoDetalle() {
             >
               <IcoLapiz />
             </Link>
-          )}
-        </div>
+          </div>
+        )}
       </header>
 
       {error && <p className="error">{error}</p>}

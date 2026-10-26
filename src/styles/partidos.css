@@ -777,6 +777,23 @@
   margin-bottom: 0.65rem;
 }
 
+.conv-toolbar-end {
+  margin-left: auto;
+  flex: 0 0 auto;
+  white-space: nowrap;
+  background: var(--lime);
+  color: #0a0a0a;
+  border: 1px solid var(--lime);
+  border-radius: var(--radius-sm);
+  padding: 0.55rem 0.95rem;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.conv-toolbar-end:disabled {
+  opacity: 0.65;
+}
+
 .conv-badge,
 .conv-tab {
   border-radius: var(--radius-sm);
@@ -1570,31 +1587,33 @@ body.conv-pointer-dragging .conv-selected-row.drag-over {
   }
 }
 
-/* Convocatoria + campo: tablet */
+/* Convocatoria: en móvil/tablet las pestañas no estiran al 100% para dejar sitio a Guardar */
 @media (max-width: 1024px) {
   .conv-toolbar {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    display: flex;
+    flex-wrap: wrap;
     overflow: visible;
     gap: 0.45rem;
   }
 
   .conv-badge,
   .conv-tab {
-    width: 100%;
+    flex: 0 1 auto;
+    width: auto;
+    min-width: 0;
     min-height: 44px;
     margin: 0;
-    padding: 0.45rem 0.55rem;
+    padding: 0.45rem 0.7rem;
     font-size: 0.82rem;
     line-height: 1.2;
-    white-space: normal;
+    white-space: nowrap;
     text-align: center;
   }
-}
 
-@media (min-width: 641px) and (max-width: 1024px) {
-  .conv-toolbar {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+  .conv-toolbar-end {
+    margin-left: auto;
+    flex: 0 0 auto;
+    min-height: 44px;
   }
 }
 
@@ -2900,7 +2919,8 @@ body.conv-pointer-dragging .conv-selected-row.drag-over {
 }
 
 .match-cierre {
-  margin-bottom: 1rem;
+  margin-top: 1.15rem;
+  margin-bottom: 1.15rem;
 }
 
 .match-cierre-head {
@@ -3032,6 +3052,8 @@ body.conv-pointer-dragging .conv-selected-row.drag-over {
   display: flex;
   flex-direction: column;
   gap: 0.55rem;
+  margin-top: 1.15rem;
+  margin-bottom: 1.15rem;
 }
 
 .acta-stat-row {

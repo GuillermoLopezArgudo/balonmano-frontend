@@ -706,22 +706,6 @@ export default function Convocatoria() {
             Volver
           </button>
         </Link>
-        <div className="add-player-actions">
-          {canWriteConvocatoria && (dirty || estadoConv !== 'guardada') && (
-            <button
-              type="button"
-              disabled={saving || (!dirty && estadoConv === 'guardada')}
-              onClick={persist}
-            >
-              {saving ? 'Guardando…' : 'Guardar convocatoria'}
-            </button>
-          )}
-          {!canWriteConvocatoria && (
-            <button type="button" disabled>
-              Solo lectura
-            </button>
-          )}
-        </div>
       </header>
 
       <div className="conv-toolbar">
@@ -745,6 +729,21 @@ export default function Convocatoria() {
             {t.id === 'banquillo' ? ` ${banquillo.length}` : ''}
           </button>
         ))}
+        {canWriteConvocatoria && (dirty || estadoConv !== 'guardada') && (
+          <button
+            type="button"
+            className="conv-toolbar-end"
+            disabled={saving || (!dirty && estadoConv === 'guardada')}
+            onClick={persist}
+          >
+            {saving ? 'Guardando…' : 'Guardar convocatoria'}
+          </button>
+        )}
+        {!canWriteConvocatoria && (
+          <button type="button" className="conv-toolbar-end" disabled>
+            Solo lectura
+          </button>
+        )}
       </div>
 
       <p className="conv-status-line">

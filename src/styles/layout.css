@@ -294,6 +294,12 @@ a.volver-link svg {
   max-width: 100%;
 }
 
+.page-head .add-player-actions.page-head-actions-end {
+  justify-self: stretch;
+  width: 100%;
+  justify-content: flex-end;
+}
+
 .page-head h1 {
   margin: 0;
   font-family: var(--display);
