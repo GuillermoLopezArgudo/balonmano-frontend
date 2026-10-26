@@ -49,11 +49,39 @@
 
 .jugada-toolbar {
   display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-bottom: 0.9rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel-2);
+}
+
+.jugada-toolbar-row {
+  display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.75rem;
+  justify-content: flex-start;
+  gap: 0.65rem 1rem;
+}
+
+.jugada-tool-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.jugada-tool-label {
+  margin-right: 0.15rem;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .jugada-pasos,
@@ -70,10 +98,14 @@
   font-size: 0.8rem;
 }
 
-.jugada-modes .btn-seg,
-.jugada-modes .btn-play,
-.jugada-modes button.ghost {
-  min-height: 2.4rem;
+.jugada-tool-group .btn-seg,
+.jugada-tool-group .btn-play,
+.jugada-tool-group button.ghost {
+  min-height: 2.35rem;
+}
+
+.jugada-pasos .btn-play {
+  margin-left: 0.15rem;
 }
 
 .jugada-hint {
@@ -257,14 +289,20 @@
   }
 
   .jugada-toolbar {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.55rem;
     width: 100%;
     max-width: 100%;
     min-width: 0;
+    padding: 0.65rem 0.7rem;
+    gap: 0.75rem;
   }
 
+  .jugada-toolbar-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.55rem;
+  }
+
+  .jugada-tool-group,
   .jugada-pasos,
   .jugada-modes,
   .btn-seg-group {
@@ -274,16 +312,14 @@
   }
 
   .jugada-modes.btn-seg-group {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.4rem;
+    display: flex;
+    flex-wrap: wrap;
   }
 
-  .jugada-modes .btn-seg,
-  .jugada-modes .btn-play,
-  .jugada-modes button.ghost {
-    flex: unset;
-    width: 100%;
+  .jugada-tool-group .btn-seg,
+  .jugada-tool-group .btn-play,
+  .jugada-tool-group button.ghost {
+    flex: 1 1 calc(50% - 0.4rem);
     min-width: 0;
     max-width: 100%;
     justify-content: center;
@@ -292,10 +328,9 @@
     font-size: 0.78rem;
   }
 
-  .jugada-pasos {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.35rem;
+  .jugada-tool-label {
+    flex: 1 1 100%;
+    margin: 0 0 0.1rem;
   }
 
   .jugada-paso-chip,
@@ -371,7 +406,7 @@
   right: 0.55rem;
 }
 
-/* Campo completo entrenamiento (marcas) */
+/* Campo completo / media pista horizontal */
 .jugada-board.jugada-board-full {
   aspect-ratio: 2 / 1;
   min-height: min(56vw, 420px);
@@ -382,4 +417,9 @@
   grid-template-columns: none;
   grid-template-rows: none;
   gap: 0;
+}
+
+.jugada-board.jugada-board-media {
+  aspect-ratio: 1.15 / 1;
+  min-height: min(62vw, 460px);
 }

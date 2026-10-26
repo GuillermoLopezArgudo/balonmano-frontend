@@ -44,8 +44,24 @@ export default function CampoAlineacion({
       className={`hb-court hb-court-${fase}`}
       aria-label={`Campo de alineación ${fase}`}
     >
-      <div className="hb-court-mark hb-court-arc" aria-hidden="true" />
-      <div className="hb-court-mark hb-court-goal" aria-hidden="true" />
+      <svg
+        className="hb-court-marks-svg"
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+        aria-hidden="true"
+      >
+        <path
+          className="hb-court-line hb-court-line-9m"
+          d="M 8 98 Q 8 42 50 42 Q 92 42 92 98"
+          fill="none"
+        />
+        <path
+          className="hb-court-line hb-court-line-6m"
+          d="M 22 98 Q 22 58 50 58 Q 78 58 78 98"
+          fill="none"
+        />
+        <rect className="hb-court-line-goal" x="38" y="96.2" width="24" height="2.6" rx="0.4" />
+      </svg>
       <span className={`hb-fase-tag hb-fase-${fase}`}>
         {fase === 'defensa' ? 'Defensa' : 'Ataque'}
       </span>

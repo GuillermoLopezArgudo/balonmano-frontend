@@ -21,8 +21,10 @@ export default function ResumenPartido() {
   const [acciones, setAcciones] = useState([]);
   const [tipos, setTipos] = useState([]);
   const [error, setError] = useState('');
+  const [status, setStatus] = useState('');
+  const [closing, setClosing] = useState(false);
 
-  useEffect(() => {
+  const reload = () =>
     Promise.all([
       api.getPartidos(),
       api.getJugadores(),
@@ -30,21 +32,22 @@ export default function ResumenPartido() {
       api.getEstadisticasPorteros().catch(() => []),
       api.getAcciones(),
       api.getTiposAccion(),
-    ])
-      .then(([partidos, jugs, st, gk, acts, tips]) => {
-        const p = partidos.find((x) => x.id_partido === id) || null;
-        setPartido(p);
-        setJugadores(jugs);
-        setStats(st.filter((s) => s.id_partido === id));
-        setGkStats(gk.filter((s) => s.id_partido === id));
-        setAcciones(
-          acts
-            .filter((a) => a.id_partido === id)
-            .sort((a, b) => a.minuto - b.minuto || (a.segundo || 0) - (b.segundo || 0)),
-        );
-        setTipos(tips);
-      })
-      .catch((e) => setError(e.message));
+    ]).then(([partidos, jugs, st, gk, acts, tips]) => {
+      const p = partidos.find((x) => String(x.id_partido) === String(id)) || null;
+      setPartido(p);
+      setJugadores(jugs);
+      setStats(st.filter((s) => String(s.id_partido) === String(id)));
+      setGkStats(gk.filter((s) => String(s.id_partido) === String(id)));
+      setAcciones(
+        acts
+          .filter((a) => String(a.id_partido) === String(id))
+          .sort((a, b) => a.minuto - b.minuto || (a.segundo || 0) - (b.segundo || 0)),
+      );
+      setTipos(tips);
+    });
+
+  useEffect(() => {
+    reload().catch((e) => setError(e.message));
   }, [id]);
 
   const resumen = useMemo(() => {
@@ -125,10 +128,69 @@ export default function ResumenPartido() {
     window.print();
   };
 
-  if (error) return <p className="error">{error}</p>;
+  const marcarJugado = async () => {
+    if (!partido || partido.estado === 'jugado') return;
+    setClosing(true);
+    setError('');
+    setStatus('');
+    try {
+      await api.updatePartido(id, { estado: 'jugado' });
+      await reload();
+      setStatus('Partido marcado como jugado');
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setClosing(false);
+    }
+  };
+
+  const checklist = useMemo(() => {
+    if (!partido) return [];
+    const tieneMarcador =
+      (partido.goles_local != null || partido.goles_visitante != null) &&
+      !(partido.goles_local === 0 && partido.goles_visitante === 0 && !acciones.length);
+    return [
+      {
+        id: 'marcador',
+        ok: partido.goles_local != null && partido.goles_visitante != null,
+        label: 'Marcador registrado',
+        hint: tieneMarcador
+          ? `${partido.goles_local} – ${partido.goles_visitante}`
+          : 'Revisa el marcador en directo',
+      },
+      {
+        id: 'acciones',
+        ok: acciones.length > 0,
+        label: 'Acciones en el feed',
+        hint: acciones.length
+          ? `${acciones.length} registradas`
+          : 'Vuelve al directo y anota jugadas',
+      },
+      {
+        id: 'stats',
+        ok: porJugador.length > 0,
+        label: 'Stats de jugadoras',
+        hint: porJugador.length
+          ? `${porJugador.length} con participación`
+          : 'Sin participación todavía',
+      },
+      {
+        id: 'estado',
+        ok: partido.estado === 'jugado',
+        label: 'Estado: jugado',
+        hint:
+          partido.estado === 'jugado'
+            ? 'Cerrado en el calendario'
+            : `Ahora: ${partido.estado || 'programado'}`,
+      },
+    ];
+  }, [partido, acciones.length, porJugador.length]);
+
+  if (error && !partido) return <p className="error">{error}</p>;
   if (!partido) return <p className="muted">Cargando resumen…</p>;
 
   const tipoById = Object.fromEntries(tipos.map((t) => [t.id_tipo_accion, t.nombre]));
+  const pendientes = checklist.filter((c) => !c.ok).length;
 
   return (
     <div className="acta-print">
@@ -150,6 +212,55 @@ export default function ResumenPartido() {
           </button>
         </div>
       </header>
+
+      {error && <p className="error no-print">{error}</p>}
+      {status && <p className="club-status saved no-print">{status}</p>}
+
+      <section className="panel match-cierre no-print">
+        <div className="match-cierre-head">
+          <h2>Cierre del partido</h2>
+          <span className={pendientes ? 'match-cierre-badge warn' : 'match-cierre-badge ok'}>
+            {pendientes ? `${pendientes} pendiente${pendientes === 1 ? '' : 's'}` : 'Listo'}
+          </span>
+        </div>
+        <ul className="match-cierre-list">
+          {checklist.map((c) => (
+            <li key={c.id} className={c.ok ? 'is-ok' : 'is-pending'}>
+              <span className="match-cierre-check" aria-hidden="true">
+                {c.ok ? '✓' : '!'}
+              </span>
+              <div>
+                <strong>{c.label}</strong>
+                <small>{c.hint}</small>
+              </div>
+            </li>
+          ))}
+        </ul>
+        <div className="match-cierre-actions">
+          {partido.estado !== 'jugado' && (
+            <button type="button" disabled={closing} onClick={marcarJugado}>
+              {closing ? 'Cerrando…' : 'Marcar como jugado'}
+            </button>
+          )}
+          {!acciones.length && (
+            <Link to={`/partidos/${id}/directo`}>
+              <button type="button" className="ghost">
+                Seguir en directo
+              </button>
+            </Link>
+          )}
+          <Link to="/analitica">
+            <button type="button" className="ghost">
+              Ver analítica
+            </button>
+          </Link>
+          <Link to="/informes">
+            <button type="button" className="ghost">
+              Exportar informe
+            </button>
+          </Link>
+        </div>
+      </section>
 
       <section className="panel match-result-card">
         <div className="match-result-side">

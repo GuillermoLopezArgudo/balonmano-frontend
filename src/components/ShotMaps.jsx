@@ -97,6 +97,67 @@ export function HandballCourtMarks({ gradientId = 'court' }) {
   );
 }
 
+function heatFill(count, max) {
+  if (!count || !max) return '#163828';
+  const t = count / max;
+  const alpha = 0.22 + t * 0.78;
+  return `rgba(191, 255, 0, ${alpha.toFixed(2)})`;
+}
+
+/** Pista de solo lectura: más verde cuanto más se ha lanzado desde esa zona. */
+export function CourtHeatMap({ counts = {} }) {
+  const values = Object.values(counts);
+  const total = values.reduce((sum, n) => sum + n, 0);
+  const max = values.reduce((m, n) => Math.max(m, n), 0);
+  return (
+    <div className="shot-map shot-map-heat">
+      <div className="shot-map-head">
+        <strong>Origen · pista</strong>
+        <span>{total ? `${total} acción${total === 1 ? '' : 'es'}` : 'Sin actividad'}</span>
+      </div>
+      <svg
+        className="shot-map-svg court-map"
+        viewBox="0 0 200 118"
+        role="img"
+        aria-label="Mapa de actividad por zona"
+      >
+        <HandballCourtMarks gradientId="courtHeat" />
+        {PISTA_CELLS.map((c) => {
+          const n = counts[c.key] || 0;
+          const hot = max > 0 && n === max;
+          return (
+            <g key={c.key}>
+              <rect
+                x={c.x}
+                y={c.y}
+                width={c.w}
+                height={c.h}
+                rx="5"
+                className={`shot-map-cell shot-heat-cell${hot && n ? ' is-hot' : ''}`}
+                style={{ fill: heatFill(n, max) }}
+              />
+              <text
+                x={c.x + c.w / 2}
+                y={c.y + c.h / 2 + 0.5}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                className={`shot-map-label shot-heat-label${n / (max || 1) > 0.55 ? ' is-hot' : ''}`}
+              >
+                {n ? String(n) : PISTA_ZONAS.find((z) => z.key === c.key)?.short}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+      <p className="shot-heat-legend">
+        <span>Menos</span>
+        <i aria-hidden="true" />
+        <span>Más actividad</span>
+      </p>
+    </div>
+  );
+}
+
 export function CourtShotMap({
   value,
   onChange,

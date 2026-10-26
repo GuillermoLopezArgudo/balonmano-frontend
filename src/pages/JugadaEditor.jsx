@@ -38,9 +38,18 @@ function flechasPorEquipo(flechas, piezas) {
   return { atk, def };
 }
 
-const POSICIONES_CAMPO = ['EI', 'LI', 'CE', 'PI', 'LD', 'ED', 'PO'];
+function equipoPieza(pieza, fase) {
+  const et = String(pieza?.etiqueta || '');
+  if (et.startsWith('A-') || pieza?.color === COLOR_ATAQUE) return 'ataque';
+  if (et.startsWith('D-') || pieza?.color === COLOR_DEFENSA) return 'defensa';
+  return fase === 'defensa' ? 'defensa' : 'ataque';
+}
 
-function defaultPiezas(fase) {
+function slotsEquipo(fase, ambito, equipo) {
+  return defaultPiezas(fase, ambito).filter((r) => equipoPieza(r.pieza, fase) === equipo);
+}
+
+function defaultPiezas(fase, ambito = 'tactica') {
   // Campo completo: A-* atacan portería derecha; D-* la defienden (6-0).
   // Y=0 arriba. Atacante mirando a la derecha → EI arriba, ED abajo.
   const completo = [
@@ -59,24 +68,58 @@ function defaultPiezas(fase) {
     { etiqueta: 'D-LI', x: 78, y: 72, color: COLOR_DEFENSA },
     { etiqueta: 'D-EI', x: 82, y: 88, color: COLOR_DEFENSA },
   ];
+  // Media pista horizontal: de la línea central a la portería (como la mitad derecha del campo).
+  const media = [
+    { etiqueta: 'A-CE', x: 10, y: 50, color: COLOR_ATAQUE },
+    { etiqueta: 'A-LI', x: 22, y: 28, color: COLOR_ATAQUE },
+    { etiqueta: 'A-LD', x: 22, y: 72, color: COLOR_ATAQUE },
+    { etiqueta: 'A-EI', x: 36, y: 12, color: COLOR_ATAQUE },
+    { etiqueta: 'A-ED', x: 36, y: 88, color: COLOR_ATAQUE },
+    { etiqueta: 'A-PI', x: 58, y: 50, color: COLOR_ATAQUE },
+    { etiqueta: 'D-PO', x: 92, y: 50, color: COLOR_DEFENSA },
+    { etiqueta: 'D-ED', x: 74, y: 12, color: COLOR_DEFENSA },
+    { etiqueta: 'D-LD', x: 68, y: 28, color: COLOR_DEFENSA },
+    { etiqueta: 'D-CE', x: 62, y: 42, color: COLOR_DEFENSA },
+    { etiqueta: 'D-PI', x: 62, y: 58, color: COLOR_DEFENSA },
+    { etiqueta: 'D-LI', x: 68, y: 72, color: COLOR_DEFENSA },
+    { etiqueta: 'D-EI', x: 74, y: 88, color: COLOR_DEFENSA },
+  ];
+  // Posiciones medidas del tablero ancho (portería abajo).
+  // Atacantes siempre rojas, defensoras siempre azules.
   const atk = [
-    { etiqueta: 'CE', x: 50, y: 12 },
-    { etiqueta: 'LD', x: 28, y: 32 },
-    { etiqueta: 'LI', x: 72, y: 32 },
-    { etiqueta: 'PI', x: 50, y: 40 },
-    { etiqueta: 'ED', x: 14, y: 82 },
-    { etiqueta: 'EI', x: 86, y: 82 },
+    { etiqueta: 'CE', x: 50, y: 25, color: COLOR_ATAQUE },
+    { etiqueta: 'LD', x: 35, y: 28, color: COLOR_ATAQUE },
+    { etiqueta: 'LI', x: 62, y: 29, color: COLOR_ATAQUE },
+    { etiqueta: 'PI', x: 51, y: 50, color: COLOR_ATAQUE },
+    { etiqueta: 'ED', x: 16, y: 83, color: COLOR_ATAQUE },
+    { etiqueta: 'EI', x: 84, y: 85, color: COLOR_ATAQUE },
+    { etiqueta: 'D-PO', x: 50, y: 87, color: COLOR_DEFENSA },
+    { etiqueta: 'D-EI', x: 23, y: 68, color: COLOR_DEFENSA },
+    { etiqueta: 'D-LI', x: 35, y: 52, color: COLOR_DEFENSA },
+    { etiqueta: 'D-CE', x: 43, y: 51, color: COLOR_DEFENSA },
+    { etiqueta: 'D-PI', x: 54, y: 50, color: COLOR_DEFENSA },
+    { etiqueta: 'D-LD', x: 62, y: 52, color: COLOR_DEFENSA },
+    { etiqueta: 'D-ED', x: 72, y: 60, color: COLOR_DEFENSA },
   ];
   const def = [
-    { etiqueta: 'EI', x: 8, y: 78 },
-    { etiqueta: 'LI', x: 20, y: 55 },
-    { etiqueta: 'CE', x: 38, y: 42 },
-    { etiqueta: 'PI', x: 62, y: 42 },
-    { etiqueta: 'LD', x: 80, y: 55 },
-    { etiqueta: 'ED', x: 92, y: 78 },
-    { etiqueta: 'PO', x: 50, y: 92 },
+    { etiqueta: 'EI', x: 28, y: 62, color: COLOR_DEFENSA },
+    { etiqueta: 'LI', x: 36, y: 53, color: COLOR_DEFENSA },
+    { etiqueta: 'CE', x: 43, y: 50, color: COLOR_DEFENSA },
+    { etiqueta: 'PI', x: 53, y: 49, color: COLOR_DEFENSA },
+    { etiqueta: 'LD', x: 63, y: 52, color: COLOR_DEFENSA },
+    { etiqueta: 'ED', x: 74, y: 63, color: COLOR_DEFENSA },
+    { etiqueta: 'PO', x: 50, y: 81, color: COLOR_DEFENSA },
+    { etiqueta: 'A-CE', x: 50, y: 27, color: COLOR_ATAQUE },
+    { etiqueta: 'A-LD', x: 36, y: 30, color: COLOR_ATAQUE },
+    { etiqueta: 'A-LI', x: 65, y: 30, color: COLOR_ATAQUE },
+    { etiqueta: 'A-PI', x: 51, y: 50, color: COLOR_ATAQUE },
+    { etiqueta: 'A-ED', x: 15, y: 85, color: COLOR_ATAQUE },
+    { etiqueta: 'A-EI', x: 88, y: 85, color: COLOR_ATAQUE },
   ];
-  const base = fase === 'completo' ? completo : fase === 'defensa' ? def : atk;
+  let base;
+  if (fase === 'completo') base = completo;
+  else if (ambito === 'fisico') base = media;
+  else base = fase === 'defensa' ? def : atk;
   return base.map((p, i) => {
     const id = uid();
     return {
@@ -91,10 +134,15 @@ function defaultPiezas(fase) {
   });
 }
 
+/** Entrenamiento: el campo empieza vacío; las piezas se cargan con el botón. */
 function blankJugada(fase = 'ataque', ambito = 'tactica') {
-  const rows = defaultPiezas(fase);
-  const first = rows[0];
-  const esDefensa = fase === 'defensa';
+  const rows = ambito === 'fisico' ? [] : defaultPiezas(fase, ambito);
+  const portador =
+    fase === 'defensa' && ambito !== 'fisico'
+      ? rows.find((r) => r.pieza.color === COLOR_ATAQUE) ||
+        rows.find((r) => String(r.pieza.etiqueta).startsWith('A-'))
+      : rows[0];
+  const sinBalon = !portador;
   return {
     nombre: '',
     fase,
@@ -108,9 +156,9 @@ function blankJugada(fase = 'ataque', ambito = 'tactica') {
         titulo: 'Inicio',
         posiciones: rows.map((r) => r.pos),
         flechas: [],
-        balon_x: esDefensa ? null : first.pos.x,
-        balon_y: esDefensa ? null : first.pos.y,
-        id_pieza_balon: esDefensa ? null : first.pieza.id_pieza,
+        balon_x: sinBalon ? null : portador.pos.x,
+        balon_y: sinBalon ? null : portador.pos.y,
+        id_pieza_balon: sinBalon ? null : portador.pieza.id_pieza,
       },
     ],
   };
@@ -262,7 +310,6 @@ function snapshotPlayParallel(paso, actionIdx, t, atkFlechas, defFlechas) {
 }
 
 function fromApi(data) {
-  const esDefensa = data.fase === 'defensa';
   return {
     id_jugada: data.id_jugada,
     nombre: data.nombre,
@@ -274,9 +321,9 @@ function fromApi(data) {
       id_paso: paso.id_paso,
       orden: paso.orden,
       titulo: paso.titulo || '',
-      balon_x: esDefensa ? null : paso.balon_x ?? null,
-      balon_y: esDefensa ? null : paso.balon_y ?? null,
-      id_pieza_balon: esDefensa ? null : paso.id_pieza_balon ?? null,
+      balon_x: paso.balon_x ?? null,
+      balon_y: paso.balon_y ?? null,
+      id_pieza_balon: paso.id_pieza_balon ?? null,
       posiciones: (paso.posiciones || []).map((pos) => ({ ...pos })),
       flechas: (paso.flechas || []).map((f) => ({
         id_flecha: f.id_flecha || uid(),
@@ -293,7 +340,6 @@ function fromApi(data) {
 }
 
 function toPayload(state) {
-  const esDefensa = state.fase === 'defensa';
   return {
     nombre: state.nombre.trim(),
     fase: state.fase,
@@ -310,9 +356,9 @@ function toPayload(state) {
       id_paso: paso.id_paso,
       orden: i,
       titulo: paso.titulo || null,
-      balon_x: esDefensa ? null : paso.balon_x,
-      balon_y: esDefensa ? null : paso.balon_y,
-      id_pieza_balon: esDefensa ? null : paso.id_pieza_balon,
+      balon_x: paso.balon_x,
+      balon_y: paso.balon_y,
+      id_pieza_balon: paso.id_pieza_balon,
       posiciones: paso.posiciones,
       flechas: paso.flechas.map((f) => ({
         id_pieza: f.id_pieza,
@@ -336,7 +382,7 @@ export default function JugadaEditor({ variant = 'jugada' }) {
   const canWrite = isEntrenamiento ? canWriteFisico : canWriteJugadas;
 
   const [state, setState] = useState(() =>
-    blankJugada(isEntrenamiento ? 'completo' : 'ataque', isEntrenamiento ? 'fisico' : 'tactica'),
+    blankJugada('ataque', isEntrenamiento ? 'fisico' : 'tactica'),
   );
   const [pasoIdx, setPasoIdx] = useState(0);
   const [modo, setModo] = useState('mover'); // mover | flecha | pase | lanzar
@@ -382,16 +428,37 @@ export default function JugadaEditor({ variant = 'jugada' }) {
   const paso = state.pasos[pasoIdx] || state.pasos[0];
   const nextPaso = state.pasos[pasoIdx + 1];
   const esCompleto = state.fase === 'completo';
+  // Entrenamiento en media pista: misma vista horizontal que el completo, solo mitad.
+  const esMediaPista = isEntrenamiento && !esCompleto;
+  const esCampoHorizontal = esCompleto || esMediaPista;
+  const cupo = useMemo(() => {
+    const usadas = (equipo) =>
+      new Set(
+        state.piezas
+          .filter((p) => equipoPieza(p, state.fase) === equipo)
+          .map((p) => p.etiqueta),
+      );
+    const atk = usadas('ataque');
+    const def = usadas('defensa');
+    return {
+      puedeAtk: slotsEquipo(state.fase, state.ambito, 'ataque').some(
+        (r) => !atk.has(r.pieza.etiqueta),
+      ),
+      puedeDef: slotsEquipo(state.fase, state.ambito, 'defensa').some(
+        (r) => !def.has(r.pieza.etiqueta),
+      ),
+    };
+  }, [state.fase, state.ambito, state.piezas]);
 
   const playTracks = useMemo(() => {
     if (!paso) return { atk: [], def: [], max: 0, flat: [] };
-    if (esCompleto) {
+    if (esCampoHorizontal) {
       const { atk, def } = flechasPorEquipo(paso.flechas, state.piezas);
       return { atk, def, max: Math.max(atk.length, def.length), flat: [...atk, ...def] };
     }
     const flat = paso.flechas || [];
     return { atk: flat, def: [], max: flat.length, flat };
-  }, [paso, esCompleto, state.piezas]);
+  }, [paso, esCampoHorizontal, state.piezas]);
 
   const posMap = useMemo(() => {
     const map = {};
@@ -402,13 +469,13 @@ export default function JugadaEditor({ variant = 'jugada' }) {
   const playSnap = useMemo(() => {
     if (!playing || !paso) return null;
     if (playPhase === 'action') {
-      if (esCompleto) {
+      if (esCampoHorizontal) {
         return snapshotPlayParallel(paso, playActionIdx, playT, playTracks.atk, playTracks.def);
       }
       return snapshotPlay(paso, playActionIdx, playT, playTracks.flat);
     }
     if (playPhase === 'between') {
-      if (esCompleto) {
+      if (esCampoHorizontal) {
         return snapshotPlayParallel(
           paso,
           playTracks.max,
@@ -420,7 +487,7 @@ export default function JugadaEditor({ variant = 'jugada' }) {
       return snapshotPlay(paso, playTracks.flat.length, 1, playTracks.flat);
     }
     return null;
-  }, [playing, paso, playPhase, playActionIdx, playT, playTracks, esCompleto]);
+  }, [playing, paso, playPhase, playActionIdx, playT, playTracks, esCampoHorizontal]);
 
   const displayPos = useCallback(
     (piezaId) => {
@@ -549,7 +616,7 @@ export default function JugadaEditor({ variant = 'jugada' }) {
     const BETWEEN_MS = 700;
     const pasos = state.pasos;
     const piezas = state.piezas;
-    const paralelo = state.fase === 'completo';
+    const paralelo = state.fase === 'completo' || state.ambito === 'fisico';
 
     const maxAcciones = (p) => {
       if (!paralelo) return (p?.flechas || []).length;
@@ -954,35 +1021,28 @@ export default function JugadaEditor({ variant = 'jugada' }) {
     setPasoIdx((i) => Math.max(0, Math.min(i, state.pasos.length - 2)));
   };
 
-  const addPieza = (equipoColor) => {
+  const addPieza = (equipo) => {
+    const lado = equipo === 'defensa' ? 'defensa' : 'ataque';
+    const usadas = new Set(
+      state.piezas
+        .filter((p) => equipoPieza(p, state.fase) === lado)
+        .map((p) => p.etiqueta),
+    );
+    const libre = slotsEquipo(state.fase, state.ambito, lado).find(
+      (r) => !usadas.has(r.pieza.etiqueta),
+    );
+    if (!libre) return;
     stopPlay();
     clearFrozen();
     const idPieza = uid();
-    const esCompleto = state.fase === 'completo';
-    let color = COLORS[state.piezas.length % COLORS.length];
-    let etiqueta = `P${state.piezas.length + 1}`;
-    if (esCompleto) {
-      const esAtk =
-        equipoColor === 'ataque' ||
-        (equipoColor !== 'defensa' &&
-          state.piezas.filter((p) => p.color === COLOR_ATAQUE).length <=
-            state.piezas.filter((p) => p.color === COLOR_DEFENSA).length);
-      color = esAtk ? COLOR_ATAQUE : COLOR_DEFENSA;
-      const pref = esAtk ? 'A-' : 'D-';
-      const usadas = new Set(
-        state.piezas.filter((p) => p.color === color).map((p) => p.etiqueta),
-      );
-      const libre = POSICIONES_CAMPO.find((pos) => !usadas.has(`${pref}${pos}`));
-      etiqueta = libre ? `${pref}${libre}` : `${pref}${state.piezas.filter((p) => p.color === color).length + 1}`;
-    }
     setState((prev) => ({
       ...prev,
       piezas: [
         ...prev.piezas,
         {
           id_pieza: idPieza,
-          etiqueta,
-          color,
+          etiqueta: libre.pieza.etiqueta,
+          color: libre.pieza.color,
           orden: prev.piezas.length,
         },
       ],
@@ -990,11 +1050,7 @@ export default function JugadaEditor({ variant = 'jugada' }) {
         ...p,
         posiciones: [
           ...p.posiciones,
-          {
-            id_pieza: idPieza,
-            x: esCompleto ? (color === COLOR_ATAQUE ? 30 : 70) : 50,
-            y: 50,
-          },
+          { id_pieza: idPieza, x: libre.pos.x, y: libre.pos.y },
         ],
       })),
     }));
@@ -1015,13 +1071,62 @@ export default function JugadaEditor({ variant = 'jugada' }) {
     }));
   };
 
+  const ponerTodasJugadoras = () => {
+    if (!isEntrenamiento || !canWrite) return;
+    if (
+      state.piezas.length &&
+      !window.confirm('¿Sustituir las piezas actuales por todas las jugadoras de esta pista?')
+    ) {
+      return;
+    }
+    stopPlay();
+    clearFrozen();
+    cancelPending();
+    const rows = defaultPiezas(state.fase, 'fisico');
+    const first = rows[0];
+    setState((prev) => ({
+      ...prev,
+      piezas: rows.map((r) => r.pieza),
+      pasos: prev.pasos.map((paso, i) => ({
+        ...paso,
+        posiciones: rows.map((r) => ({ ...r.pos })),
+        flechas: i === 0 ? [] : paso.flechas,
+        balon_x: first ? first.pos.x : null,
+        balon_y: first ? first.pos.y : null,
+        id_pieza_balon: first ? first.pieza.id_pieza : null,
+      })),
+    }));
+    setPasoIdx(0);
+  };
+
+  const quitarTodasJugadoras = () => {
+    if (!isEntrenamiento || !canWrite || !state.piezas.length) return;
+    if (!window.confirm('¿Quitar todas las jugadoras del campo?')) return;
+    stopPlay();
+    clearFrozen();
+    cancelPending();
+    setState((prev) => ({
+      ...prev,
+      piezas: [],
+      pasos: prev.pasos.map((paso) => ({
+        ...paso,
+        posiciones: [],
+        flechas: [],
+        balon_x: null,
+        balon_y: null,
+        id_pieza_balon: null,
+      })),
+    }));
+    setPasoIdx(0);
+  };
+
   const changeFase = (fase) => {
     if (!isNew && !window.confirm('Cambiar fase reinicia las piezas del campo. ¿Continuar?')) {
       return;
     }
     stopPlay();
     clearFrozen();
-    const blank = blankJugada(fase);
+    const blank = blankJugada(fase, state.ambito);
     setState((prev) => ({
       ...prev,
       fase,
@@ -1081,8 +1186,36 @@ export default function JugadaEditor({ variant = 'jugada' }) {
     );
   }
 
-  const faseLabel =
-    state.fase === 'defensa' ? 'Defensa' : state.fase === 'completo' ? 'Campo completo' : 'Ataque';
+  const faseLabel = esCompleto
+    ? 'Campo completo'
+    : esMediaPista
+      ? 'Media pista'
+      : state.fase === 'defensa'
+        ? 'Defensa'
+        : 'Ataque';
+
+  const botonesEquipo = (
+    <>
+      <button
+        type="button"
+        className="ghost"
+        disabled={playing || !cupo.puedeAtk}
+        onClick={() => addPieza('ataque')}
+        title={cupo.puedeAtk ? 'Añadir atacante' : 'Ya están todas las atacantes'}
+      >
+        + Atacante
+      </button>
+      <button
+        type="button"
+        className="ghost"
+        disabled={playing || !cupo.puedeDef}
+        onClick={() => addPieza('defensa')}
+        title={cupo.puedeDef ? 'Añadir defensora' : 'Ya están todas las defensoras'}
+      >
+        + Defensora
+      </button>
+    </>
+  );
 
   return (
     <>
@@ -1135,26 +1268,31 @@ export default function JugadaEditor({ variant = 'jugada' }) {
             value={state.nombre}
             onChange={(e) => setState((s) => ({ ...s, nombre: e.target.value }))}
             placeholder={
-              isEntrenamiento ? 'Ej. Posesión 4×4 campo completo' : 'Ej. Cruce por 1.ª'
+              isEntrenamiento ? 'Ej. Posesión 4×4 o cruce en media pista' : 'Ej. Cruce por 1.ª'
             }
             maxLength={120}
           />
         </div>
-        {!isEntrenamiento && (
-          <div className="field">
-            <label>Fase</label>
-            <select value={state.fase} onChange={(e) => changeFase(e.target.value)}>
-              <option value="ataque">Ataque</option>
-              <option value="defensa">Defensa</option>
-            </select>
-          </div>
-        )}
-        {isEntrenamiento && (
-          <div className="field">
-            <label>Campo</label>
-            <input value="Completo (40×20)" disabled readOnly />
-          </div>
-        )}
+        <div className="field">
+          <label>{isEntrenamiento ? 'Campo' : 'Fase'}</label>
+          <select
+            value={state.fase}
+            onChange={(e) => changeFase(e.target.value)}
+            disabled={!canWrite}
+          >
+            {isEntrenamiento ? (
+              <>
+                <option value="ataque">Media pista</option>
+                <option value="completo">Campo completo</option>
+              </>
+            ) : (
+              <>
+                <option value="ataque">Ataque</option>
+                <option value="defensa">Defensa</option>
+              </>
+            )}
+          </select>
+        </div>
         <div className="field jugada-desc-field">
           <label>Notas</label>
           <input
@@ -1167,140 +1305,158 @@ export default function JugadaEditor({ variant = 'jugada' }) {
       </div>
 
       <div className="jugada-toolbar">
-        <div className="jugada-pasos">
-          {state.pasos.map((p, i) => (
+        <div className="jugada-toolbar-row">
+          <div className="jugada-tool-group jugada-pasos" aria-label="Pasos">
+            <span className="jugada-tool-label">Pasos</span>
+            {state.pasos.map((p, i) => (
+              <button
+                type="button"
+                key={p.id_paso}
+                className={`btn-seg jugada-paso-chip${i === pasoIdx ? ' active' : ''}`}
+                onClick={() => {
+                  stopPlay();
+                  clearFrozen();
+                  setPasoIdx(i);
+                  setSelectedFlechaId(null);
+                  setFlechaPieza(null);
+                  setPaseFrom(null);
+                }}
+              >
+                {i + 1}
+                {p.titulo ? ` · ${p.titulo}` : ''}
+              </button>
+            ))}
+            <button type="button" className="ghost" onClick={addPaso}>
+              + Paso
+            </button>
             <button
               type="button"
-              key={p.id_paso}
-              className={`btn-seg jugada-paso-chip${i === pasoIdx ? ' active' : ''}`}
+              className="ghost danger"
+              disabled={state.pasos.length <= 1}
+              onClick={removePaso}
+            >
+              − Paso
+            </button>
+            {!playing ? (
+              <button type="button" className="btn-play" onClick={play}>
+                ▶ Play
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="ghost"
+                onClick={() => {
+                  stopPlay();
+                  clearFrozen();
+                }}
+              >
+                ■ Stop
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="jugada-toolbar-row">
+          <div
+            className="jugada-tool-group jugada-modes btn-seg-group"
+            role="group"
+            aria-label="Modo de edición"
+          >
+            <span className="jugada-tool-label">Acción</span>
+            <button
+              type="button"
+              className={`btn-seg${modo === 'mover' ? ' active' : ''}`}
               onClick={() => {
-                stopPlay();
-                clearFrozen();
-                setPasoIdx(i);
-                setSelectedFlechaId(null);
+                setModo('mover');
                 setFlechaPieza(null);
                 setPaseFrom(null);
               }}
             >
-              {i + 1}
-              {p.titulo ? ` · ${p.titulo}` : ''}
+              Mover
             </button>
-          ))}
-          <button type="button" className="ghost" onClick={addPaso}>
-            + Paso
-          </button>
-          <button
-            type="button"
-            className="ghost danger"
-            disabled={state.pasos.length <= 1}
-            onClick={removePaso}
-          >
-            − Paso
-          </button>
-        </div>
-        <div className="jugada-modes btn-seg-group" role="group" aria-label="Modo de edición">
-          <button
-            type="button"
-            className={`btn-seg${modo === 'mover' ? ' active' : ''}`}
-            onClick={() => {
-              setModo('mover');
-              setFlechaPieza(null);
-              setPaseFrom(null);
-            }}
-          >
-            Mover
-          </button>
-          <button
-            type="button"
-            className={`btn-seg${modo === 'flecha' ? ' active' : ''}`}
-            onClick={() => {
-              setModo('flecha');
-              setPaseFrom(null);
-              setFlechaPieza(null);
-            }}
-          >
-            Desmarque
-          </button>
-          {state.fase !== 'defensa' && (
-            <>
-              <button
-                type="button"
-                className={`btn-seg${modo === 'pase' ? ' active' : ''}`}
-                onClick={() => {
-                  setModo('pase');
-                  setFlechaPieza(null);
-                }}
-              >
-                Pase
-              </button>
-              <button
-                type="button"
-                className={`btn-seg${modo === 'lanzar' ? ' active' : ''}`}
-                onClick={() => {
-                  setModo('lanzar');
-                  setPaseFrom(null);
-                  setFlechaPieza(null);
-                }}
-              >
-                Lanzar
-              </button>
-            </>
-          )}
-          {isEntrenamiento ? (
-            <>
-              <button
-                type="button"
-                className="ghost"
-                onClick={() => addPieza('ataque')}
-                title="Añadir atacante (roja)"
-              >
-                + Atacante
-              </button>
-              <button
-                type="button"
-                className="ghost"
-                onClick={() => addPieza('defensa')}
-                title="Añadir defensora (azul)"
-              >
-                + Defensora
-              </button>
-            </>
-          ) : (
-            <button type="button" className="ghost" onClick={() => addPieza()}>
-              + Pieza
-            </button>
-          )}
-          <button
-            type="button"
-            className="ghost danger"
-            disabled={playing || !(paso?.flechas || []).length}
-            onClick={removeLastFlecha}
-            title="Elimina la última línea del paso (pase, desmarque o lanzamiento)"
-          >
-            Quitar línea
-          </button>
-          {(flechaPieza || paseFrom) && (
-            <button type="button" className="ghost" onClick={cancelPending}>
-              Cancelar
-            </button>
-          )}
-          {!playing ? (
-            <button type="button" className="btn-play" onClick={play}>
-              ▶ Play
-            </button>
-          ) : (
             <button
               type="button"
-              className="ghost"
+              className={`btn-seg${modo === 'flecha' ? ' active' : ''}`}
               onClick={() => {
-                stopPlay();
-                clearFrozen();
+                setModo('flecha');
+                setPaseFrom(null);
+                setFlechaPieza(null);
               }}
             >
-              ■ Stop
+              Desmarque
             </button>
-          )}
+            {(state.fase !== 'defensa' || esMediaPista || !isEntrenamiento) && (
+              <>
+                <button
+                  type="button"
+                  className={`btn-seg${modo === 'pase' ? ' active' : ''}`}
+                  onClick={() => {
+                    setModo('pase');
+                    setFlechaPieza(null);
+                  }}
+                >
+                  Pase
+                </button>
+                <button
+                  type="button"
+                  className={`btn-seg${modo === 'lanzar' ? ' active' : ''}`}
+                  onClick={() => {
+                    setModo('lanzar');
+                    setPaseFrom(null);
+                    setFlechaPieza(null);
+                  }}
+                >
+                  Lanzar
+                </button>
+              </>
+            )}
+            <button
+              type="button"
+              className="ghost danger"
+              disabled={playing || !(paso?.flechas || []).length}
+              onClick={removeLastFlecha}
+              title="Elimina la última línea del paso (pase, desmarque o lanzamiento)"
+            >
+              Quitar línea
+            </button>
+            {(flechaPieza || paseFrom) && (
+              <button type="button" className="ghost" onClick={cancelPending}>
+                Cancelar
+              </button>
+            )}
+            {!isEntrenamiento && botonesEquipo}
+          </div>
         </div>
+
+        {isEntrenamiento && (
+          <div className="jugada-toolbar-row">
+            <div className="jugada-tool-group" aria-label="Jugadoras">
+              <span className="jugada-tool-label">Jugadoras</span>
+              <button
+                type="button"
+                className="ghost"
+                onClick={ponerTodasJugadoras}
+                title={
+                  esCompleto
+                    ? 'Colocar las 14 jugadoras en campo completo'
+                    : 'Colocar las jugadoras en media pista'
+                }
+              >
+                Poner todas
+              </button>
+              <button
+                type="button"
+                className="ghost danger"
+                disabled={!state.piezas.length}
+                onClick={quitarTodasJugadoras}
+                title="Quitar todas las jugadoras del campo"
+              >
+                Quitar todas
+              </button>
+              {botonesEquipo}
+            </div>
+          </div>
+        )}
       </div>
 
       {modo === 'flecha' && (
@@ -1351,13 +1507,15 @@ export default function JugadaEditor({ variant = 'jugada' }) {
         </p>
       )}
 
-      <div className={`jugada-board-wrap panel club-card${isEntrenamiento ? ' jugada-board-wrap-full' : ''}`}>
+      <div
+        className={`jugada-board-wrap panel club-card${esCampoHorizontal ? ' jugada-board-wrap-full' : ''}`}
+      >
         <div
           ref={boardRef}
-          className={`hb-court hb-court-${state.fase} jugada-board${isEntrenamiento ? ' jugada-board-full' : ''}`}
+          className={`hb-court ${esMediaPista ? 'hb-court-media' : `hb-court-${state.fase}`} jugada-board${esCampoHorizontal ? ' jugada-board-full' : ''}${esMediaPista ? ' jugada-board-media' : ''}`}
           onClick={onBoardClick}
         >
-          {state.fase === 'completo' ? (
+          {esCompleto ? (
             <>
               <div className="hb-full-mark hb-full-border" aria-hidden="true" />
               <div className="hb-full-mark hb-full-center-line" aria-hidden="true" />
@@ -1369,13 +1527,39 @@ export default function JugadaEditor({ variant = 'jugada' }) {
               <div className="hb-full-mark hb-full-6m hb-full-6m-l" aria-hidden="true" />
               <div className="hb-full-mark hb-full-6m hb-full-6m-r" aria-hidden="true" />
             </>
-          ) : (
+          ) : esMediaPista ? (
             <>
-              <div className="hb-court-mark hb-court-arc" aria-hidden="true" />
-              <div className="hb-court-mark hb-court-goal" aria-hidden="true" />
+              <div className="hb-full-mark hb-full-border" aria-hidden="true" />
+              <div className="hb-full-mark hb-half-center-line" aria-hidden="true" />
+              <div className="hb-full-mark hb-half-center-circle" aria-hidden="true" />
+              <div className="hb-full-mark hb-full-goal hb-full-goal-r" aria-hidden="true" />
+              <div className="hb-full-mark hb-full-arc hb-full-arc-r" aria-hidden="true" />
+              <div className="hb-full-mark hb-full-6m hb-full-6m-r" aria-hidden="true" />
             </>
+          ) : (
+            <svg
+              className="hb-court-marks-svg"
+              viewBox="0 0 100 100"
+              preserveAspectRatio="none"
+              aria-hidden="true"
+            >
+              {/* Portería abajo, tablero ancho: 9 m (discontinua) y 6 m */}
+              <path
+                className="hb-court-line hb-court-line-9m"
+                d="M 8 98 Q 8 42 50 42 Q 92 42 92 98"
+                fill="none"
+              />
+              <path
+                className="hb-court-line hb-court-line-6m"
+                d="M 22 98 Q 22 58 50 58 Q 78 58 78 98"
+                fill="none"
+              />
+              <rect className="hb-court-line-goal" x="38" y="96.2" width="24" height="2.6" rx="0.4" />
+            </svg>
           )}
-          <span className={`hb-fase-tag hb-fase-${state.fase}`}>{faseLabel}</span>
+          <span className={`hb-fase-tag ${esMediaPista ? 'hb-fase-ataque' : `hb-fase-${state.fase}`}`}>
+            {faseLabel}
+          </span>
 
           <svg className="jugada-arrows" viewBox="0 0 100 100" preserveAspectRatio="none">
             <defs>
@@ -1481,12 +1665,11 @@ export default function JugadaEditor({ variant = 'jugada' }) {
             const selected =
               flechaPieza === pieza.id_pieza || paseFrom === pieza.id_pieza;
             const tieneBalon =
-              state.fase !== 'defensa' &&
-              (playing && playSnap
+              playing && playSnap
                 ? playSnap.ballOwner === pieza.id_pieza
                 : !playing && frozenSnap
                   ? frozenSnap.ballOwner === pieza.id_pieza
-                  : paso?.id_pieza_balon === pieza.id_pieza);
+                  : paso?.id_pieza_balon === pieza.id_pieza;
             return (
               <div
                 key={pieza.id_pieza}
@@ -1516,14 +1699,12 @@ export default function JugadaEditor({ variant = 'jugada' }) {
             );
           })}
 
-          {state.fase !== 'defensa' && (
-            <div
-              className={`jugada-ball${modo === 'mover' ? ' movable' : ''}`}
-              style={{ left: `${displayBall.x}%`, top: `${displayBall.y}%` }}
-              onPointerDown={onPointerDownBall}
-              title="Balón"
-            />
-          )}
+          <div
+            className={`jugada-ball${modo === 'mover' ? ' movable' : ''}`}
+            style={{ left: `${displayBall.x}%`, top: `${displayBall.y}%` }}
+            onPointerDown={onPointerDownBall}
+            title="Balón"
+          />
         </div>
       </div>
     </>

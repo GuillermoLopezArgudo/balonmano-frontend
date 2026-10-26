@@ -115,6 +115,7 @@ export default function Analitica() {
   const [jugadores, setJugadores] = useState([]);
   const [filtro, setFiltro] = useState('temporada');
   const [zoneTab, setZoneTab] = useState('paradas');
+  const [rivalSel, setRivalSel] = useState('');
   const [error, setError] = useState('');
 
   useAbortable(async ({ signal, alive }) => {
@@ -259,19 +260,71 @@ export default function Analitica() {
 
   const evolucion = useMemo(() => {
     return jugados.map((p) => {
-      const goles =
-        p.id_equipo_local === myId ? p.goles_local || 0 : p.goles_visitante || 0;
+      const local = p.id_equipo_local === myId;
+      const gf = local ? p.goles_local || 0 : p.goles_visitante || 0;
+      const gc = local ? p.goles_visitante || 0 : p.goles_local || 0;
+      const diff = gf - gc;
       return {
         id: p.id_partido,
         label: p.jornada ? String(p.jornada) : new Date(p.fecha).getDate(),
-        goles,
+        goles: gf,
+        gf,
+        gc,
+        diff,
+        resultado: diff > 0 ? 'V' : diff < 0 ? 'D' : 'E',
         rival:
-          p.id_equipo_local === myId ? p.equipo_visitante_nombre : p.equipo_local_nombre,
+          local ? p.equipo_visitante_nombre : p.equipo_local_nombre,
       };
     });
   }, [jugados, myId]);
 
-  const maxGoles = Math.max(1, ...evolucion.map((e) => e.goles), 1);
+  const maxGoles = Math.max(
+    1,
+    ...evolucion.flatMap((e) => [e.gf, e.gc]),
+    1,
+  );
+
+  const rivalesOpts = useMemo(() => {
+    const map = new Map();
+    for (const e of evolucion) {
+      const name = (e.rival || '').trim();
+      if (!name) continue;
+      map.set(name, (map.get(name) || 0) + 1);
+    }
+    return [...map.entries()]
+      .map(([nombre, n]) => ({ nombre, n }))
+      .sort((a, b) => b.n - a.n || a.nombre.localeCompare(b.nombre, 'es'));
+  }, [evolucion]);
+
+  const vsRival = useMemo(() => {
+    if (!rivalSel) return null;
+    const matches = evolucion.filter((e) => e.rival === rivalSel);
+    if (!matches.length) return null;
+    let v = 0;
+    let e = 0;
+    let d = 0;
+    let gf = 0;
+    let gc = 0;
+    for (const m of matches) {
+      gf += m.gf;
+      gc += m.gc;
+      if (m.resultado === 'V') v += 1;
+      else if (m.resultado === 'D') d += 1;
+      else e += 1;
+    }
+    return {
+      partidos: matches.length,
+      v,
+      e,
+      d,
+      gf,
+      gc,
+      diff: gf - gc,
+      gfAvg: gf / matches.length,
+      gcAvg: gc / matches.length,
+      matches: [...matches].reverse(),
+    };
+  }, [evolucion, rivalSel]);
 
   const temporada =
     jugados[0]?.temporada_nombre ||
@@ -367,7 +420,7 @@ export default function Analitica() {
               year: 'numeric',
             })
           : '—';
-        return `<tr><td>${escHtml(fecha)}</td><td>${escHtml(e.label)}</td><td>${escHtml(e.rival || '—')}</td><td>${e.goles}</td></tr>`;
+        return `<tr><td>${escHtml(fecha)}</td><td>${escHtml(e.label)}</td><td>${escHtml(e.rival || '—')}</td><td>${e.gf}</td><td>${e.gc}</td><td>${e.diff >= 0 ? '+' : ''}${e.diff}</td><td>${e.resultado}</td></tr>`;
       })
       .join('');
 
@@ -388,8 +441,8 @@ export default function Analitica() {
       <table><thead><tr><th>Posición</th><th>Efectividad</th></tr></thead>
       <tbody>${posRows || '<tr><td colspan="2">Sin datos por posición</td></tr>'}</tbody></table>
       <h2>Evolución de goles por partido</h2>
-      <table><thead><tr><th>Fecha</th><th>Jor.</th><th>Rival</th><th>Goles</th></tr></thead>
-      <tbody>${evoRows || '<tr><td colspan="4">Sin partidos finalizados</td></tr>'}</tbody></table>
+      <table><thead><tr><th>Fecha</th><th>Jor.</th><th>Rival</th><th>GF</th><th>GC</th><th>Diff</th><th>Res.</th></tr></thead>
+      <tbody>${evoRows || '<tr><td colspan="7">Sin partidos finalizados</td></tr>'}</tbody></table>
       <p class="muted no-print" style="margin-top:1.5rem">SIETE · Usa «Guardar como PDF» en el diálogo de impresión</p>`;
 
     try {
@@ -495,30 +548,135 @@ export default function Analitica() {
           </section>
 
           <section className="panel forma-panel">
-            <h2>Evolución de goles por partido</h2>
+            <div className="forma-panel-head">
+              <h2>Evolución de goles por partido</h2>
+              {!!evolucion.length && (
+                <div className="analitica-bars-legend" aria-hidden="true">
+                  <span>
+                    <i className="analitica-dot gf" /> GF
+                  </span>
+                  <span>
+                    <i className="analitica-dot gc" /> GC
+                  </span>
+                </div>
+              )}
+            </div>
             {evolucion.length ? (
               <div className="analitica-bars">
                 {evolucion.map((e) => (
                   <div
-                    className="analitica-bar"
+                    className={`analitica-bar result-${e.resultado}`}
                     key={e.id}
-                    title={`${e.rival}: ${e.goles}`}
+                    title={`${e.rival}: ${e.gf}-${e.gc} (${e.diff >= 0 ? '+' : ''}${e.diff})`}
                   >
-                    <span className="analitica-bar-val">{e.goles}</span>
-                    <div className="analitica-bar-track">
+                    <span className="analitica-bar-val">
+                      {e.gf}-{e.gc}
+                    </span>
+                    <div className="analitica-bar-track analitica-bar-pair">
                       <div
-                        className="analitica-bar-fill"
+                        className="analitica-bar-fill gf"
                         style={{
-                          height: `${Math.max(10, (e.goles / maxGoles) * 100)}%`,
+                          height: `${Math.max(8, (e.gf / maxGoles) * 100)}%`,
+                        }}
+                      />
+                      <div
+                        className="analitica-bar-fill gc"
+                        style={{
+                          height: `${Math.max(8, (e.gc / maxGoles) * 100)}%`,
                         }}
                       />
                     </div>
+                    <span className="analitica-bar-diff">
+                      {e.diff > 0 ? `+${e.diff}` : e.diff}
+                    </span>
                     <span className="analitica-bar-label">{e.label}</span>
                   </div>
                 ))}
               </div>
             ) : (
               <p className="muted">Sin partidos finalizados todavía</p>
+            )}
+          </section>
+
+          <section className="panel forma-panel">
+            <div className="forma-panel-head">
+              <h2>Comparativa vs rival</h2>
+              {!!rivalesOpts.length && (
+                <label className="analitica-rival-pick">
+                  <span className="sr-only">Rival</span>
+                  <select
+                    value={
+                      rivalesOpts.some((r) => r.nombre === rivalSel) ? rivalSel : ''
+                    }
+                    onChange={(ev) => setRivalSel(ev.target.value)}
+                  >
+                    <option value="">Elegir rival…</option>
+                    {rivalesOpts.map((r) => (
+                      <option key={r.nombre} value={r.nombre}>
+                        {r.nombre} ({r.n})
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+            </div>
+            {!rivalesOpts.length && (
+              <p className="muted">Sin rivales en el periodo seleccionado</p>
+            )}
+            {rivalesOpts.length > 0 && !rivalSel && (
+              <p className="muted">Elige un rival para ver el historial de enfrentamientos</p>
+            )}
+            {vsRival && (
+              <>
+                <div className="metrics analitica-kpis analitica-h2h-kpis">
+                  <div className="metric">
+                    <span>Balance</span>
+                    <strong className="c-lime">
+                      {vsRival.v}-{vsRival.e}-{vsRival.d}
+                    </strong>
+                    <small>
+                      {vsRival.partidos} partido{vsRival.partidos === 1 ? '' : 's'}
+                    </small>
+                  </div>
+                  <div className="metric">
+                    <span>GF / GC</span>
+                    <strong className="c-cyan">
+                      {vsRival.gf} / {vsRival.gc}
+                    </strong>
+                    <small>
+                      Diff {vsRival.diff >= 0 ? '+' : ''}
+                      {vsRival.diff} · media {fmt(vsRival.gfAvg)}–
+                      {fmt(vsRival.gcAvg)}
+                    </small>
+                  </div>
+                  <div className="metric">
+                    <span>% victorias</span>
+                    <strong className="c-orange">
+                      {Math.round((vsRival.v / vsRival.partidos) * 100)}%
+                    </strong>
+                    <small>
+                      {vsRival.v} victoria{vsRival.v === 1 ? '' : 's'}
+                    </small>
+                  </div>
+                </div>
+                <div className="analitica-h2h-list">
+                  {vsRival.matches.map((m) => (
+                    <div
+                      key={m.id}
+                      className={`analitica-h2h-row result-${m.resultado}`}
+                    >
+                      <span className="analitica-h2h-res">{m.resultado}</span>
+                      <span className="analitica-h2h-score">
+                        {m.gf}–{m.gc}
+                      </span>
+                      <span className="analitica-h2h-meta">
+                        Jor. {m.label}
+                        {m.diff !== 0 ? ` · ${m.diff > 0 ? '+' : ''}${m.diff}` : ''}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </>
             )}
           </section>
         </>

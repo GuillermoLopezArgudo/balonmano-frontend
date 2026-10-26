@@ -125,7 +125,7 @@ export default function Entrenamientos() {
       <section className="panel club-card">
         {!items.length && (
           <p className="muted">
-            Aún no hay entrenamientos. Crea uno en campo completo (movimientos, pases, lanzamientos).
+            Aún no hay entrenamientos. Crea uno en campo completo o en media pista.
           </p>
         )}
         {Boolean(items.length) && !filtrados.length && (
@@ -137,7 +137,9 @@ export default function Entrenamientos() {
               <div>
                 <strong>{j.nombre}</strong>
                 <small>
-                  <span className="prep-tipo-badge">Campo completo</span>
+                  <span className="prep-tipo-badge">
+                    {j.fase === 'completo' ? 'Campo completo' : 'Media pista'}
+                  </span>
                   {' · '}
                   {j.num_pasos} paso{j.num_pasos === 1 ? '' : 's'} · {j.num_piezas} piezas
                   {j.actualizado_en

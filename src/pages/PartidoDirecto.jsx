@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api';
 import { useAuth } from '../auth';
 import {
+  CourtHeatMap,
   CourtShotMap,
   GoalShotMap,
   isFueraPorteria,
@@ -33,6 +34,26 @@ const SANCION_TIPOS = [
   { key: 'azul', label: 'Azul', tipo: 'Azul' },
 ];
 
+const LLEGADAS = [
+  { key: 'entrada', label: 'Entrada' },
+  { key: 'giro_izq', label: 'Giro izq.' },
+  { key: 'giro_der', label: 'Giro der.' },
+  { key: 'punto_debil', label: 'Punto débil' },
+  { key: 'directo', label: 'Directo' },
+];
+
+const PERDIDAS = [
+  { key: 'falta_ataque', label: 'Falta en ataque' },
+  { key: 'pasos', label: 'Pasos' },
+  { key: 'dobles', label: 'Dobles' },
+  { key: 'mal_pase', label: 'Mal pase' },
+  { key: 'interceptado', label: 'Interceptado' },
+];
+
+function labelContexto(key) {
+  return [...LLEGADAS, ...PERDIDAS].find((x) => x.key === key)?.label || '';
+}
+
 /** Lanzamiento: dentro de portería = Gol; fuera = Lanzamiento fallado. */
 function tipoNombrePara(accionKey, zonaPorteria, sancionTipo) {
   if (accionKey === 'lanzamiento') {
@@ -48,6 +69,7 @@ function zonaFeed(a) {
   const parts = [];
   if (a.rival_dorsal != null) parts.push(`#${a.rival_dorsal}`);
   // Contraataque se muestra aparte en el feed (live-feed-contra)
+  if (a.contexto) parts.push(labelContexto(a.contexto));
   if (a.zona) parts.push(labelPista(a.zona) || a.zona);
   if (a.zona_porteria) parts.push(`→ ${labelPorteria(a.zona_porteria) || a.zona_porteria}`);
   return parts.length ? ` · ${parts.join(' · ')}` : '';
@@ -123,6 +145,7 @@ export default function PartidoDirecto() {
   const [zona, setZona] = useState('');
   const [zonaPorteria, setZonaPorteria] = useState('');
   const [esContraataque, setEsContraataque] = useState(false);
+  const [contexto, setContexto] = useState('');
   const [rivalJugadoras, setRivalJugadoras] = useState([]);
   const [rivalJugadorId, setRivalJugadorId] = useState('');
   const [nuevoDorsal, setNuevoDorsal] = useState('');
@@ -139,6 +162,8 @@ export default function PartidoDirecto() {
   const esGolRival = accion === 'gol_rival';
   const esLanzamiento = accion === 'lanzamiento';
   const esSancion = accion === 'sancion';
+  const esPerdida = accion === 'perdida';
+  const opcionesContexto = esPerdida ? PERDIDAS : LLEGADAS;
   const esPorteraAccion = esParada || esGolRival;
 
   const jugadoresParaAccion = useMemo(() => {
@@ -295,6 +320,7 @@ export default function PartidoDirecto() {
     setZona('');
     setZonaPorteria('');
     setEsContraataque(false);
+    setContexto('');
     setRivalJugadorId('');
     setNuevoDorsal('');
     setNuevoNombreRival('');
@@ -323,6 +349,7 @@ export default function PartidoDirecto() {
     setZona(a.zona || '');
     setZonaPorteria(a.zona_porteria || '');
     setEsContraataque(Boolean(a.es_contraataque));
+    setContexto(a.contexto || '');
     setRivalJugadorId(a.id_rival_jugador || '');
     setError('');
     setFlash('Editando acción — guarda o cancela');
@@ -412,6 +439,10 @@ export default function PartidoDirecto() {
       setError('Elige una casilla dentro de la portería (no fuera).');
       return;
     }
+    if ((needsShotMap || esPerdida) && !opcionesContexto.some((o) => o.key === contexto)) {
+      setError(esPerdida ? 'Elige el tipo de pérdida' : 'Elige cómo llega el lanzamiento');
+      return;
+    }
     if (!tipoSeleccionado) {
       setError(
         esSancion
@@ -445,6 +476,7 @@ export default function PartidoDirecto() {
         zona: needsShotMap ? zona : null,
         zona_porteria: needsShotMap ? zonaPorteria : null,
         es_contraataque: needsShotMap && (esLanzamiento || esGolRival) ? esContraataque : false,
+        contexto: needsShotMap || esPerdida ? contexto : null,
         id_rival_jugador: idRivalJug,
       };
 
@@ -505,6 +537,15 @@ export default function PartidoDirecto() {
 
   const recent = [...acciones].slice(-8).reverse();
 
+  const calorPista = useMemo(() => {
+    const counts = {};
+    for (const a of acciones) {
+      if (!a.zona) continue;
+      counts[a.zona] = (counts[a.zona] || 0) + 1;
+    }
+    return counts;
+  }, [acciones]);
+
   return (
     <>
       <header className="page-head">
@@ -537,6 +578,39 @@ export default function PartidoDirecto() {
                   Resumen
                 </button>
               </Link>
+              {partido?.estado !== 'jugado' && (
+                <button
+                  type="button"
+                  className="live-cerrar-btn"
+                  disabled={saving}
+                  onClick={async () => {
+                    if (
+                      !window.confirm(
+                        '¿Cerrar el partido? Se marcará como jugado y irás al resumen.',
+                      )
+                    ) {
+                      return;
+                    }
+                    setSaving(true);
+                    setError('');
+                    try {
+                      setRunning(false);
+                      await api.updatePartido(partidoId, {
+                        estado: 'jugado',
+                        goles_local: score.local,
+                        goles_visitante: score.visitante,
+                      });
+                      navigate(`/partidos/${partidoId}/resumen`);
+                    } catch (err) {
+                      setError(err.message);
+                    } finally {
+                      setSaving(false);
+                    }
+                  }}
+                >
+                  Cerrar partido
+                </button>
+              )}
             </>
           )}
           <Link to="/partidos">
@@ -599,7 +673,7 @@ export default function PartidoDirecto() {
       {flash && <p className="club-status saved">{flash}</p>}
 
       <div className="live-grid">
-        <section className="panel club-card registro-accion">
+        <section className="panel club-card registro-accion live-registro">
           <h2>Registro acción</h2>
 
           <div className="live-acciones">
@@ -611,6 +685,7 @@ export default function PartidoDirecto() {
                 onClick={() => {
                   setAccion(a.key);
                   setError('');
+                  setContexto('');
                   if (!a.needsShotMap) {
                     setZona('');
                     setZonaPorteria('');
@@ -738,6 +813,36 @@ export default function PartidoDirecto() {
             </div>
           )}
 
+          {(needsShotMap || esPerdida) && (
+            <div className="live-contexto">
+              <p className="live-contexto-label">
+                {esPerdida ? 'Tipo de pérdida' : 'Cómo llega al lanzamiento'}
+              </p>
+              <div
+                className="live-contexto-ops"
+                role="group"
+                aria-label={esPerdida ? 'Tipo de pérdida' : 'Cómo llega al lanzamiento'}
+              >
+                {opcionesContexto.map((o) => (
+                  <button
+                    type="button"
+                    key={o.key}
+                    className={contexto === o.key ? 'active' : ''}
+                    onClick={() => {
+                      setContexto(o.key);
+                      setError('');
+                    }}
+                  >
+                    {o.label}
+                  </button>
+                ))}
+              </div>
+              {needsShotMap && (
+                <p className="muted">La misma zona se puede alcanzar de varias formas.</p>
+              )}
+            </div>
+          )}
+
           {needsShotMap && (esLanzamiento || esGolRival) && (
             <label className="live-contra-check">
               <input
@@ -805,7 +910,15 @@ export default function PartidoDirecto() {
           </div>
         </section>
 
-        <section className="panel club-card">
+        <section className="panel club-card live-heat">
+          <h2>Mapa de actividad</h2>
+          <p className="panel-hint">
+            Zonas desde las que ha habido más acción en este partido. El verde más intenso es la zona más usada.
+          </p>
+          <CourtHeatMap counts={calorPista} />
+        </section>
+
+        <section className="panel club-card live-feed-panel">
           <h2>Últimas acciones</h2>
           <div className="live-feed">
             {recent.map((a) => {

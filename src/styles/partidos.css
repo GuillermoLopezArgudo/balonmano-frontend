@@ -788,6 +788,40 @@
   border: 2px solid rgba(255, 255, 255, 0.18);
 }
 
+.hb-court-marks-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  overflow: visible;
+}
+
+.hb-court-line {
+  stroke: rgba(255, 255, 255, 0.42);
+  stroke-width: 0.55;
+  vector-effect: non-scaling-stroke;
+}
+
+.hb-court-line-9m {
+  stroke: rgba(255, 255, 255, 0.28);
+  stroke-dasharray: 2.2 1.6;
+  stroke-width: 0.5;
+}
+
+.hb-court-line-6m {
+  stroke: rgba(255, 255, 255, 0.5);
+  stroke-width: 0.65;
+}
+
+.hb-court-line-goal {
+  fill: rgba(0, 0, 0, 0.22);
+  stroke: rgba(255, 255, 255, 0.45);
+  stroke-width: 0.45;
+  vector-effect: non-scaling-stroke;
+}
+
 .hb-court-arc {
   left: 18%;
   right: 18%;
@@ -1597,9 +1631,118 @@ body.conv-pointer-dragging .conv-selected-row.drag-over {
 
 .live-grid {
   display: grid;
-  grid-template-columns: 1.2fr 0.9fr;
+  grid-template-columns: minmax(0, 1.2fr) minmax(16rem, 0.9fr);
+  grid-template-areas:
+    'registro acciones'
+    'heat heat';
   gap: 1rem;
   align-items: start;
+}
+
+@media (max-width: 900px) {
+  .live-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      'registro'
+      'acciones'
+      'heat';
+  }
+
+  .live-board {
+    position: sticky;
+    top: calc(56px + env(safe-area-inset-top, 0px));
+    z-index: 25;
+  }
+
+  .live-acciones button,
+  .live-zonas button,
+  .live-sancion-btn,
+  .live-contexto-ops button {
+    min-height: 48px;
+    padding: 0.7rem 0.85rem;
+    font-size: 0.92rem;
+  }
+
+  .live-clock-btn {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0.45rem 0.7rem;
+  }
+
+  .live-clock-btn-wide {
+    min-width: 5.5rem;
+  }
+
+  .live-submit {
+    min-height: 52px;
+    font-size: 1rem;
+  }
+
+  .live-registro .field select,
+  .live-registro .field input {
+    min-height: 48px;
+    font-size: 1rem;
+  }
+
+  .add-player-actions {
+    flex-wrap: wrap;
+    gap: 0.45rem;
+  }
+
+  .add-player-actions .live-cerrar-btn,
+  .add-player-actions a,
+  .add-player-actions button {
+    flex: 1 1 auto;
+    min-height: 44px;
+  }
+
+  .shot-maps {
+    gap: 0.75rem;
+  }
+
+  .live-heat {
+    order: 3;
+  }
+}
+
+@media (max-width: 640px) {
+  .live-board {
+    top: calc(52px + env(safe-area-inset-top, 0px));
+    padding: 0.75rem 0.85rem;
+    border-radius: 12px;
+  }
+
+  .live-board-score {
+    font-size: 1.85rem;
+  }
+
+  .live-board-meta {
+    flex-wrap: wrap;
+    row-gap: 0.35rem;
+  }
+
+  .live-acciones {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.45rem;
+  }
+
+  .live-acciones button {
+    width: 100%;
+    flex: none;
+  }
+
+  .page-head .add-player-actions {
+    width: 100%;
+  }
+}
+
+.live-registro {
+  grid-area: registro;
+}
+
+.live-feed-panel {
+  grid-area: acciones;
 }
 
 .live-acciones,
@@ -1650,6 +1793,44 @@ body.conv-pointer-dragging .conv-selected-row.drag-over {
   flex: 1 1 100%;
   font-weight: 500;
   margin: 0;
+}
+
+.live-contexto {
+  margin-top: 0.9rem;
+}
+
+.live-contexto-label {
+  margin: 0 0 0.45rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.live-contexto-ops {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.live-contexto-ops button {
+  background: var(--panel-2);
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.5rem 0.8rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.live-contexto-ops button.active {
+  background: var(--lime);
+  color: #0a0a0a;
+  border-color: var(--lime);
+}
+
+.live-contexto .muted {
+  margin: 0.45rem 0 0;
+  font-size: 0.78rem;
 }
 
 .live-sancion-tipos {
@@ -1709,13 +1890,13 @@ body.conv-pointer-dragging .conv-selected-row.drag-over {
   grid-template-columns: 1fr;
   gap: 0.85rem;
   margin-top: 1rem;
-  align-items: start;
+  align-items: stretch;
 }
 
-/* Lado a lado solo si el panel cabe: la portería necesita ancho para AI/AC/AD */
+/* Lado a lado, las dos tarjetas al mismo tamaño, si el panel cabe */
 @container registro (min-width: 580px) {
   .shot-maps {
-    grid-template-columns: minmax(0, 1.05fr) minmax(16rem, 0.95fr);
+    grid-template-columns: 1fr 1fr;
   }
 }
 
@@ -1727,6 +1908,78 @@ body.conv-pointer-dragging .conv-selected-row.drag-over {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.shot-maps .shot-map-svg,
+.shot-maps .goal-map {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.shot-maps .goal-map {
+  flex-direction: column;
+}
+
+.shot-maps .goal-map-with-out,
+.shot-maps .goal-map-save {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 18.5rem;
+  grid-template-rows: auto minmax(16rem, 1fr);
+}
+
+.shot-maps .goal-map-with-out > .goal-map-frame,
+.shot-maps .goal-map-save .goal-map-frame {
+  height: auto;
+  min-height: 16rem;
+}
+
+.live-heat {
+  grid-area: heat;
+}
+
+.live-heat .panel-hint {
+  margin: -0.35rem 0 0.85rem;
+}
+
+.live-heat .shot-map-heat {
+  width: min(100%, 46rem);
+  max-width: none;
+  margin-inline: auto;
+}
+
+.shot-heat-cell {
+  stroke: color-mix(in srgb, #fff 28%, transparent);
+  stroke-width: 1;
+}
+
+.shot-heat-cell.is-hot {
+  stroke: #bfff00;
+  stroke-width: 1.6;
+}
+
+.shot-heat-label.is-hot {
+  fill: #0a0a0a;
+}
+
+.shot-heat-legend {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0.65rem 0 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 650;
+}
+
+.shot-heat-legend i {
+  flex: 1 1 auto;
+  max-width: 8rem;
+  height: 0.45rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #163828, rgba(191, 255, 0, 0.45), #bfff00);
 }
 
 .shot-map-court {
@@ -2206,8 +2459,7 @@ body.conv-pointer-dragging .conv-selected-row.drag-over {
 }
 
 @media (max-width: 900px) {
-  .live-board,
-  .live-grid {
+  .live-board {
     grid-template-columns: 1fr;
   }
 
@@ -2236,6 +2488,109 @@ body.conv-pointer-dragging .conv-selected-row.drag-over {
   .zone-grid {
     grid-template-columns: 1fr 1fr;
   }
+}
+
+.match-cierre {
+  margin-bottom: 1rem;
+}
+
+.match-cierre-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.85rem;
+}
+
+.match-cierre-head h2 {
+  margin: 0;
+}
+
+.match-cierre-badge {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.3rem 0.55rem;
+  border-radius: 999px;
+}
+
+.match-cierre-badge.ok {
+  background: color-mix(in srgb, var(--lime) 22%, transparent);
+  color: var(--lime);
+}
+
+.match-cierre-badge.warn {
+  background: color-mix(in srgb, var(--orange) 20%, transparent);
+  color: var(--orange);
+}
+
+.match-cierre-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.match-cierre-list li {
+  display: grid;
+  grid-template-columns: 1.6rem minmax(0, 1fr);
+  gap: 0.65rem;
+  align-items: start;
+  padding: 0.55rem 0.7rem;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+}
+
+.match-cierre-list li strong {
+  display: block;
+  font-size: 0.9rem;
+}
+
+.match-cierre-list li small {
+  display: block;
+  margin-top: 0.15rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.match-cierre-check {
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 800;
+  margin-top: 0.1rem;
+}
+
+.match-cierre-list li.is-ok .match-cierre-check {
+  background: color-mix(in srgb, var(--lime) 25%, transparent);
+  color: var(--lime);
+}
+
+.match-cierre-list li.is-pending .match-cierre-check {
+  background: color-mix(in srgb, var(--orange) 22%, transparent);
+  color: var(--orange);
+}
+
+.match-cierre-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 0.9rem;
+}
+
+.live-cerrar-btn {
+  background: var(--lime) !important;
+  color: #0a0a0a !important;
+  font-weight: 800;
 }
 
 .match-result-card {
@@ -2641,7 +2996,6 @@ body.conv-pointer-dragging .conv-selected-row.drag-over {
   }
 
   /* Layouts que se rompen sin sidebar */
-  .live-grid,
   .club-grid,
   .club-form,
   .ajustes-grid,
@@ -2787,13 +3141,15 @@ body.conv-pointer-dragging .conv-selected-row.drag-over {
   .btn-seg-group,
   .live-acciones,
   .live-zonas,
-  .live-sancion-tipos {
+  .live-sancion-tipos,
+  .live-contexto-ops {
     width: 100%;
   }
 
   .live-acciones button,
   .live-zonas button,
-  .live-sancion-btn {
+  .live-sancion-btn,
+  .live-contexto-ops button {
     flex: 1 1 calc(50% - 0.45rem);
     min-width: 0;
     min-height: 44px;
@@ -2984,7 +3340,8 @@ body.conv-pointer-dragging .conv-selected-row.drag-over {
 
 /* ========== Audit responsive pantallas restantes ========== */
 
-.hb-court-completo {
+.hb-court-completo,
+.hb-court-media {
   background:
     linear-gradient(180deg, rgba(16, 90, 72, 0.55), rgba(8, 48, 40, 0.72)),
     repeating-linear-gradient(
@@ -3054,19 +3411,19 @@ body.conv-pointer-dragging .conv-selected-row.drag-over {
 }
 
 .hb-full-6m-l {
-  left: 4%;
-  border-right: none;
-  border-top-right-radius: 0;
-  border-bottom-right-radius: 0;
-  clip-path: inset(0 50% 0 0);
-}
-
-.hb-full-6m-r {
-  right: 4%;
+  left: calc(4% - 7%);
   border-left: none;
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
   clip-path: inset(0 0 0 50%);
+}
+
+.hb-full-6m-r {
+  right: calc(4% - 7%);
+  border-right: none;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  clip-path: inset(0 50% 0 0);
 }
 
 .hb-full-arc {
@@ -3078,12 +3435,32 @@ body.conv-pointer-dragging .conv-selected-row.drag-over {
 }
 
 .hb-full-arc-l {
-  left: 4%;
-  clip-path: inset(0 50% 0 0);
+  left: calc(4% - 11%);
+  clip-path: inset(0 0 0 50%);
 }
 
 .hb-full-arc-r {
-  right: 4%;
+  right: calc(4% - 11%);
+  clip-path: inset(0 50% 0 0);
+}
+
+/* Media pista: línea central a la izquierda, portería a la derecha */
+.hb-half-center-line {
+  top: 4%;
+  bottom: 4%;
+  left: 4%;
+  width: 0;
+  border-left: 2px solid rgba(255, 255, 255, 0.5);
+}
+
+.hb-half-center-circle {
+  top: 50%;
+  left: 4%;
+  width: 18%;
+  aspect-ratio: 1;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
   clip-path: inset(0 0 0 50%);
 }
 
