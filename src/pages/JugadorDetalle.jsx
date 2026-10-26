@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { api, mediaUrl } from '../api';
+import { api } from '../api';
+import AuthImage from '../components/AuthImage';
+import { useAuth } from '../auth';
+import { IcoLapiz } from '../components/ActionIcons';
 import { HandballCourtMarks, PISTA_CELLS } from '../components/ShotMaps';
 
 function edad(fecha) {
@@ -71,6 +74,7 @@ function ZoneCard({ z, compact = false }) {
 }
 
 export default function JugadorDetalle() {
+  const { canWritePlantilla } = useAuth();
   const { id } = useParams();
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
@@ -124,6 +128,14 @@ export default function JugadorDetalle() {
           hint: `${data.paradas} / ${data.lanzamientos_recibidos} tiros`,
           tone: 'lime',
         },
+        {
+          label: 'Asist. entrenos',
+          value: `${data.asistencia_entrenamientos?.pct_asistencia ?? 0}%`,
+          hint: `${data.asistencia_entrenamientos?.presentes || 0} presentes · ${
+            data.asistencia_entrenamientos?.faltas || 0
+          } faltas · ${data.asistencia_entrenamientos?.justificadas || 0} just.`,
+          tone: 'purple',
+        },
       ]
     : [
         {
@@ -151,10 +163,24 @@ export default function JugadorDetalle() {
           tone: 'lime',
         },
         {
-          label: '% Pérdidas',
-          value: `${data.pct_perdidas ?? 0}%`,
-          hint: `${data.perdidas || 0} pérdidas de balón`,
+          label: 'Recuperaciones',
+          value: data.recuperaciones || 0,
+          hint: `${data.perdidas || 0} pérdidas · ${data.pct_perdidas ?? 0}%`,
+          tone: 'lime',
+        },
+        {
+          label: 'Faltas',
+          value: `${data.faltas_cometidas || 0}/${data.faltas_recibidas || 0}`,
+          hint: 'Cometidas / recibidas',
           tone: 'purple',
+        },
+        {
+          label: 'Asist. entrenos',
+          value: `${data.asistencia_entrenamientos?.pct_asistencia ?? 0}%`,
+          hint: `${data.asistencia_entrenamientos?.presentes || 0} presentes · ${
+            data.asistencia_entrenamientos?.faltas || 0
+          } faltas · ${data.asistencia_entrenamientos?.justificadas || 0} just.`,
+          tone: 'cyan',
         },
       ];
 
@@ -180,9 +206,16 @@ export default function JugadorDetalle() {
             {j.nombre} {j.apellido}
           </h1>
         </div>
-        <Link to={`/plantilla/${id}/editar`}>
-          <button type="button">Editar perfil</button>
-        </Link>
+        {canWritePlantilla && (
+          <Link
+            to={`/plantilla/${id}/editar`}
+            className="btn-icon-edit"
+            title="Editar perfil"
+            aria-label="Editar perfil"
+          >
+            <IcoLapiz />
+          </Link>
+        )}
       </header>
 
       <div className="ficha-top">
@@ -197,7 +230,7 @@ export default function JugadorDetalle() {
               }
             >
               {j.img_foto ? (
-                <img src={mediaUrl(j.img_foto)} alt="" />
+                <AuthImage path={j.img_foto} alt="" />
               ) : (
                 <span>{initials}</span>
               )}
@@ -209,6 +242,16 @@ export default function JugadorDetalle() {
               <p className="ficha-role">
                 {pos.toUpperCase()}
                 {j.dorsal != null ? ` · #${j.dorsal}` : ''}
+              </p>
+              <p>
+                <span className={`conv-disp-badge conv-disp-badge-${j.disponibilidad || 'disponible'}`}>
+                  {{
+                    disponible: 'Disponible',
+                    dudosa: 'Dudosa',
+                    lesion: 'Lesión',
+                    sancion: 'Sanción',
+                  }[j.disponibilidad || 'disponible'] || 'Disponible'}
+                </span>
               </p>
             </div>
           </div>

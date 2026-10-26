@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { IcoBasura } from './ActionIcons';
 
 export const ZONAS_CAMPO = [
   { id: 'extremo_izq', label: 'Extremo izq.', short: 'EI', area: 'ei' },
@@ -104,9 +105,10 @@ export default function CampoAlineacion({
                     onClearZone(zona.id);
                   }}
                   onPointerDown={(e) => e.stopPropagation()}
+                  title="Quitar"
                   aria-label={`Quitar de ${labelZona(zona, fase)}`}
                 >
-                  ×
+                  <IcoBasura size={12} />
                 </button>
               </div>
             ) : (

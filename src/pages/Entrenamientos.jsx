@@ -2,13 +2,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { api } from '../api';
 import { useAuth } from '../auth';
+import { IcoBasura, IcoLapiz, IcoVer } from '../components/ActionIcons';
 
-export function FisicoTabs() {
+export function FisicoTabs({ end = null }) {
   return (
     <div className="filters roster-filters fisico-tabs" style={{ marginBottom: '1rem' }}>
-      <NavLink to="/preparacion" end className={({ isActive }) => (isActive ? 'active' : undefined)}>
-        Preparaciones
-      </NavLink>
       <NavLink
         to="/preparacion/entrenamiento"
         end
@@ -16,6 +14,16 @@ export function FisicoTabs() {
       >
         Entrenamientos
       </NavLink>
+      <NavLink
+        to="/preparacion/asistencia"
+        className={({ isActive }) => (isActive ? 'active' : undefined)}
+      >
+        Asistencia
+      </NavLink>
+      <NavLink to="/preparacion" end className={({ isActive }) => (isActive ? 'active' : undefined)}>
+        Físico
+      </NavLink>
+      {end}
     </div>
   );
 }
@@ -91,19 +99,23 @@ export default function Entrenamientos() {
     <>
       <header className="page-head">
         <div>
-          <p className="page-kicker">CONDICIÓN FÍSICA</p>
+          <p className="page-kicker">ENTRENAMIENTOS</p>
           <h1>Entrenamientos</h1>
+          <p className="muted" style={{ marginTop: '0.35rem' }}>
+            Plantillas de ejercicios en pista, como las jugadas. Útiles si cambia el cuerpo técnico.
+          </p>
         </div>
-        {canWriteFisico && (
-          <div className="add-player-actions">
-            <Link to="/preparacion/entrenamiento/nueva">
-              <button type="button">Nuevo entrenamiento</button>
-            </Link>
-          </div>
-        )}
       </header>
 
-      <FisicoTabs />
+      <FisicoTabs
+        end={
+          canWriteFisico ? (
+            <Link to="/preparacion/entrenamiento/nueva" className="filters-end">
+              <button type="button">Nuevo entrenamiento</button>
+            </Link>
+          ) : null
+        }
+      />
 
       <div className="field roster-search">
         <label htmlFor="ent-q" className="sr-only">
@@ -125,7 +137,8 @@ export default function Entrenamientos() {
       <section className="panel club-card">
         {!items.length && (
           <p className="muted">
-            Aún no hay entrenamientos. Crea uno en campo completo o en media pista.
+            Aún no hay entrenamientos. Crea uno en campo completo o en media pista para reutilizarlo
+            en pista.
           </p>
         )}
         {Boolean(items.length) && !filtrados.length && (
@@ -149,23 +162,36 @@ export default function Entrenamientos() {
                 {j.descripcion && <p className="muted jugada-desc">{j.descripcion}</p>}
               </div>
               <div className="jugada-row-actions">
-                <Link to={`/preparacion/entrenamiento/${j.id_jugada}`}>
-                  <button type="button" className="ghost">
-                    {canWriteFisico ? 'Abrir' : 'Ver'}
-                  </button>
+                <Link
+                  to={`/preparacion/entrenamiento/${j.id_jugada}`}
+                  className="btn-icon-view"
+                  title="Ver"
+                  aria-label="Ver entrenamiento"
+                >
+                  <IcoVer />
                 </Link>
                 {canWriteFisico && (
                   <>
+                    <Link
+                      to={`/preparacion/entrenamiento/${j.id_jugada}/editar`}
+                      className="btn-icon-edit"
+                      title="Editar"
+                      aria-label="Editar entrenamiento"
+                    >
+                      <IcoLapiz />
+                    </Link>
                     <button type="button" className="ghost" disabled={busy} onClick={() => copiar(j)}>
                       Copiar
                     </button>
                     <button
                       type="button"
-                      className="ghost danger"
+                      className="btn-icon-del"
                       disabled={busy}
+                      title="Eliminar"
+                      aria-label="Eliminar entrenamiento"
                       onClick={() => borrar(j)}
                     >
-                      Eliminar
+                      <IcoBasura />
                     </button>
                   </>
                 )}

@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { api, isAbortError, setUnauthorizedHandler } from './api';
 import { permsFromSession } from './permisos';
 import { syncThemeFromPrefs } from './theme';
@@ -127,10 +127,25 @@ export function AuthProvider({ children }) {
     return applySesion(sesion);
   }, [applySesion]);
 
+  const miembroRef = useRef(miembro);
+  miembroRef.current = miembro;
+
   useClubRealtime({
     enabled: !!token,
     token,
     onEvent: (ev) => {
+      if (ev?.type === 'sesion.revocada') {
+        const mid = ev.id_miembro || null;
+        const mine = miembroRef.current?.id_miembro || null;
+        if (String(mid || '') === String(mine || '')) {
+          sessionStorage.setItem(
+            'siete_login_notice',
+            'Se cambió la contraseña. Entra de nuevo.',
+          );
+          logout();
+        }
+        return;
+      }
       if (ev?.refresh_sesion || ev?.type === 'miembros.changed') {
         refreshSesion().catch(() => {});
       }

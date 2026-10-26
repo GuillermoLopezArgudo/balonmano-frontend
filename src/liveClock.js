@@ -97,6 +97,15 @@ export function clearActiveLive() {
   }
 }
 
+/** Quita el banner si el partido cerrado es el que estaba en directo. */
+export function clearActiveLiveIfPartido(idPartido) {
+  if (!idPartido) return;
+  const active = getActiveLive();
+  if (active && String(active.id_partido) === String(idPartido)) {
+    clearActiveLive();
+  }
+}
+
 export function notifyLiveClock() {
   try {
     window.dispatchEvent(new Event(EVENT));

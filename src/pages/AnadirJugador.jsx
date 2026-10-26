@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
-import { api, mediaUrl } from '../api';
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
+import { api } from '../api';
+import AuthImage from '../components/AuthImage';
+import { useAuth } from '../auth';
 
 const empty = {
   nombre: '',
@@ -11,10 +13,12 @@ const empty = {
   peso_kg: '',
   dorsal: '',
   activo: true,
+  disponibilidad: 'disponible',
   img_foto: '',
 };
 
 export default function AnadirJugador() {
+  const { canWritePlantilla } = useAuth();
   const { id } = useParams();
   const isEdit = Boolean(id);
   const navigate = useNavigate();
@@ -47,6 +51,7 @@ export default function AnadirJugador() {
           peso_kg: j.peso_kg != null ? String(j.peso_kg) : '',
           dorsal: j.dorsal != null ? String(j.dorsal) : '',
           activo: j.activo !== false,
+          disponibilidad: j.disponibilidad || 'disponible',
           img_foto: j.img_foto || '',
         });
       } catch (e) {
@@ -62,7 +67,7 @@ export default function AnadirJugador() {
 
   const setField = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
 
-  const preview = mediaUrl(form.img_foto) || null;
+  const preview = Boolean(form.img_foto);
   const initials = `${(form.nombre || '?')[0]}${(form.apellido || '?')[0]}`.toUpperCase();
 
   const onFile = async (e) => {
@@ -97,6 +102,7 @@ export default function AnadirJugador() {
       peso_kg: form.peso_kg ? Number(form.peso_kg) : null,
       img_foto: form.img_foto || null,
       activo: form.activo,
+      disponibilidad: form.disponibilidad || 'disponible',
     };
   };
 
@@ -120,6 +126,7 @@ export default function AnadirJugador() {
     }
   };
 
+  if (!canWritePlantilla) return <Navigate to="/plantilla" replace />;
   if (loading) return <p className="muted">Cargando jugador…</p>;
 
   return (
@@ -154,7 +161,7 @@ export default function AnadirJugador() {
           <h2>Foto y dorsal</h2>
           <div className="player-photo">
             {preview ? (
-              <img src={preview} alt="Foto del jugador" />
+              <AuthImage path={form.img_foto} alt="Foto del jugador" />
             ) : (
               <span>{initials}</span>
             )}
@@ -184,6 +191,18 @@ export default function AnadirJugador() {
             >
               <option value="activo">Activo</option>
               <option value="inactivo">Inactivo</option>
+            </select>
+          </div>
+          <div className="field">
+            <label>Disponibilidad</label>
+            <select
+              value={form.disponibilidad || 'disponible'}
+              onChange={(e) => setField('disponibilidad', e.target.value)}
+            >
+              <option value="disponible">Disponible</option>
+              <option value="dudosa">Dudosa</option>
+              <option value="lesion">Lesión</option>
+              <option value="sancion">Sanción</option>
             </select>
           </div>
         </aside>

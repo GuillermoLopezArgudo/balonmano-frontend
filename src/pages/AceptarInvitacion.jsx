@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { api, isAbortError } from '../api';
 import { useAuth } from '../auth';
+import { passwordError } from '../password';
 
 export default function AceptarInvitacion() {
   const { token } = useParams();
@@ -42,8 +43,9 @@ export default function AceptarInvitacion() {
 
   const onSubmit = async (e) => {
     e.preventDefault();
-    if (password.length < 8) {
-      setError('La contraseña debe tener al menos 8 caracteres');
+    const passMsg = passwordError(password);
+    if (passMsg) {
+      setError(passMsg);
       return;
     }
     if (password !== password2) {
@@ -107,6 +109,7 @@ export default function AceptarInvitacion() {
                     onChange={(e) => setPassword(e.target.value)}
                     autoComplete="new-password"
                   />
+                  <p className="muted">Mayúscula, minúscula y un número.</p>
                 </div>
                 <div className="field">
                   <label htmlFor="pwd2">Repetir contraseña</label>

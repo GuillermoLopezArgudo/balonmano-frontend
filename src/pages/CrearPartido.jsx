@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { api, mediaUrl } from '../api';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { api } from '../api';
 import { useAuth } from '../auth';
+import { IcoBasura, IcoFlecha } from '../components/ActionIcons';
 
 const STEPS = [
   { id: 1, label: 'Partido' },
@@ -81,6 +82,8 @@ async function ensureTemporadaActual() {
 }
 
 export default function CrearPartido() {
+  const { id: editId } = useParams();
+  const isEdit = Boolean(editId);
   const navigate = useNavigate();
   const { equipo, canWritePartidos } = useAuth();
   const [step, setStep] = useState(1);
@@ -89,9 +92,8 @@ export default function CrearPartido() {
   const [busqueda, setBusqueda] = useState('');
   const [nuevoRival, setNuevoRival] = useState('');
   const [saving, setSaving] = useState(false);
+  const [loadingEdit, setLoadingEdit] = useState(isEdit);
   const [error, setError] = useState('');
-  const [uploading, setUploading] = useState(false);
-  const fileRef = useRef(null);
   const [form, setForm] = useState({
     competicion: equipo?.datos?.competicion || '',
     jornada: '1',
@@ -101,45 +103,69 @@ export default function CrearPartido() {
     pabellon: equipo?.datos?.pabellon || '',
     id_temporada: '',
     id_rival: '',
-    img_portada: '',
+    estado: 'programado',
   });
 
   useEffect(() => {
-    Promise.all([api.getRivales(), ensureTemporadaActual()])
-      .then(([r, { list, actual }]) => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const [r, { list, actual }] = await Promise.all([
+          api.getRivales(),
+          ensureTemporadaActual(),
+        ]);
+        if (cancelled) return;
         setRivales(r);
         setTemporadas(list);
-        setForm((f) => ({
-          ...f,
-          id_temporada: actual.id_temporada,
-          competicion: f.competicion || equipo?.datos?.competicion || '',
-          pabellon: f.pabellon || equipo?.datos?.pabellon || '',
-        }));
-      })
-      .catch((err) => setError(err.message));
-  }, [equipo]);
+
+        if (isEdit) {
+          const partidos = await api.getPartidos();
+          if (cancelled) return;
+          const p = partidos.find((x) => x.id_partido === editId);
+          if (!p) {
+            setError('Partido no encontrado');
+            setLoadingEdit(false);
+            return;
+          }
+          const d = new Date(p.fecha);
+          const pad = (n) => String(n).padStart(2, '0');
+          setForm({
+            competicion: p.competicion || equipo?.datos?.competicion || '',
+            jornada: p.jornada != null ? String(p.jornada) : '',
+            fecha: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
+            hora: `${pad(d.getHours())}:${pad(d.getMinutes())}`,
+            condicion: p.es_local === false ? 'visitante' : 'local',
+            pabellon: p.pabellon || equipo?.datos?.pabellon || '',
+            id_temporada: p.id_temporada || actual.id_temporada,
+            id_rival: p.id_rival || '',
+            estado: p.estado || 'programado',
+          });
+          if (p.id_rival) {
+            const riv = r.find((x) => x.id_rival === p.id_rival);
+            if (riv) setBusqueda(riv.nombre || '');
+          }
+          setLoadingEdit(false);
+        } else {
+          setForm((f) => ({
+            ...f,
+            id_temporada: actual.id_temporada,
+            competicion: f.competicion || equipo?.datos?.competicion || '',
+            pabellon: f.pabellon || equipo?.datos?.pabellon || '',
+          }));
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err.message);
+          setLoadingEdit(false);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [equipo, editId, isEdit]);
 
   const setField = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
-
-  const onPortada = async (e) => {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file) return;
-    if (file.size > 2 * 1024 * 1024) {
-      setError('La imagen debe pesar menos de 2 MB');
-      return;
-    }
-    setUploading(true);
-    setError('');
-    try {
-      const { path } = await api.uploadImagen(file, 'partido');
-      setField('img_portada', path);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setUploading(false);
-    }
-  };
 
   const rivalesFiltrados = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
@@ -192,6 +218,28 @@ export default function CrearPartido() {
     setSaving(true);
     setError('');
     try {
+      const fechaIso = new Date(`${form.fecha}T${form.hora}:00`).toISOString();
+      const jornada =
+        form.competicion === 'Amistoso'
+          ? null
+          : form.jornada
+            ? Number(String(form.jornada).replace(/\D/g, '')) || null
+            : null;
+      const basePayload = {
+        id_rival: form.id_rival,
+        es_local: form.condicion === 'local',
+        fecha: fechaIso,
+        jornada,
+        pabellon: form.pabellon || null,
+        competicion: form.competicion || null,
+      };
+
+      if (isEdit) {
+        await api.updatePartido(editId, basePayload);
+        navigate(`/partidos/${editId}`);
+        return;
+      }
+
       let idTemporada = form.id_temporada;
       const sel = temporadas.find((t) => t.id_temporada === idTemporada);
       if (!sel || sel.estado !== 'activa') {
@@ -201,21 +249,9 @@ export default function CrearPartido() {
         setForm((f) => ({ ...f, id_temporada: idTemporada }));
       }
 
-      const fechaIso = new Date(`${form.fecha}T${form.hora}:00`).toISOString();
       const created = await api.createPartido({
-        id_rival: form.id_rival,
-        es_local: form.condicion === 'local',
+        ...basePayload,
         id_temporada: idTemporada,
-        fecha: fechaIso,
-        jornada:
-          form.competicion === 'Amistoso'
-            ? null
-            : form.jornada
-              ? Number(String(form.jornada).replace(/\D/g, '')) || null
-              : null,
-        pabellon: form.pabellon || null,
-        competicion: form.competicion || null,
-        img_portada: form.img_portada || null,
         estado: 'programado',
       });
       navigate(`/partidos/${created.id_partido}/convocatoria`);
@@ -226,38 +262,45 @@ export default function CrearPartido() {
     }
   };
 
+  if (loadingEdit) {
+    return <p className="muted" style={{ padding: '2rem' }}>Cargando partido…</p>;
+  }
+
   return (
     <>
       {!canWritePartidos ? (
         <>
           <header className="page-head">
             <div>
-              <p className="page-kicker">PARTIDO NUEVO</p>
-              <h1>Crear partido</h1>
+              <p className="page-kicker">{isEdit ? 'EDITAR PARTIDO' : 'PARTIDO NUEVO'}</p>
+              <h1>{isEdit ? 'Editar partido' : 'Crear partido'}</h1>
             </div>
-            <Link to="/partidos">
+            <Link className="page-back" to={isEdit && editId ? `/partidos/${editId}` : '/partidos'}>
               <button type="button" className="ghost">
+                <IcoFlecha />
                 Volver
               </button>
             </Link>
           </header>
-          <p className="error">Tu cargo no permite crear partidos.</p>
+          <p className="error">
+            Tu cargo no permite {isEdit ? 'editar' : 'crear'} partidos.
+          </p>
         </>
       ) : (
         <>
       <header className="page-head">
         <div>
-          <p className="page-kicker">PARTIDO NUEVO</p>
-          <h1>Crear partido</h1>
+          <p className="page-kicker">{isEdit ? 'EDITAR PARTIDO' : 'PARTIDO NUEVO'}</p>
+          <h1>{isEdit ? 'Editar partido' : 'Crear partido'}</h1>
         </div>
         <div className="add-player-actions">
-          <Link to="/partidos">
+          <Link to={isEdit && editId ? `/partidos/${editId}` : '/partidos'}>
             <button type="button" className="ghost">
               Cancelar
             </button>
           </Link>
           <button type="button" disabled={saving || !canSave} onClick={onSave}>
-            {saving ? 'Guardando…' : 'Guardar partido'}
+            {saving ? 'Guardando…' : isEdit ? 'Guardar cambios' : 'Guardar partido'}
           </button>
         </div>
       </header>
@@ -366,6 +409,8 @@ export default function CrearPartido() {
                 value={form.id_temporada}
                 onChange={(e) => setField('id_temporada', e.target.value)}
                 required
+                disabled={isEdit}
+                title={isEdit ? 'La temporada no se cambia al editar' : undefined}
               >
                 <option value="">Seleccionar…</option>
                 {temporadas
@@ -377,49 +422,6 @@ export default function CrearPartido() {
                     </option>
                   ))}
               </select>
-            </div>
-            <div className="field full partido-portada-field">
-              <label>Portada (opcional)</label>
-              <div className="partido-portada-box">
-                <div
-                  className={`partido-portada-preview${form.img_portada ? ' has-img' : ''}`}
-                  style={
-                    form.img_portada
-                      ? { backgroundImage: `url(${mediaUrl(form.img_portada)})` }
-                      : undefined
-                  }
-                >
-                  {!form.img_portada && (
-                    <span className="muted">Sin imagen · se usará la de por defecto</span>
-                  )}
-                </div>
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp"
-                  hidden
-                  onChange={onPortada}
-                />
-                <div className="partido-portada-actions">
-                  <button
-                    type="button"
-                    className="ghost"
-                    disabled={uploading}
-                    onClick={() => fileRef.current?.click()}
-                  >
-                    {uploading ? 'Subiendo…' : form.img_portada ? 'Cambiar imagen' : 'Subir imagen'}
-                  </button>
-                  {form.img_portada && (
-                    <button
-                      type="button"
-                      className="ghost"
-                      onClick={() => setField('img_portada', '')}
-                    >
-                      Quitar
-                    </button>
-                  )}
-                </div>
-              </div>
             </div>
           </div>
           <div className="wizard-nav">
@@ -464,7 +466,7 @@ export default function CrearPartido() {
                   </button>
                   <button
                     type="button"
-                    className="rival-delete"
+                    className="btn-icon-del"
                     title="Eliminar rival"
                     aria-label={`Eliminar ${nombre}`}
                     onClick={(e) => {
@@ -472,7 +474,7 @@ export default function CrearPartido() {
                       eliminarRival(rv.id_rival, nombre);
                     }}
                   >
-                    ✕
+                    <IcoBasura size={16} />
                   </button>
                 </div>
               );
@@ -541,10 +543,6 @@ export default function CrearPartido() {
             <div>
               <dt>Pabellón</dt>
               <dd>{form.pabellon || '—'}</dd>
-            </div>
-            <div>
-              <dt>Portada</dt>
-              <dd>{form.img_portada ? 'Imagen cargada' : 'Por defecto'}</dd>
             </div>
             <div>
               <dt>Temporada</dt>

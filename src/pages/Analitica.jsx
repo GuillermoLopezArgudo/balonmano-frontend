@@ -104,14 +104,18 @@ function printHtml(title, bodyHtml) {
 }
 
 export default function Analitica() {
-  const { equipo } = useAuth();
+  const { equipo, can } = useAuth();
+  const puedeExportar = can('analitica');
   const [searchParams, setSearchParams] = useSearchParams();
   const seccionParam = searchParams.get('seccion');
   const seccion = seccionParam === 'porteros' ? 'porteros' : 'equipo';
 
   const [dash, setDash] = useState(null);
   const [partidos, setPartidos] = useState([]);
+  const [temporadas, setTemporadas] = useState([]);
+  const [idTemporada, setIdTemporada] = useState('');
   const [gkStats, setGkStats] = useState([]);
+  const [jugStats, setJugStats] = useState([]);
   const [jugadores, setJugadores] = useState([]);
   const [filtro, setFiltro] = useState('temporada');
   const [zoneTab, setZoneTab] = useState('paradas');
@@ -120,10 +124,18 @@ export default function Analitica() {
 
   useAbortable(async ({ signal, alive }) => {
     try {
-      const [d, p, gk, j] = await Promise.all([
+      const [d, p, temps, gk, js, j] = await Promise.all([
         api.getDashboard({ signal }),
         api.getPartidos({ signal }),
+        api.getTemporadas({ signal }).catch((e) => {
+          if (isAbortError(e)) throw e;
+          return [];
+        }),
         api.getEstadisticasPorteros({ signal }).catch((e) => {
+          if (isAbortError(e)) throw e;
+          return [];
+        }),
+        api.getEstadisticas({ signal }).catch((e) => {
           if (isAbortError(e)) throw e;
           return [];
         }),
@@ -135,8 +147,17 @@ export default function Analitica() {
       if (!alive()) return;
       setDash(d);
       setPartidos(p);
+      setTemporadas(temps || []);
       setGkStats(gk);
+      setJugStats(js);
       setJugadores(j);
+      const activa = (temps || []).find((t) => t.estado === 'activa');
+      const fallback =
+        activa?.id_temporada ||
+        (temps || [])[0]?.id_temporada ||
+        p.find((x) => x.id_temporada)?.id_temporada ||
+        '';
+      setIdTemporada((prev) => prev || (fallback ? String(fallback) : ''));
     } catch (e) {
       if (!alive() || isAbortError(e)) return;
       setError(e.message);
@@ -150,15 +171,25 @@ export default function Analitica() {
     else setSearchParams({});
   };
 
+  const temporadaSel = useMemo(
+    () => temporadas.find((t) => String(t.id_temporada) === String(idTemporada)) || null,
+    [temporadas, idTemporada],
+  );
+
+  const partidosTemporada = useMemo(() => {
+    if (!idTemporada) return partidos;
+    return partidos.filter((p) => String(p.id_temporada) === String(idTemporada));
+  }, [partidos, idTemporada]);
+
   const jugados = useMemo(() => {
-    const now = new Date();
-    let list = partidos
-      .filter((p) => new Date(p.fecha) <= now)
+    // Solo partidos cerrados manualmente como jugados (sin_resultado no suma).
+    let list = partidosTemporada
+      .filter((p) => p.estado === 'jugado')
       .sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
     if (filtro === 'ultimos5') list = list.slice(-5);
     if (filtro === 'ultimos10') list = list.slice(-10);
     return list;
-  }, [partidos, filtro]);
+  }, [partidosTemporada, filtro]);
 
   const partidoIds = useMemo(
     () => new Set(jugados.map((p) => p.id_partido)),
@@ -193,6 +224,15 @@ export default function Analitica() {
     const efiEquipo = total ? Math.round((golesFavor / total) * 100) : dash?.efectividad || 0;
     const efiRival = total ? Math.round((golesContra / total) * 100) : 0;
 
+    const jugFiltradas = jugStats.filter((s) => partidoIds.has(s.id_partido));
+    const recuperaciones = jugFiltradas.reduce((a, s) => a + (s.recuperaciones || 0), 0);
+    const perdidas = jugFiltradas.reduce((a, s) => a + (s.perdidas || 0), 0);
+    const faltasCom = jugFiltradas.reduce((a, s) => a + (s.faltas_cometidas || 0), 0);
+    const faltasRec = jugFiltradas.reduce((a, s) => a + (s.faltas_recibidas || 0), 0);
+    const lanzCampo = jugFiltradas.reduce((a, s) => a + (s.lanzamientos || 0), 0);
+    const golesCampo = jugFiltradas.reduce((a, s) => a + (s.goles || 0), 0);
+    const efiTiro = lanzCampo ? Math.round((golesCampo / lanzCampo) * 100) : 0;
+
     const paradas = gkFiltradas.reduce((a, s) => a + (s.paradas || 0), 0);
     const recibidos = gkFiltradas.reduce((a, s) => a + (s.lanzamientos_recibidos || 0), 0);
     const efiPortero = recibidos ? Math.round((paradas / recibidos) * 100) : 0;
@@ -223,6 +263,11 @@ export default function Analitica() {
       golesPromedio,
       efiEquipo,
       efiRival,
+      efiTiro,
+      recuperaciones,
+      perdidas,
+      faltasCom,
+      faltasRec,
       paradas,
       recibidos,
       efiPortero,
@@ -232,7 +277,76 @@ export default function Analitica() {
       porPartidoTiros: jugados.length ? recibidos / jugados.length : 0,
       zonas,
     };
-  }, [jugados, myId, dash, gkFiltradas]);
+  }, [jugados, myId, dash, gkFiltradas, jugStats, partidoIds]);
+
+  const rankingJugadoras = useMemo(() => {
+    const map = {};
+    for (const s of jugStats) {
+      if (!partidoIds.has(s.id_partido)) continue;
+      if (!map[s.id_jugador]) {
+        map[s.id_jugador] = {
+          goles: 0,
+          lanzamientos: 0,
+          recuperaciones: 0,
+          perdidas: 0,
+          faltas_cometidas: 0,
+          faltas_recibidas: 0,
+          partidos: 0,
+        };
+      }
+      const row = map[s.id_jugador];
+      row.goles += s.goles || 0;
+      row.lanzamientos += s.lanzamientos || 0;
+      row.recuperaciones += s.recuperaciones || 0;
+      row.perdidas += s.perdidas || 0;
+      row.faltas_cometidas += s.faltas_cometidas || 0;
+      row.faltas_recibidas += s.faltas_recibidas || 0;
+      row.partidos += 1;
+    }
+    return Object.entries(map)
+      .map(([jid, vals]) => {
+        const j = jugadores.find((x) => x.id_jugador === jid);
+        return {
+          id: jid,
+          nombre: j ? `${j.nombre} ${j.apellido}` : 'Jugadora',
+          dorsal: j?.dorsal,
+          ...vals,
+          efi: vals.lanzamientos ? Math.round((vals.goles / vals.lanzamientos) * 100) : 0,
+        };
+      })
+      .sort(
+        (a, b) =>
+          b.goles - a.goles || b.recuperaciones - a.recuperaciones || b.lanzamientos - a.lanzamientos,
+      );
+  }, [jugStats, partidoIds, jugadores]);
+
+  const efiPorPosicion = useMemo(() => {
+    const familias = {
+      Extremo: { goles: 0, lanzamientos: 0 },
+      Lateral: { goles: 0, lanzamientos: 0 },
+      Central: { goles: 0, lanzamientos: 0 },
+      Pivote: { goles: 0, lanzamientos: 0 },
+    };
+    for (const s of jugStats) {
+      if (!partidoIds.has(s.id_partido)) continue;
+      const j = jugadores.find((x) => x.id_jugador === s.id_jugador);
+      const raw = Array.isArray(j?.posiciones) ? j.posiciones.join(' ') : j?.posiciones || '';
+      const pos = String(raw).toLowerCase();
+      if (pos.includes('portero')) continue;
+      const key = Object.keys(familias).find((k) => pos.includes(k.toLowerCase()));
+      if (!key) continue;
+      familias[key].goles += s.goles || 0;
+      familias[key].lanzamientos += s.lanzamientos || 0;
+    }
+    return Object.entries(familias).map(([posicion, v]) => ({
+      posicion,
+      efectividad: v.lanzamientos
+        ? Math.round((v.goles / v.lanzamientos) * 1000) / 10
+        : 0,
+      goles: v.goles,
+      lanzamientos: v.lanzamientos,
+    }));
+  }, [jugStats, partidoIds, jugadores]);
 
   const porPortero = useMemo(() => {
     const map = {};
@@ -327,9 +441,19 @@ export default function Analitica() {
   }, [evolucion, rivalSel]);
 
   const temporada =
+    temporadaSel?.nombre ||
     jugados[0]?.temporada_nombre ||
-    partidos[0]?.temporada_nombre ||
-    'Temporada actual';
+    partidosTemporada[0]?.temporada_nombre ||
+    'Temporada';
+
+  const temporadaEstadoLabel =
+    temporadaSel?.estado === 'activa'
+      ? 'activa'
+      : temporadaSel?.estado === 'cerrada'
+        ? 'cerrada'
+        : temporadaSel?.estado === 'archivada'
+          ? 'archivada'
+          : '';
 
   const zoneEntries = Object.entries(metrics.zonas).map(([key, vals]) => {
     const pct = vals.lanzamientos
@@ -354,14 +478,76 @@ export default function Analitica() {
     };
   });
 
+  const periodoExportLabel = () => {
+    const base = temporada;
+    if (filtro === 'ultimos5') return `${base} · últimos 5`;
+    if (filtro === 'ultimos10') return `${base} · últimos 10`;
+    return temporadaEstadoLabel ? `${base} (${temporadaEstadoLabel})` : base;
+  };
+
+  const exportarCsv = () => {
+    const team = equipo?.datos?.nombre || 'Equipo';
+    const filtroLabel = periodoExportLabel();
+    const lines = [
+      ['Equipo', team],
+      ['Sección', seccion === 'porteros' ? 'Porteros' : 'Equipo'],
+      ['Periodo', filtroLabel],
+      ['Generado', new Date().toLocaleString('es-ES')],
+      [],
+    ];
+    if (seccion === 'porteros') {
+      lines.push(['KPI', 'Valor']);
+      lines.push(['Paradas', metrics.paradas]);
+      lines.push(['Tiros recibidos', metrics.recibidos]);
+      lines.push(['Efectividad %', metrics.efiPortero]);
+      lines.push([]);
+      lines.push(['Portera', 'Paradas', 'Recibidos', 'Efi %']);
+      for (const p of porPortero) {
+        lines.push([p.nombre, p.paradas, p.recibidos, p.efi]);
+      }
+    } else {
+      lines.push(['KPI', 'Valor']);
+      lines.push(['Partidos', metrics.partidos]);
+      lines.push(['Goles a favor', metrics.golesFavor]);
+      lines.push(['Goles en contra', metrics.golesContra]);
+      lines.push(['Eficacia tiro %', metrics.efiTiro]);
+      lines.push(['Recuperaciones', metrics.recuperaciones]);
+      lines.push(['Pérdidas', metrics.perdidas]);
+      lines.push([]);
+      lines.push(['Jugadora', 'Goles', 'Lanzamientos', 'Recuperaciones', 'Pérdidas', 'Efi %']);
+      for (const j of rankingJugadoras) {
+        lines.push([
+          `#${j.dorsal ?? '—'} ${j.nombre}`,
+          j.goles,
+          j.lanzamientos,
+          j.recuperaciones,
+          j.perdidas,
+          j.efi,
+        ]);
+      }
+    }
+    const csv = lines
+      .map((row) =>
+        row
+          .map((cell) => {
+            const s = String(cell ?? '');
+            return /[",;\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+          })
+          .join(';'),
+      )
+      .join('\n');
+    const blob = new Blob([`\ufeff${csv}`], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `analitica-${seccion}-${Date.now()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const exportar = () => {
     const team = equipo?.datos?.nombre || 'Equipo';
-    const filtroLabel =
-      filtro === 'ultimos5'
-        ? 'Últimos 5 partidos'
-        : filtro === 'ultimos10'
-          ? 'Últimos 10 partidos'
-          : temporada;
+    const filtroLabel = periodoExportLabel();
 
     if (seccion === 'porteros') {
       const porteroRows = porPortero
@@ -404,10 +590,10 @@ export default function Analitica() {
       return;
     }
 
-    const posRows = (dash?.efectividad_por_posicion || [])
+    const posRows = efiPorPosicion
       .map(
         (r) =>
-          `<tr><td>${escHtml(r.posicion)}</td><td>${escHtml(r.efectividad)}%</td></tr>`,
+          `<tr><td>${escHtml(r.posicion)}</td><td>${r.goles}/${r.lanzamientos}</td><td>${escHtml(r.efectividad)}%</td></tr>`,
       )
       .join('');
     const evoRows = evolucion
@@ -438,8 +624,8 @@ export default function Analitica() {
         <div class="kpi"><span>Diferencia</span><strong>${metrics.golesFavor - metrics.golesContra >= 0 ? '+' : ''}${metrics.golesFavor - metrics.golesContra}</strong></div>
       </div>
       <h2>Eficacia de tiro por posición</h2>
-      <table><thead><tr><th>Posición</th><th>Efectividad</th></tr></thead>
-      <tbody>${posRows || '<tr><td colspan="2">Sin datos por posición</td></tr>'}</tbody></table>
+      <table><thead><tr><th>Posición</th><th>Goles / lanz.</th><th>Efectividad</th></tr></thead>
+      <tbody>${posRows || '<tr><td colspan="3">Sin datos por posición</td></tr>'}</tbody></table>
       <h2>Evolución de goles por partido</h2>
       <table><thead><tr><th>Fecha</th><th>Jor.</th><th>Rival</th><th>GF</th><th>GC</th><th>Diff</th><th>Res.</th></tr></thead>
       <tbody>${evoRows || '<tr><td colspan="7">Sin partidos finalizados</td></tr>'}</tbody></table>
@@ -459,13 +645,13 @@ export default function Analitica() {
     <>
       <header className="page-head">
         <div>
-          <p className="page-kicker">SCOUTING · {equipo?.datos?.nombre || 'EQUIPO'}</p>
+          <p className="page-kicker">RENDIMIENTO · {equipo?.datos?.nombre || 'EQUIPO'}</p>
           <h1>Analítica</h1>
-        </div>
-        <div className="add-player-actions">
-          <button type="button" onClick={exportar}>
-            Exportar PDF
-          </button>
+          <p className="muted" style={{ marginTop: '0.35rem' }}>
+            {puedeExportar
+              ? 'Gráficos, tendencias y exportación PDF / CSV.'
+              : 'Gráficos y tendencias.'}
+          </p>
         </div>
       </header>
 
@@ -482,19 +668,66 @@ export default function Analitica() {
             </button>
           ))}
         </div>
-        <div className="filters roster-filters" style={{ marginBottom: 0 }}>
-          {FILTROS.map((f) => (
-            <button
-              type="button"
-              key={f.key}
-              className={filtro === f.key ? 'active' : ''}
-              onClick={() => setFiltro(f.key)}
-            >
-              {f.key === 'temporada' ? temporada : f.label}
+        {puedeExportar && (
+          <div className="analitica-export">
+            <button type="button" className="ghost" onClick={exportarCsv}>
+              Exportar CSV
             </button>
-          ))}
+            <button type="button" onClick={exportar}>
+              Exportar PDF
+            </button>
+          </div>
+        )}
+        <div className="analitica-toolbar-period">
+          <div className="field analitica-temp-field" style={{ marginBottom: 0 }}>
+            <label htmlFor="analitica-temp" className="sr-only">
+              Temporada
+            </label>
+            <select
+              id="analitica-temp"
+              value={idTemporada}
+              onChange={(e) => {
+                setIdTemporada(e.target.value);
+                setFiltro('temporada');
+                setRivalSel('');
+              }}
+              disabled={!temporadas.length}
+            >
+              {!temporadas.length && <option value="">Sin temporadas</option>}
+              {temporadas.map((t) => (
+                <option key={t.id_temporada} value={t.id_temporada}>
+                  {t.nombre}
+                  {t.estado === 'activa'
+                    ? ' · activa'
+                    : t.estado === 'cerrada'
+                      ? ' · cerrada'
+                      : t.estado === 'archivada'
+                        ? ' · archivada'
+                        : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="filters roster-filters" style={{ marginBottom: 0 }}>
+            {FILTROS.map((f) => (
+              <button
+                type="button"
+                key={f.key}
+                className={filtro === f.key ? 'active' : ''}
+                onClick={() => setFiltro(f.key)}
+              >
+                {f.key === 'temporada' ? 'Toda la temporada' : f.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
+      {temporadaEstadoLabel && temporadaEstadoLabel !== 'activa' && (
+        <p className="hint" style={{ marginTop: '0.65rem' }}>
+          Estás viendo la temporada {temporada} ({temporadaEstadoLabel}). El PDF/CSV usa este
+          filtro.
+        </p>
+      )}
 
       {seccion === 'equipo' && (
         <>
@@ -507,28 +740,94 @@ export default function Analitica() {
               </small>
             </div>
             <div className="metric">
-              <span>Eficacia equipo</span>
-              <strong className="c-cyan">{metrics.efiEquipo}%</strong>
+              <span>Eficacia tiro</span>
+              <strong className="c-cyan">{metrics.efiTiro}%</strong>
               <small>
-                GF {metrics.golesFavor} · GC {metrics.golesContra}
+                GF {metrics.golesFavor} · GC {metrics.golesContra} · bal. {metrics.efiEquipo}%
               </small>
             </div>
             <div className="metric">
-              <span>Goles encajados / partido</span>
-              <strong className="c-orange">
-                {fmt(metrics.partidos ? metrics.golesContra / metrics.partidos : 0)}
+              <span>Recup. / Pérdidas</span>
+              <strong className="c-lime">
+                {metrics.recuperaciones}/{metrics.perdidas}
               </strong>
               <small>
-                {metrics.golesContra} en contra · diff{' '}
-                {metrics.golesFavor - metrics.golesContra >= 0 ? '+' : ''}
-                {metrics.golesFavor - metrics.golesContra}
+                Faltas {metrics.faltasCom}/{metrics.faltasRec} · GC/p{' '}
+                {fmt(metrics.partidos ? metrics.golesContra / metrics.partidos : 0)}
               </small>
             </div>
           </div>
 
           <section className="panel forma-panel">
+            <h2>Ranking de jugadoras</h2>
+            <div className="roster-list">
+              {Boolean(rankingJugadoras.length) && (
+                <div className="roster-row ranking-head" aria-hidden="true">
+                  <div className="roster-player">
+                    <span>
+                      <strong>Jugadora</strong>
+                    </span>
+                  </div>
+                  <span className="roster-cell">Goles</span>
+                  <span className="roster-cell" title="Goles / lanzamientos">
+                    Gol/Lanz
+                  </span>
+                  <span className="roster-cell" title="Recuperaciones">
+                    Rec.
+                  </span>
+                  <span className="roster-cell" title="Pérdidas">
+                    Pérd.
+                  </span>
+                  <span className="roster-cell" title="Faltas cometidas / recibidas">
+                    Faltas
+                  </span>
+                  <span className="roster-cell" title="Eficacia de tiro">
+                    Efi.
+                  </span>
+                </div>
+              )}
+              {rankingJugadoras.map((j) => (
+                <div className="roster-row ranking-row" key={j.id}>
+                  <div className="roster-player">
+                    <span>
+                      <strong>
+                        #{j.dorsal ?? '—'} {j.nombre}
+                      </strong>
+                      <small>
+                        {j.partidos} partido{j.partidos === 1 ? '' : 's'}
+                      </small>
+                    </span>
+                  </div>
+                  <span className="roster-cell" data-label="Goles">
+                    {j.goles}
+                  </span>
+                  <span className="roster-cell" data-label="Gol/Lanz">
+                    {j.goles}/{j.lanzamientos}
+                  </span>
+                  <span className="roster-cell" data-label="Rec.">
+                    {j.recuperaciones}
+                  </span>
+                  <span className="roster-cell" data-label="Pérd.">
+                    {j.perdidas}
+                  </span>
+                  <span className="roster-cell" data-label="Faltas">
+                    {j.faltas_cometidas}/{j.faltas_recibidas}
+                  </span>
+                  <span className="roster-cell valor" data-label="Efi.">
+                    {j.efi}%
+                  </span>
+                </div>
+              ))}
+              {!rankingJugadoras.length && (
+                <p className="muted">Sin estadísticas de campo en este periodo</p>
+              )}
+            </div>
+          </section>
+
+          <section className="panel forma-panel">
             <h2>Eficacia de tiro por posición</h2>
-            {(dash.efectividad_por_posicion || []).map((row, i) => (
+            <p className="panel-hint">Según temporada y filtro seleccionados</p>
+            {efiPorPosicion.map((row, i) => (
               <div className="bar-row" key={row.posicion}>
                 <span>{row.posicion}</span>
                 <div className="bar-track">
@@ -539,11 +838,13 @@ export default function Analitica() {
                     }}
                   />
                 </div>
-                <strong>{row.efectividad}%</strong>
+                <strong title={`${row.goles}/${row.lanzamientos}`}>
+                  {row.efectividad}%
+                </strong>
               </div>
             ))}
-            {!dash.efectividad_por_posicion?.length && (
-              <p className="muted">Sin datos por posición</p>
+            {!efiPorPosicion.some((r) => r.lanzamientos > 0) && (
+              <p className="muted">Sin lanzamientos de campo en este periodo</p>
             )}
           </section>
 

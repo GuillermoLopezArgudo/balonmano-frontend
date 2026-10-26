@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, isAbortError } from '../api';
 import { useAuth } from '../auth';
+import { IcoBasura, IcoLapiz } from '../components/ActionIcons';
 import { useAbortable } from '../useAbortable';
 
 const DIAS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
@@ -36,15 +37,25 @@ function dayLabel(fecha) {
 }
 
 function isFinished(p) {
-  return p.estado === 'jugado' || p.estado === 'no_disputado';
+  return p.estado === 'jugado' || p.estado === 'sin_resultado';
 }
 
 function isAplazado(p) {
   return p.estado === 'aplazado';
 }
 
+function isPendienteCerrar(p) {
+  if (p.estado && p.estado !== 'programado') return false;
+  return new Date(p.fecha).getTime() < Date.now();
+}
+
+function isProximo(p) {
+  if (p.estado && p.estado !== 'programado') return false;
+  return new Date(p.fecha).getTime() >= Date.now();
+}
+
 export default function Partidos() {
-  const { equipo, canWritePartidos } = useAuth();
+  const { equipo, canWritePartidos, canRead } = useAuth();
   const [partidos, setPartidos] = useState([]);
   const [temporadas, setTemporadas] = useState([]);
   const [filtro, setFiltro] = useState('todos');
@@ -77,7 +88,8 @@ export default function Partidos() {
   const counts = useMemo(() => {
     return {
       todos: partidos.length,
-      proximos: partidos.filter((p) => p.estado === 'programado' || (!p.estado && new Date(p.fecha) > new Date())).length,
+      proximos: partidos.filter((p) => isProximo(p)).length,
+      pendientes: partidos.filter((p) => isPendienteCerrar(p)).length,
       aplazados: partidos.filter((p) => p.estado === 'aplazado').length,
       finalizados: partidos.filter((p) => isFinished(p)).length,
     };
@@ -92,8 +104,8 @@ export default function Partidos() {
     const q = busqueda.trim().toLowerCase();
     const myId = equipo?.id_equipo;
     return partidos.filter((p) => {
-      if (filtro === 'proximos' && p.estado !== 'programado' && !(!p.estado && new Date(p.fecha) > new Date()))
-        return false;
+      if (filtro === 'proximos' && !isProximo(p)) return false;
+      if (filtro === 'pendientes' && !isPendienteCerrar(p)) return false;
       if (filtro === 'aplazados' && p.estado !== 'aplazado') return false;
       if (filtro === 'finalizados' && !isFinished(p)) return false;
       if (periodo !== 'todos' && monthKey(p.fecha) !== periodo) return false;
@@ -139,17 +151,13 @@ export default function Partidos() {
           <p className="page-kicker">TEMPORADA {temporadaLabel}</p>
           <h1>Partidos</h1>
         </div>
-        {canWritePartidos && (
-          <Link to="/partidos/nuevo">
-            <button type="button">+ Nuevo partido</button>
-          </Link>
-        )}
       </header>
 
       <div className="filters roster-filters">
         {[
           { key: 'todos', label: `Todos · ${counts.todos}` },
           { key: 'proximos', label: `Próximos · ${counts.proximos}` },
+          { key: 'pendientes', label: `Pendientes · ${counts.pendientes}` },
           { key: 'aplazados', label: `Aplazados · ${counts.aplazados}` },
           { key: 'finalizados', label: `Finalizados · ${counts.finalizados}` },
         ].map((f) => (
@@ -162,6 +170,11 @@ export default function Partidos() {
             {f.label}
           </button>
         ))}
+        {canWritePartidos && (
+          <Link to="/partidos/nuevo" className="filters-end">
+            <button type="button">+ Nuevo partido</button>
+          </Link>
+        )}
       </div>
 
       <section className="panel cal-filters">
@@ -221,7 +234,11 @@ export default function Partidos() {
                       <strong>
                         {p.equipo_local_nombre}{' '}
                         <span className="cal-score">
-                          {finished ? `${p.goles_local} - ${p.goles_visitante}` : 'vs'}
+                          {p.estado === 'jugado'
+                            ? `${p.goles_local} - ${p.goles_visitante}`
+                            : p.estado === 'sin_resultado'
+                              ? 's/r'
+                              : 'vs'}
                         </span>{' '}
                         {p.equipo_visitante_nombre}
                       </strong>
@@ -233,72 +250,54 @@ export default function Partidos() {
                           minute: '2-digit',
                         })}
                         {p.estado === 'aplazado' ? ' · Aplazado' : ''}
+                        {p.estado === 'sin_resultado' ? ' · Sin resultado' : ''}
+                        {isPendienteCerrar(p) ? ' · Pendiente de cerrar' : ''}
                         {p.temporada_estado === 'cerrada' ? ' · Temp. cerrada' : ''}
                       </small>
                     </div>
                     <div className="cal-actions">
-                      {!finished && p.estado !== 'aplazado' && (
-                        <button
-                          type="button"
-                          className="ghost"
-                          onClick={async () => {
-                            await api.updatePartido(p.id_partido, { estado: 'aplazado' });
-                            await load();
-                          }}
-                        >
-                          Aplazar
-                        </button>
-                      )}
-                      {p.estado === 'aplazado' && (
-                        <button
-                          type="button"
-                          className="ghost"
-                          onClick={async () => {
-                            await api.updatePartido(p.id_partido, { estado: 'programado' });
-                            await load();
-                          }}
-                        >
-                          Reprogramar
-                        </button>
-                      )}
-                      {!finished && (
-                        <button
-                          type="button"
-                          className="ghost"
-                          onClick={async () => {
-                            await api.updatePartido(p.id_partido, { estado: 'jugado' });
-                            await load();
-                          }}
-                        >
-                          Marcar jugado
-                        </button>
-                      )}
-                      <Link to={`/partidos/${p.id_partido}/resumen`}>
-                        <button type="button" className="ghost">
-                          Resumen
-                        </button>
+                      <Link className="cal-action-btn" to={`/partidos/${p.id_partido}`}>
+                        <button type="button">Abrir</button>
                       </Link>
-                      <Link to={`/partidos/${p.id_partido}/directo`}>
-                        <button type="button" className="ghost">
-                          Directo
-                        </button>
-                      </Link>
-                      <Link to={`/partidos/${p.id_partido}/convocatoria`}>
-                        <button type="button" className="ghost">
-                          Convocatoria
-                        </button>
-                      </Link>
-                      <button
-                        type="button"
-                        className="ghost roster-del"
-                        onClick={async () => {
-                          if (!confirm('¿Borrar partido?')) return;
-                          await api.deletePartido(p.id_partido);
-                          await load();
-                        }}
-                      >
-                        ×
-                      </button>
+                      {(finished || canRead('directo')) && (
+                        <Link
+                          className="cal-action-btn"
+                          to={
+                            finished
+                              ? `/partidos/${p.id_partido}/resumen`
+                              : `/partidos/${p.id_partido}/directo`
+                          }
+                        >
+                          <button type="button" className="ghost">
+                            {finished ? 'Acta' : 'Directo'}
+                          </button>
+                        </Link>
+                      )}
+                      {canWritePartidos && (
+                        <>
+                          <Link
+                            to={`/partidos/${p.id_partido}/editar`}
+                            className="btn-icon-edit"
+                            title="Editar partido"
+                            aria-label="Editar partido"
+                          >
+                            <IcoLapiz />
+                          </Link>
+                          <button
+                            type="button"
+                            className="btn-icon-del"
+                            title="Eliminar partido"
+                            aria-label="Eliminar partido"
+                            onClick={async () => {
+                              if (!confirm('¿Borrar partido?')) return;
+                              await api.deletePartido(p.id_partido);
+                              await load();
+                            }}
+                          >
+                            <IcoBasura />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 );

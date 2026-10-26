@@ -110,12 +110,6 @@ body {
   overscroll-behavior-x: none;
 }
 
-[data-theme='claro'] .partido-portada-preview {
-  background:
-    linear-gradient(160deg, rgba(15, 23, 42, 0.05), rgba(15, 23, 42, 0.2)),
-    var(--panel-2);
-}
-
 [data-theme='claro'] .court-floor-stop-a {
   stop-color: #d8e8cf;
 }

@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../api';
 import { useAuth } from '../auth';
+import { IcoFlecha } from '../components/ActionIcons';
+import { clearActiveLiveIfPartido } from '../liveClock';
 
 const TABS = [
   { id: 'resumen', label: 'Resumen' },
@@ -12,7 +14,7 @@ const TABS = [
 
 export default function ResumenPartido() {
   const { id } = useParams();
-  const { equipo } = useAuth();
+  const { equipo, canRead, canWritePartidos } = useAuth();
   const [tab, setTab] = useState('resumen');
   const [partido, setPartido] = useState(null);
   const [jugadores, setJugadores] = useState([]);
@@ -54,13 +56,19 @@ export default function ResumenPartido() {
     const goles = stats.reduce((a, s) => a + (s.goles || 0), 0);
     const lanzamientos = stats.reduce((a, s) => a + (s.lanzamientos || 0), 0);
     const perdidas = stats.reduce((a, s) => a + (s.perdidas || 0), 0);
+    const recuperaciones = stats.reduce((a, s) => a + (s.recuperaciones || 0), 0);
+    const faltasCom = stats.reduce((a, s) => a + (s.faltas_cometidas || 0), 0);
+    const faltasRec = stats.reduce((a, s) => a + (s.faltas_recibidas || 0), 0);
     const paradas = gkStats.reduce((a, s) => a + (s.paradas || 0), 0);
     const recibidos = gkStats.reduce((a, s) => a + (s.lanzamientos_recibidos || 0), 0);
     const efiParadas = recibidos ? Math.round((paradas / recibidos) * 100) : 0;
 
     const tipoById = Object.fromEntries(tipos.map((t) => [t.id_tipo_accion, t.nombre]));
-    const golesAccion = acciones.filter((a) => tipoById[a.id_tipo_accion] === 'Gol').length;
-    const fallos = acciones.filter((a) => tipoById[a.id_tipo_accion] === 'Lanzamiento fallado').length;
+    const countTipo = (name) =>
+      acciones.filter((a) => tipoById[a.id_tipo_accion] === name).length;
+    const golesAccion = countTipo('Gol');
+    const fallos =
+      countTipo('Lanzamiento fallado') + countTipo('Poste') + countTipo('Fuera');
     const golesTotales = goles || golesAccion || (partido?.goles_local ?? 0);
     const lanzTotales = lanzamientos || golesAccion + fallos;
 
@@ -81,47 +89,79 @@ export default function ResumenPartido() {
       fuera: Math.max(0, lanzTotales - golesTotales),
       paradas,
       efiParadas,
-      perdidas: perdidas || acciones.filter((a) => tipoById[a.id_tipo_accion] === 'Pérdida').length,
+      perdidas: perdidas || countTipo('Pérdida'),
+      recuperaciones: recuperaciones || countTipo('Recuperación'),
+      faltasCometidas: faltasCom || countTipo('Falta cometida'),
+      faltasRecibidas: faltasRec || countTipo('Falta recibida'),
     };
   }, [stats, gkStats, acciones, tipos, partido, equipo]);
 
   const porJugador = useMemo(() => {
     const tipoById = Object.fromEntries(tipos.map((t) => [t.id_tipo_accion, t.nombre]));
+    const empty = () => ({
+      goles: 0,
+      lanzamientos: 0,
+      perdidas: 0,
+      recuperaciones: 0,
+      faltas_cometidas: 0,
+      faltas_recibidas: 0,
+    });
     const map = {};
     for (const s of stats) {
       map[s.id_jugador] = {
+        ...empty(),
         goles: s.goles || 0,
         lanzamientos: s.lanzamientos || 0,
         perdidas: s.perdidas || 0,
-        asistencias: s.asistencias || 0,
+        recuperaciones: s.recuperaciones || 0,
+        faltas_cometidas: s.faltas_cometidas || 0,
+        faltas_recibidas: s.faltas_recibidas || 0,
+        fromStats: true,
       };
     }
     for (const a of acciones) {
-      if (!map[a.id_jugador]) {
-        map[a.id_jugador] = { goles: 0, lanzamientos: 0, perdidas: 0, asistencias: 0 };
-      }
-      const nombre = tipoById[a.id_tipo_accion];
+      if (map[a.id_jugador]?.fromStats) continue;
+      if (!map[a.id_jugador]) map[a.id_jugador] = empty();
+      const nombre = tipoById[a.id_tipo_accion] || '';
+      const n = nombre.toLowerCase();
       if (nombre === 'Gol') {
         map[a.id_jugador].goles += 1;
         map[a.id_jugador].lanzamientos += 1;
+      } else if (
+        nombre === 'Lanzamiento fallado' ||
+        nombre === 'Poste' ||
+        nombre === 'Fuera'
+      ) {
+        map[a.id_jugador].lanzamientos += 1;
+      } else if (n.includes('pérdida') || n.includes('perdida')) {
+        map[a.id_jugador].perdidas += 1;
+      } else if (n.includes('recuperación') || n.includes('recuperacion')) {
+        map[a.id_jugador].recuperaciones += 1;
+      } else if (n.includes('falta') && n.includes('recibid')) {
+        map[a.id_jugador].faltas_recibidas += 1;
+      } else if (n.includes('falta')) {
+        map[a.id_jugador].faltas_cometidas += 1;
       }
-      if (nombre === 'Lanzamiento fallado') map[a.id_jugador].lanzamientos += 1;
-      if (nombre === 'Pérdida') map[a.id_jugador].perdidas += 1;
-      if (nombre === 'Asistencia') map[a.id_jugador].asistencias += 1;
     }
     return Object.entries(map)
       .map(([jid, vals]) => {
         const j = jugadores.find((x) => x.id_jugador === jid);
+        const { fromStats: _fs, ...rest } = vals;
         return {
           id: jid,
           nombre: j ? `${j.nombre} ${j.apellido}` : 'Jugador',
           dorsal: j?.dorsal,
           posicion: j?.posiciones?.[0] || '—',
-          ...vals,
-          efi: vals.lanzamientos ? Math.round((vals.goles / vals.lanzamientos) * 100) : 0,
+          ...rest,
+          efi: rest.lanzamientos ? Math.round((rest.goles / rest.lanzamientos) * 100) : 0,
         };
       })
-      .sort((a, b) => b.goles - a.goles || b.lanzamientos - a.lanzamientos);
+      .sort(
+        (a, b) =>
+          b.goles - a.goles ||
+          b.recuperaciones - a.recuperaciones ||
+          b.lanzamientos - a.lanzamientos,
+      );
   }, [stats, acciones, tipos, jugadores]);
 
   const exportarPdf = () => {
@@ -129,14 +169,24 @@ export default function ResumenPartido() {
   };
 
   const marcarJugado = async () => {
-    if (!partido || partido.estado === 'jugado') return;
+    if (!partido || partido.estado === 'jugado' || partido.estado === 'sin_resultado') {
+      return;
+    }
+    const conGoles =
+      (Number(partido.goles_local) || 0) > 0 || (Number(partido.goles_visitante) || 0) > 0;
+    const estado = conGoles ? 'jugado' : 'sin_resultado';
     setClosing(true);
     setError('');
     setStatus('');
     try {
-      await api.updatePartido(id, { estado: 'jugado' });
+      await api.updatePartido(id, { estado });
+      clearActiveLiveIfPartido(id);
       await reload();
-      setStatus('Partido marcado como jugado');
+      setStatus(
+        conGoles
+          ? 'Partido marcado como jugado'
+          : 'Partido cerrado sin resultado (no suma en analítica)',
+      );
     } catch (e) {
       setError(e.message);
     } finally {
@@ -176,12 +226,15 @@ export default function ResumenPartido() {
       },
       {
         id: 'estado',
-        ok: partido.estado === 'jugado',
-        label: 'Estado: jugado',
+        ok: partido.estado === 'jugado' || partido.estado === 'sin_resultado',
+        label:
+          partido.estado === 'sin_resultado' ? 'Estado: sin resultado' : 'Estado: jugado',
         hint:
           partido.estado === 'jugado'
-            ? 'Cerrado en el calendario'
-            : `Ahora: ${partido.estado || 'programado'}`,
+            ? 'Cerrado · suma en analítica'
+            : partido.estado === 'sin_resultado'
+              ? 'Cerrado · no suma en analítica'
+              : `Ahora: ${partido.estado || 'programado'}`,
       },
     ];
   }, [partido, acciones.length, porJugador.length]);
@@ -201,12 +254,20 @@ export default function ResumenPartido() {
           </p>
           <h1>Resumen del partido</h1>
         </div>
+        <Link className="page-back" to={`/partidos/${id}`}>
+          <button type="button" className="ghost">
+            <IcoFlecha />
+            Volver
+          </button>
+        </Link>
         <div className="add-player-actions">
-          <Link to={`/partidos/${id}/directo`}>
-            <button type="button" className="ghost">
-              Directo
-            </button>
-          </Link>
+          {canRead('directo') && (
+            <Link to={`/partidos/${id}/directo`}>
+              <button type="button" className="ghost">
+                Directo
+              </button>
+            </Link>
+          )}
           <button type="button" onClick={exportarPdf}>
             Exportar acta PDF
           </button>
@@ -237,12 +298,19 @@ export default function ResumenPartido() {
           ))}
         </ul>
         <div className="match-cierre-actions">
-          {partido.estado !== 'jugado' && (
+          {canWritePartidos &&
+            partido.estado !== 'jugado' &&
+            partido.estado !== 'sin_resultado' && (
             <button type="button" disabled={closing} onClick={marcarJugado}>
-              {closing ? 'Cerrando…' : 'Marcar como jugado'}
+              {closing
+                ? 'Cerrando…'
+                : (Number(partido.goles_local) || 0) > 0 ||
+                    (Number(partido.goles_visitante) || 0) > 0
+                  ? 'Marcar como jugado'
+                  : 'Cerrar sin resultado'}
             </button>
           )}
-          {!acciones.length && (
+          {!acciones.length && canRead('directo') && (
             <Link to={`/partidos/${id}/directo`}>
               <button type="button" className="ghost">
                 Seguir en directo
@@ -252,11 +320,6 @@ export default function ResumenPartido() {
           <Link to="/analitica">
             <button type="button" className="ghost">
               Ver analítica
-            </button>
-          </Link>
-          <Link to="/informes">
-            <button type="button" className="ghost">
-              Exportar informe
             </button>
           </Link>
         </div>
@@ -305,6 +368,22 @@ export default function ResumenPartido() {
           <div>
             <span>Pérdidas</span>
             <small>Registradas en el partido</small>
+          </div>
+        </div>
+        <div className="acta-stat-row">
+          <strong className="c-lime">{resumen.recuperaciones}</strong>
+          <div>
+            <span>Recuperaciones</span>
+            <small>Balones recuperados</small>
+          </div>
+        </div>
+        <div className="acta-stat-row">
+          <strong className="c-orange">
+            {resumen.faltasCometidas}/{resumen.faltasRecibidas}
+          </strong>
+          <div>
+            <span>Faltas</span>
+            <small>Cometidas / recibidas</small>
           </div>
         </div>
       </div>
@@ -373,6 +452,15 @@ export default function ResumenPartido() {
                 <span className="roster-cell" data-label="Lanz.">
                   {j.goles}/{j.lanzamientos}
                 </span>
+                <span className="roster-cell" data-label="Rec.">
+                  {j.recuperaciones}
+                </span>
+                <span className="roster-cell" data-label="Pérd.">
+                  {j.perdidas}
+                </span>
+                <span className="roster-cell" data-label="Faltas">
+                  {j.faltas_cometidas}/{j.faltas_recibidas}
+                </span>
                 <span className="roster-cell valor" data-label="Efi.">
                   {j.efi}%
                 </span>
@@ -428,13 +516,18 @@ export default function ResumenPartido() {
             <li>Goles: {resumen.goles}</li>
             <li>Lanzamientos: {resumen.lanzamientos}</li>
             <li>Paradas: {resumen.paradas} ({resumen.efiParadas}%)</li>
+            <li>Recuperaciones: {resumen.recuperaciones}</li>
             <li>Pérdidas: {resumen.perdidas}</li>
+            <li>
+              Faltas: {resumen.faltasCometidas} cometidas / {resumen.faltasRecibidas} recibidas
+            </li>
           </ul>
           <h3>Plantilla con participación</h3>
           <ul className="acta-list">
             {porJugador.map((j) => (
               <li key={j.id}>
-                #{j.dorsal ?? '—'} {j.nombre} — {j.goles} goles, {j.lanzamientos} lanz., {j.efi}%
+                #{j.dorsal ?? '—'} {j.nombre} — {j.goles} G, {j.recuperaciones} REC,{' '}
+                {j.perdidas} PÉRD, {j.faltas_cometidas}/{j.faltas_recibidas} faltas, {j.efi}% efi.
               </li>
             ))}
             {!porJugador.length && <li>Sin datos</li>}

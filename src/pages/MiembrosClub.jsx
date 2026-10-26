@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { api, isAbortError } from '../api';
 import { useAuth } from '../auth';
-import { CARGOS, CARGOS_UNICOS } from '../permisos';
+import { CARGOS, CARGOS_UNICOS, writeLabelsForCargo } from '../permisos';
 import { useAbortable } from '../useAbortable';
 import { onMiembrosChanged } from '../useClubRealtime';
 
@@ -83,11 +83,6 @@ export default function MiembrosClub() {
     load().catch(() => {});
   }), []);
 
-  const adminActual = useMemo(
-    () => miembros.find((m) => m.permiso === 'administrador' && m.estado === 'activo'),
-    [miembros],
-  );
-
   const ocupados = useMemo(() => {
     const set = new Set();
     for (const m of miembros) {
@@ -101,11 +96,10 @@ export default function MiembrosClub() {
     const activos = miembros.filter((m) => m.estado === 'activo');
     return {
       miembros: activos.length,
-      administrador: adminActual?.nombre || '—',
       invitaciones: miembros.filter((m) => m.estado === 'pendiente').length,
       bajas: miembros.filter((m) => m.estado === 'baja').length,
     };
-  }, [miembros, adminActual]);
+  }, [miembros]);
 
   const listado = useMemo(() => {
     if (tab === 'invitaciones') return miembros.filter((m) => m.estado === 'pendiente');
@@ -256,41 +250,30 @@ export default function MiembrosClub() {
           <p className="page-kicker">CLUB · EQUIPO TÉCNICO</p>
           <h1>Miembros</h1>
         </div>
-        <div className="add-player-actions miembros-head-actions">
-          <Link to="/club">
-            <button type="button" className="ghost">
-              Club
-            </button>
-          </Link>
-          <button
-            type="button"
-            className={showInvite ? 'ghost' : ''}
-            onClick={() => setShowInvite((v) => !v)}
-          >
-            {showInvite ? 'Cerrar' : 'Invitar'}
-          </button>
-        </div>
       </header>
 
-      <p className="miembros-lead">
-        El cargo define los permisos. Solo un entrenador principal y un segundo. Un
-        administrador gestiona el club.
-      </p>
-
-      <div className="miembros-kpis">
-        <div className="miembros-kpi">
-          <span>Activos</span>
-          <strong>{counts.miembros}</strong>
-        </div>
-        <div className="miembros-kpi miembros-kpi-admin">
-          <span>Admin</span>
-          <strong title={counts.administrador}>{counts.administrador}</strong>
-        </div>
-        <div className="miembros-kpi">
-          <span>Pendientes</span>
-          <strong>{counts.invitaciones}</strong>
-        </div>
-      </div>
+      {canManageClub && (
+        <details className="miembros-leyenda">
+          <summary>Qué puede editar cada cargo</summary>
+          <ul className="miembros-leyenda-list">
+            {CARGOS.map((cargo) => {
+              const areas = writeLabelsForCargo(cargo);
+              return (
+                <li key={cargo}>
+                  <strong>{cargo}</strong>
+                  <span>{areas.length ? areas.join(' · ') : 'Solo lectura'}</span>
+                </li>
+              );
+            })}
+            <li>
+              <strong>Administrador del club</strong>
+              <span>
+                Todo lo anterior + gestionar club (independiente del cargo)
+              </span>
+            </li>
+          </ul>
+        </details>
+      )}
 
       <div className="miembros-tabs" role="tablist">
         {[
@@ -310,6 +293,20 @@ export default function MiembrosClub() {
             <em>{t.n}</em>
           </button>
         ))}
+        <div className="filters-end">
+          <Link to="/club">
+            <button type="button" className="ghost">
+              Club
+            </button>
+          </Link>
+          <button
+            type="button"
+            className={showInvite ? 'ghost' : ''}
+            onClick={() => setShowInvite((v) => !v)}
+          >
+            {showInvite ? 'Cerrar' : 'Invitar'}
+          </button>
+        </div>
       </div>
 
       {showInvite && (
@@ -432,10 +429,8 @@ export default function MiembrosClub() {
                 )}
               </div>
 
+              {!(m.estado === 'activo' && isAdmin) && (
               <footer className="miembro-card-actions">
-                {m.estado === 'activo' && isAdmin && (
-                  <p className="miembro-card-note">Administra el club · único</p>
-                )}
                 {m.estado === 'activo' && !isAdmin && (
                   <>
                     {!m.tiene_acceso && (
@@ -505,6 +500,7 @@ export default function MiembrosClub() {
                   </>
                 )}
               </footer>
+              )}
             </article>
           );
         })}

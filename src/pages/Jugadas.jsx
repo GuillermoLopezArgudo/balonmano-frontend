@@ -2,9 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api';
 import { useAuth } from '../auth';
+import { IcoBasura, IcoLapiz, IcoVer } from '../components/ActionIcons';
+import SinAcceso from '../components/SinAcceso';
 
 export default function Jugadas() {
-  const { canWriteJugadas } = useAuth();
+  const { canWriteJugadas, canRead } = useAuth();
+  const puedeVer = canRead('jugadas');
   const [items, setItems] = useState([]);
   const [fase, setFase] = useState('');
   const [q, setQ] = useState('');
@@ -19,6 +22,7 @@ export default function Jugadas() {
       .catch((e) => setError(e.message));
 
   useEffect(() => {
+    if (!puedeVer) return undefined;
     let cancelled = false;
     api
       .getJugadas(fase ? { fase, ambito: 'tactica' } : { ambito: 'tactica' })
@@ -31,7 +35,7 @@ export default function Jugadas() {
     return () => {
       cancelled = true;
     };
-  }, [fase]);
+  }, [fase, puedeVer]);
 
   const filtrados = useMemo(() => {
     const term = q.trim().toLowerCase();
@@ -71,6 +75,8 @@ export default function Jugadas() {
     }
   };
 
+  if (!puedeVer) return <SinAcceso que="las jugadas" />;
+
   return (
     <>
       <header className="page-head">
@@ -78,13 +84,6 @@ export default function Jugadas() {
           <p className="page-kicker">TACTICA</p>
           <h1>Jugadas</h1>
         </div>
-        {canWriteJugadas && (
-          <div className="add-player-actions">
-            <Link to="/jugadas/nueva">
-              <button type="button">Nueva jugada</button>
-            </Link>
-          </div>
-        )}
       </header>
 
       <div className="filters roster-filters" style={{ marginBottom: '1rem' }}>
@@ -105,6 +104,11 @@ export default function Jugadas() {
         >
           Defensa
         </button>
+        {canWriteJugadas && (
+          <Link to="/jugadas/nueva" className="filters-end">
+            <button type="button">Nueva jugada</button>
+          </Link>
+        )}
       </div>
 
       <div className="field roster-search">
@@ -151,23 +155,36 @@ export default function Jugadas() {
                 {j.descripcion && <p className="muted jugada-desc">{j.descripcion}</p>}
               </div>
               <div className="jugada-row-actions">
-                <Link to={`/jugadas/${j.id_jugada}`}>
-                  <button type="button" className="ghost">
-                    {canWriteJugadas ? 'Abrir' : 'Ver'}
-                  </button>
+                <Link
+                  to={`/jugadas/${j.id_jugada}`}
+                  className="btn-icon-view"
+                  title="Ver"
+                  aria-label="Ver jugada"
+                >
+                  <IcoVer />
                 </Link>
                 {canWriteJugadas && (
                   <>
+                    <Link
+                      to={`/jugadas/${j.id_jugada}/editar`}
+                      className="btn-icon-edit"
+                      title="Editar"
+                      aria-label="Editar jugada"
+                    >
+                      <IcoLapiz />
+                    </Link>
                     <button type="button" className="ghost" disabled={busy} onClick={() => copiar(j)}>
                       Copiar
                     </button>
                     <button
                       type="button"
-                      className="ghost danger"
+                      className="btn-icon-del"
                       disabled={busy}
+                      title="Eliminar"
+                      aria-label="Eliminar jugada"
                       onClick={() => borrar(j)}
                     >
-                      Eliminar
+                      <IcoBasura />
                     </button>
                   </>
                 )}

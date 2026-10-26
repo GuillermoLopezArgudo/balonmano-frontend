@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { api, isAbortError, mediaUrl } from '../api';
+import { api, isAbortError } from '../api';
+import AuthImage from '../components/AuthImage';
 import { useAuth } from '../auth';
+import { IcoBasura, IcoLapiz } from '../components/ActionIcons';
 import { useAbortable } from '../useAbortable';
 
 const FILTROS = [
@@ -62,8 +64,16 @@ function SancionChips({ s }) {
   );
 }
 
+const DISPONIBILIDAD = [
+  { value: 'disponible', label: 'Disponible' },
+  { value: 'dudosa', label: 'Dudosa' },
+  { value: 'lesion', label: 'Lesión' },
+  { value: 'sancion', label: 'Sanción' },
+];
+
 export default function Plantilla() {
-  const { equipo, canWritePlantilla } = useAuth();
+  const { equipo, canWritePlantilla, canWriteFisico } = useAuth();
+  const soloDisponibilidad = canWriteFisico && !canWritePlantilla;
   const [jugadores, setJugadores] = useState([]);
   const [stats, setStats] = useState({});
   const [filtro, setFiltro] = useState('Todos');
@@ -136,11 +146,6 @@ export default function Plantilla() {
           {eyebrow && <p className="page-kicker">{eyebrow}</p>}
           <h1>Plantilla</h1>
         </div>
-        {canWritePlantilla && (
-          <Link to="/plantilla/nuevo">
-            <button type="button">+ Añadir jugador</button>
-          </Link>
-        )}
       </header>
 
       <div className="filters roster-filters">
@@ -154,6 +159,11 @@ export default function Plantilla() {
             {f.key}: {counts[f.key] ?? 0}
           </button>
         ))}
+        {canWritePlantilla && (
+          <Link to="/plantilla/nuevo" className="filters-end">
+            <button type="button">+ Añadir jugador</button>
+          </Link>
+        )}
       </div>
 
       <div className="field roster-search">
@@ -204,7 +214,7 @@ export default function Plantilla() {
                 <Link to={`/plantilla/${j.id_jugador}`} className="roster-player">
                   {j.img_foto ? (
                     <span className="avatar avatar-photo">
-                      <img src={mediaUrl(j.img_foto)} alt="" />
+                      <AuthImage path={j.img_foto} alt="" />
                     </span>
                   ) : (
                     <span
@@ -226,6 +236,14 @@ export default function Plantilla() {
                       {posLabel(j)}
                       {edad(j.fecha_nacimiento) != null ? ` · ${edad(j.fecha_nacimiento)} a` : ''}
                     </small>
+                    {!soloDisponibilidad && (
+                      <span
+                        className={`conv-disp-badge conv-disp-badge-${j.disponibilidad || 'disponible'}`}
+                      >
+                        {DISPONIBILIDAD.find((d) => d.value === (j.disponibilidad || 'disponible'))
+                          ?.label || 'Disponible'}
+                      </span>
+                    )}
                   </span>
                 </Link>
                 <span
@@ -250,33 +268,58 @@ export default function Plantilla() {
                 <span className="roster-cell roster-cell-sanc" data-label="Sanciones">
                   <SancionChips s={s} />
                 </span>
+                {soloDisponibilidad && (
+                  <label className="roster-disp">
+                    <span className="sr-only">
+                      Disponibilidad de {j.nombre} {j.apellido}
+                    </span>
+                    <select
+                      value={j.disponibilidad || 'disponible'}
+                      aria-label={`Disponibilidad de ${j.nombre} ${j.apellido}`}
+                      onChange={async (e) => {
+                        const disponibilidad = e.target.value;
+                        const prev = j.disponibilidad || 'disponible';
+                        setJugadores((list) =>
+                          list.map((row) =>
+                            row.id_jugador === j.id_jugador ? { ...row, disponibilidad } : row,
+                          ),
+                        );
+                        try {
+                          await api.updateJugador(j.id_jugador, { disponibilidad });
+                        } catch (err) {
+                          setError(err.message);
+                          setJugadores((list) =>
+                            list.map((row) =>
+                              row.id_jugador === j.id_jugador
+                                ? { ...row, disponibilidad: prev }
+                                : row,
+                            ),
+                          );
+                        }
+                      }}
+                    >
+                      {DISPONIBILIDAD.map((d) => (
+                        <option key={d.value} value={d.value}>
+                          {d.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
                 {canWritePlantilla && (
                   <div className="roster-actions">
                     <Link
                       to={`/plantilla/${j.id_jugador}/editar`}
-                      className="roster-edit"
+                      className="btn-icon-edit"
                       title="Editar jugadora"
                       aria-label={`Editar ${j.nombre} ${j.apellido}`}
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                        <path
-                          d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3z"
-                          stroke="currentColor"
-                          strokeWidth="1.8"
-                          strokeLinejoin="round"
-                        />
-                        <path
-                          d="M13.5 6.5l3 3"
-                          stroke="currentColor"
-                          strokeWidth="1.8"
-                          strokeLinecap="round"
-                        />
-                      </svg>
+                      <IcoLapiz />
                     </Link>
                     <button
                       type="button"
-                      className="roster-del"
+                      className="btn-icon-del"
                       title="Eliminar jugadora"
                       aria-label={`Eliminar ${j.nombre} ${j.apellido}`}
                       onClick={async () => {
@@ -285,14 +328,7 @@ export default function Plantilla() {
                         await load();
                       }}
                     >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                        <path
-                          d="M6 6l12 12M18 6L6 18"
-                          stroke="currentColor"
-                          strokeWidth="2.2"
-                          strokeLinecap="round"
-                        />
-                      </svg>
+                      <IcoBasura />
                     </button>
                   </div>
                 )}

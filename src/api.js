@@ -87,7 +87,8 @@ async function request(path, options = {}) {
       !path.startsWith('/auth/login') &&
       !path.startsWith('/auth/registro') &&
       !path.startsWith('/auth/invitacion') &&
-      !path.startsWith('/auth/aceptar-invitacion')
+      !path.startsWith('/auth/aceptar-invitacion') &&
+      !path.startsWith('/auth/password/')
     ) {
       unauthorizedHandler?.();
     }
@@ -121,6 +122,10 @@ export const api = {
   login: (data, opts) => request('/auth/login', { method: 'POST', body: JSON.stringify(data), ...opts }),
   registro: (data, opts) =>
     request('/auth/registro', { method: 'POST', body: JSON.stringify(data), ...opts }),
+  forgotPassword: (data, opts) =>
+    request('/auth/password/forgot', { method: 'POST', body: JSON.stringify(data), ...opts }),
+  resetPassword: (data, opts) =>
+    request('/auth/password/reset', { method: 'POST', body: JSON.stringify(data), ...opts }),
   getInvitacion: (token, opts) => request(`/auth/invitacion/${token}`, opts),
   aceptarInvitacion: (data, opts) =>
     request('/auth/aceptar-invitacion', { method: 'POST', body: JSON.stringify(data), ...opts }),
@@ -184,6 +189,7 @@ export const api = {
   deleteJugador: (id, opts) => request(`/jugadores/${id}`, { method: 'DELETE', ...opts }),
 
   getPartidos: (opts) => request('/partidos/', opts),
+  getPartido: (id, opts) => request(`/partidos/${id}`, opts),
   createPartido: (data, opts) =>
     request('/partidos/', { method: 'POST', body: JSON.stringify(data), ...opts }),
   updatePartido: (id, data, opts) =>
@@ -241,6 +247,21 @@ export const api = {
       ...opts,
     }),
   deleteJugada: (id, opts) => request(`/jugadas/${id}`, { method: 'DELETE', ...opts }),
+
+  getAsistencias: (opts) => request('/asistencias/', opts),
+  getAsistencia: (id, opts) => request(`/asistencias/${id}`, opts),
+  createAsistencia: (data, opts) =>
+    request('/asistencias/', { method: 'POST', body: JSON.stringify(data), ...opts }),
+  updateAsistencia: (id, data, opts) =>
+    request(`/asistencias/${id}`, { method: 'PUT', body: JSON.stringify(data), ...opts }),
+  putAsistenciaMarcajes: (id, data, opts) =>
+    request(`/asistencias/${id}/marcajes`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+      ...opts,
+    }),
+  deleteAsistencia: (id, opts) =>
+    request(`/asistencias/${id}`, { method: 'DELETE', ...opts }),
 
   getPreparaciones: (opts = {}) => {
     const { tipo, ...rest } = opts;

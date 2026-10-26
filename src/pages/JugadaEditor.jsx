@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api';
 import { useAuth } from '../auth';
+import { IcoBasura, IcoFlecha, IcoLapiz } from '../components/ActionIcons';
+import SinAcceso from '../components/SinAcceso';
 
 const uid = () =>
   typeof crypto !== 'undefined' && crypto.randomUUID
@@ -148,6 +150,7 @@ function blankJugada(fase = 'ataque', ambito = 'tactica') {
     fase,
     ambito,
     descripcion: '',
+    fecha_sesion: null,
     piezas: rows.map((r) => r.pieza),
     pasos: [
       {
@@ -316,6 +319,7 @@ function fromApi(data) {
     fase: data.fase,
     ambito: data.ambito || 'tactica',
     descripcion: data.descripcion || '',
+    fecha_sesion: data.fecha_sesion || null,
     piezas: (data.piezas || []).map((p) => ({ ...p })),
     pasos: (data.pasos || []).map((paso) => ({
       id_paso: paso.id_paso,
@@ -345,6 +349,7 @@ function toPayload(state) {
     fase: state.fase,
     ambito: state.ambito || 'tactica',
     descripcion: state.descripcion.trim() || null,
+    fecha_sesion: state.fecha_sesion || null,
     piezas: state.piezas.map((p, i) => ({
       id_pieza: p.id_pieza,
       etiqueta: p.etiqueta,
@@ -378,8 +383,11 @@ export default function JugadaEditor({ variant = 'jugada' }) {
   const { id } = useParams();
   const isNew = !id || id === 'nueva';
   const navigate = useNavigate();
-  const { canWriteJugadas, canWriteFisico } = useAuth();
-  const canWrite = isEntrenamiento ? canWriteFisico : canWriteJugadas;
+  const location = useLocation();
+  const { canWriteJugadas, canWriteFisico, canRead } = useAuth();
+  const mayWrite = isEntrenamiento ? canWriteFisico : canWriteJugadas;
+  const editing = mayWrite && (isNew || location.pathname.endsWith('/editar'));
+  const canWrite = editing;
 
   const [state, setState] = useState(() =>
     blankJugada('ataque', isEntrenamiento ? 'fisico' : 'tactica'),
@@ -555,7 +563,7 @@ export default function JugadaEditor({ variant = 'jugada' }) {
   };
 
   const removeFlecha = (flechaId) => {
-    if (!flechaId || playing) return;
+    if (!canWrite || !flechaId || playing) return;
     stopPlay();
     clearFrozen();
     setState((prev) => {
@@ -780,7 +788,7 @@ export default function JugadaEditor({ variant = 'jugada' }) {
   };
 
   const onPointerDownPieza = (e, piezaId) => {
-    if (playing) return;
+    if (!canWrite || playing) return;
     clearFrozen();
     e.preventDefault();
     e.stopPropagation();
@@ -889,6 +897,7 @@ export default function JugadaEditor({ variant = 'jugada' }) {
   };
 
   const onBoardClick = (e) => {
+    if (!canWrite) return;
     if (playing || !flechaPieza) return;
     if (modo !== 'flecha' && modo !== 'lanzar') return;
     clearFrozen();
@@ -947,7 +956,7 @@ export default function JugadaEditor({ variant = 'jugada' }) {
   };
 
   const onPointerDownBall = (e) => {
-    if (playing || modo !== 'mover') return;
+    if (!canWrite || playing || modo !== 'mover') return;
     e.preventDefault();
     e.stopPropagation();
     const board = boardRef.current;
@@ -991,6 +1000,7 @@ export default function JugadaEditor({ variant = 'jugada' }) {
   };
 
   const addPaso = () => {
+    if (!canWrite) return;
     stopPlay();
     clearFrozen();
     setState((prev) => {
@@ -1011,7 +1021,7 @@ export default function JugadaEditor({ variant = 'jugada' }) {
   };
 
   const removePaso = () => {
-    if (state.pasos.length <= 1) return;
+    if (!canWrite || state.pasos.length <= 1) return;
     stopPlay();
     clearFrozen();
     setState((prev) => {
@@ -1022,6 +1032,7 @@ export default function JugadaEditor({ variant = 'jugada' }) {
   };
 
   const addPieza = (equipo) => {
+    if (!canWrite) return;
     const lado = equipo === 'defensa' ? 'defensa' : 'ataque';
     const usadas = new Set(
       state.piezas
@@ -1057,6 +1068,7 @@ export default function JugadaEditor({ variant = 'jugada' }) {
   };
 
   const removePieza = (piezaId) => {
+    if (!canWrite) return;
     stopPlay();
     clearFrozen();
     setState((prev) => ({
@@ -1152,7 +1164,7 @@ export default function JugadaEditor({ variant = 'jugada' }) {
       if (isNew) {
         const created = await api.createJugada(payload);
         setStatus(isEntrenamiento ? 'Entrenamiento guardado' : 'Jugada guardada');
-        navigate(`${basePath}/${created.id_jugada}`, { replace: true });
+        navigate(`${basePath}/${created.id_jugada}/editar`, { replace: true });
       } else {
         const updated = await api.updateJugada(id, payload);
         setState(fromApi(updated));
@@ -1166,16 +1178,127 @@ export default function JugadaEditor({ variant = 'jugada' }) {
   };
 
   const copiar = async () => {
-    if (isNew) return;
+    if (isNew || !mayWrite) return;
     setSaving(true);
     try {
       const copia = await api.copyJugada(id, { nombre: `${state.nombre} (copia)` });
-      navigate(`${basePath}/${copia.id_jugada}`);
+      navigate(`${basePath}/${copia.id_jugada}/editar`);
     } catch (e) {
       setError(e.message);
     } finally {
       setSaving(false);
     }
+  };
+
+  const exportarPng = () => {
+    const el = boardRef.current;
+    if (!el) {
+      setError('No hay campo para exportar');
+      return;
+    }
+    const w = Math.max(640, el.clientWidth || 800);
+    const h = Math.max(360, el.clientHeight || 450);
+    const canvas = document.createElement('canvas');
+    const scale = 2;
+    canvas.width = Math.round(w * scale);
+    canvas.height = Math.round(h * scale);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.scale(scale, scale);
+    ctx.fillStyle = '#1b5e3b';
+    ctx.fillRect(0, 0, w, h);
+    ctx.strokeStyle = 'rgba(255,255,255,0.88)';
+    ctx.lineWidth = 2.5;
+    ctx.strokeRect(10, 10, w - 20, h - 20);
+    const labelFase =
+      state.fase === 'completo'
+        ? 'Campo completo'
+        : state.ambito === 'fisico' && state.fase === 'ataque'
+          ? 'Media pista'
+          : state.fase === 'defensa'
+            ? 'Defensa'
+            : 'Ataque';
+    ctx.fillStyle = 'rgba(255,255,255,0.92)';
+    ctx.font = '600 15px system-ui,sans-serif';
+    ctx.fillText(state.nombre || (isEntrenamiento ? 'Entrenamiento' : 'Jugada'), 18, 32);
+    ctx.font = '500 12px system-ui,sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.65)';
+    ctx.fillText(labelFase, 18, 50);
+
+    const px = (x) => (Number(x) / 100) * w;
+    const py = (y) => (Number(y) / 100) * h;
+
+    for (const f of paso?.flechas || []) {
+      const tipo = f.tipo || 'movimiento';
+      ctx.beginPath();
+      ctx.moveTo(px(f.x1), py(f.y1));
+      ctx.lineTo(px(f.x2), py(f.y2));
+      ctx.strokeStyle =
+        tipo === 'lanzamiento' ? '#fbbf24' : tipo === 'pase' ? '#38bdf8' : '#f8fafc';
+      ctx.lineWidth = tipo === 'pase' ? 2 : 2.5;
+      if (tipo === 'pase') ctx.setLineDash([6, 5]);
+      else ctx.setLineDash([]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      const ang = Math.atan2(py(f.y2) - py(f.y1), px(f.x2) - px(f.x1));
+      const ah = 9;
+      ctx.beginPath();
+      ctx.moveTo(px(f.x2), py(f.y2));
+      ctx.lineTo(
+        px(f.x2) - ah * Math.cos(ang - 0.4),
+        py(f.y2) - ah * Math.sin(ang - 0.4),
+      );
+      ctx.lineTo(
+        px(f.x2) - ah * Math.cos(ang + 0.4),
+        py(f.y2) - ah * Math.sin(ang + 0.4),
+      );
+      ctx.closePath();
+      ctx.fillStyle = ctx.strokeStyle;
+      ctx.fill();
+    }
+
+    for (const pieza of state.piezas) {
+      const pos = displayPos(pieza.id_pieza);
+      if (!pos) continue;
+      const x = px(pos.x);
+      const y = py(pos.y);
+      const r = Math.max(14, Math.min(w, h) * 0.028);
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fillStyle = pieza.color || '#a3e635';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.fillStyle = '#0f172a';
+      ctx.font = `700 ${Math.max(9, r * 0.7)}px system-ui,sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(String(pieza.etiqueta || '').slice(0, 5), x, y);
+    }
+
+    if (displayBall && displayBall.x != null) {
+      const bx = px(displayBall.x);
+      const by = py(displayBall.y);
+      ctx.beginPath();
+      ctx.arc(bx, by, 7, 0, Math.PI * 2);
+      ctx.fillStyle = '#f97316';
+      ctx.fill();
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+
+    const safe = (state.nombre || (isEntrenamiento ? 'entrenamiento' : 'jugada'))
+      .trim()
+      .replace(/[^\w\-áéíóúñÁÉÍÓÚÑ ]+/gi, '')
+      .replace(/\s+/g, '_')
+      .slice(0, 60);
+    const a = document.createElement('a');
+    a.download = `${safe || 'jugada'}.png`;
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+    setStatus('Imagen descargada');
   };
 
   if (loading) {
@@ -1217,6 +1340,13 @@ export default function JugadaEditor({ variant = 'jugada' }) {
     </>
   );
 
+  if (!isEntrenamiento && !canRead('jugadas')) {
+    return <SinAcceso que="las jugadas" />;
+  }
+  if (isNew && !mayWrite) {
+    return <Navigate to={basePath} replace />;
+  }
+
   return (
     <>
       <header className="page-head">
@@ -1224,7 +1354,7 @@ export default function JugadaEditor({ variant = 'jugada' }) {
           <p className="page-kicker">
             <Link to={basePath}>{isEntrenamiento ? 'ENTRENAMIENTOS' : 'JUGADAS'}</Link>
             {' / '}
-            {isNew ? 'NUEVA' : 'EDITAR'}
+            {isNew ? 'NUEVA' : editing ? 'EDITAR' : 'VER'}
           </p>
           <h1>
             {isNew
@@ -1234,13 +1364,27 @@ export default function JugadaEditor({ variant = 'jugada' }) {
               : state.nombre || (isEntrenamiento ? 'Entrenamiento' : 'Jugada')}
           </h1>
         </div>
+        <Link className="page-back" to={basePath}>
+          <button type="button" className="ghost">
+            <IcoFlecha />
+            Volver
+          </button>
+        </Link>
         <div className="add-player-actions">
-          <Link to={basePath}>
-            <button type="button" className="ghost">
-              Volver
-            </button>
-          </Link>
-          {!isNew && canWrite && (
+          <button type="button" className="ghost" onClick={exportarPng} title="Descargar imagen PNG">
+            Exportar PNG
+          </button>
+          {mayWrite && !editing && !isNew && (
+            <Link
+              to={`${basePath}/${id}/editar`}
+              className="btn-icon-edit"
+              title="Editar"
+              aria-label="Editar"
+            >
+              <IcoLapiz />
+            </Link>
+          )}
+          {!isNew && mayWrite && (
             <button type="button" className="ghost" disabled={saving} onClick={copiar}>
               Copiar
             </button>
@@ -1253,9 +1397,15 @@ export default function JugadaEditor({ variant = 'jugada' }) {
         </div>
       </header>
 
-      {!canWrite && (
+      {!mayWrite && (
         <p className="hint">
           Tu cargo solo permite consultar {isEntrenamiento ? 'este entrenamiento' : 'esta jugada'}.
+          Usa Play para reproducir los pasos.
+        </p>
+      )}
+      {mayWrite && !editing && !isNew && (
+        <p className="hint">
+          Modo reproducción. Usa Play para ver la secuencia o Editar para cambiarla.
         </p>
       )}
       {error && <p className="error">{error}</p>}
@@ -1326,17 +1476,21 @@ export default function JugadaEditor({ variant = 'jugada' }) {
                 {p.titulo ? ` · ${p.titulo}` : ''}
               </button>
             ))}
-            <button type="button" className="ghost" onClick={addPaso}>
-              + Paso
-            </button>
-            <button
-              type="button"
-              className="ghost danger"
-              disabled={state.pasos.length <= 1}
-              onClick={removePaso}
-            >
-              − Paso
-            </button>
+            {canWrite && (
+              <>
+                <button type="button" className="ghost" onClick={addPaso}>
+                  + Paso
+                </button>
+                <button
+                  type="button"
+                  className="ghost danger"
+                  disabled={state.pasos.length <= 1}
+                  onClick={removePaso}
+                >
+                  − Paso
+                </button>
+              </>
+            )}
             {!playing ? (
               <button type="button" className="btn-play" onClick={play}>
                 ▶ Play
@@ -1356,6 +1510,7 @@ export default function JugadaEditor({ variant = 'jugada' }) {
           </div>
         </div>
 
+        {canWrite && (
         <div className="jugada-toolbar-row">
           <div
             className="jugada-tool-group jugada-modes btn-seg-group"
@@ -1427,8 +1582,9 @@ export default function JugadaEditor({ variant = 'jugada' }) {
             {!isEntrenamiento && botonesEquipo}
           </div>
         </div>
+        )}
 
-        {isEntrenamiento && (
+        {canWrite && isEntrenamiento && (
           <div className="jugada-toolbar-row">
             <div className="jugada-tool-group" aria-label="Jugadoras">
               <span className="jugada-tool-label">Jugadoras</span>
@@ -1459,37 +1615,43 @@ export default function JugadaEditor({ variant = 'jugada' }) {
         )}
       </div>
 
-      {modo === 'flecha' && (
+      {canWrite && modo === 'flecha' && (
         <p className="muted jugada-hint">
           {flechaPieza
             ? 'Clic en el campo = destino del desmarque · Esc cancela'
             : 'Elige una pieza y luego el destino · Clic en una línea para seleccionarla'}
         </p>
       )}
-      {modo === 'pase' && (
+      {canWrite && modo === 'pase' && (
         <p className="muted jugada-hint">
           {paseFrom
             ? 'Ahora elige a quién pasa el balón · Esc cancela'
             : 'Elige quién tiene el balón y luego la receptora · Clic en una línea para seleccionarla'}
         </p>
       )}
-      {modo === 'lanzar' && (
+      {canWrite && modo === 'lanzar' && (
         <p className="muted jugada-hint">
           {flechaPieza
             ? 'Clic en el campo = destino del lanzamiento · Esc cancela'
             : 'Elige quién lanza y luego el destino · Clic en una línea para seleccionarla'}
         </p>
       )}
-      {selectedFlechaId && !playing && (
+      {canWrite && selectedFlechaId && !playing && (
         <p className="muted jugada-hint">
           Línea seleccionada ·{' '}
-          <button type="button" className="linkish" onClick={() => removeFlecha(selectedFlechaId)}>
-            Eliminar
+          <button
+            type="button"
+            className="btn-icon-del"
+            title="Eliminar línea"
+            aria-label="Eliminar línea"
+            onClick={() => removeFlecha(selectedFlechaId)}
+          >
+            <IcoBasura size={16} />
           </button>
           {' · Esc deselecciona · Supr elimina'}
         </p>
       )}
-      {modo === 'mover' && !selectedFlechaId && !playing && (paso?.flechas || []).length > 0 && (
+      {canWrite && modo === 'mover' && !selectedFlechaId && !playing && (paso?.flechas || []).length > 0 && (
         <p className="muted jugada-hint">
           {isEntrenamiento
             ? 'Play mueve atacantes (rojas) y defensoras (azules) a la vez, cada una con su secuencia · Clic en una línea para eliminarla'
@@ -1673,7 +1835,7 @@ export default function JugadaEditor({ variant = 'jugada' }) {
             return (
               <div
                 key={pieza.id_pieza}
-                className={`jugada-pieza${selected ? ' selected' : ''}${modo === 'mover' ? ' movable' : ''}${tieneBalon ? ' has-ball' : ''}`}
+                className={`jugada-pieza${selected ? ' selected' : ''}${canWrite && modo === 'mover' ? ' movable' : ''}${tieneBalon ? ' has-ball' : ''}`}
                 style={{
                   left: `${pos.x}%`,
                   top: `${pos.y}%`,
@@ -1682,7 +1844,7 @@ export default function JugadaEditor({ variant = 'jugada' }) {
                 onPointerDown={(e) => onPointerDownPieza(e, pieza.id_pieza)}
               >
                 <strong>{pieza.etiqueta}</strong>
-                {!playing && (
+                {canWrite && !playing && (
                   <button
                     type="button"
                     className="jugada-pieza-del"
@@ -1690,9 +1852,10 @@ export default function JugadaEditor({ variant = 'jugada' }) {
                       e.stopPropagation();
                       removePieza(pieza.id_pieza);
                     }}
+                    title="Quitar pieza"
                     aria-label="Quitar pieza"
                   >
-                    ×
+                    <IcoBasura size={11} />
                   </button>
                 )}
               </div>
@@ -1700,7 +1863,7 @@ export default function JugadaEditor({ variant = 'jugada' }) {
           })}
 
           <div
-            className={`jugada-ball${modo === 'mover' ? ' movable' : ''}`}
+            className={`jugada-ball${canWrite && modo === 'mover' ? ' movable' : ''}`}
             style={{ left: `${displayBall.x}%`, top: `${displayBall.y}%` }}
             onPointerDown={onPointerDownBall}
             title="Balón"

@@ -2,6 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../api';
 import { useAuth } from '../auth';
+import {
+  clearConvocatoriaDraft,
+  readConvocatoriaDraft,
+  writeConvocatoriaDraft,
+} from '../convocatoriaDraft';
+import { IcoBasura, IcoFlecha } from '../components/ActionIcons';
 import CampoAlineacion, {
   ZONAS_CAMPO,
   zonasParaFase,
@@ -23,6 +29,29 @@ const ZONA_ATAQUE_IDS = new Set(zonasParaFase('ataque').map((z) => z.id));
 
 const shortZona = (zonaId) => ZONAS_CAMPO.find((z) => z.id === zonaId)?.short || zonaId;
 
+function snapConvocatoria(selected, zonasAtaque, zonasDefensa) {
+  const selKeys = Object.keys(selected).sort();
+  const sel = {};
+  for (const k of selKeys) sel[k] = selected[k];
+  const sortMap = (m) => {
+    const out = {};
+    for (const k of Object.keys(m).sort()) out[k] = m[k];
+    return out;
+  };
+  return JSON.stringify({
+    selected: sel,
+    zonasAtaque: sortMap(zonasAtaque),
+    zonasDefensa: sortMap(zonasDefensa),
+  });
+}
+
+const DISP_LABEL = {
+  disponible: 'Disponible',
+  dudosa: 'Dudosa',
+  lesion: 'Lesión',
+  sancion: 'Sanción',
+};
+
 function clearJugadorDeMapa(map, jid) {
   const next = { ...map };
   for (const k of Object.keys(next)) {
@@ -33,7 +62,7 @@ function clearJugadorDeMapa(map, jid) {
 
 export default function Convocatoria() {
   const { id } = useParams();
-  const { equipo, canWriteConvocatoria } = useAuth();
+  const { equipo, miembro, canWriteConvocatoria, canReadCuotas } = useAuth();
   const [tab, setTab] = useState('convocatoria');
   const [partido, setPartido] = useState(null);
   const [jugadores, setJugadores] = useState([]);
@@ -49,6 +78,9 @@ export default function Convocatoria() {
   const [dragId, setDragId] = useState(null);
   const [dropZone, setDropZone] = useState(null);
   const [fedOk, setFedOk] = useState({}); // id_jugador -> bool
+  const [estadoConv, setEstadoConv] = useState('borrador');
+  const [savedSnap, setSavedSnap] = useState(null);
+  const [loaded, setLoaded] = useState(false);
 
   const tabMeta = TABS.find((t) => t.id === tab);
   const fase = tabMeta?.fase || null;
@@ -68,7 +100,9 @@ export default function Convocatoria() {
       api.getJugadores(),
       api.getConvocatoria(id).catch(() => ({ items: [] })),
       api.getAlineaciones().catch(() => []),
-      api.getFederacionEstados().catch(() => ({ estados: {} })),
+      canReadCuotas
+        ? api.getFederacionEstados().catch(() => ({ estados: {} }))
+        : Promise.resolve({ estados: {} }),
     ])
       .then(([partidos, jugs, conv, alins, fed]) => {
         setPartido(partidos.find((p) => p.id_partido === id) || null);
@@ -82,14 +116,26 @@ export default function Convocatoria() {
           if (ataque && ataque !== 'portero') za[ataque] = item.id_jugador;
           if (item.zona_defensa) zd[item.zona_defensa] = item.id_jugador;
         }
-        setSelected(map);
-        setZonasAtaque(za);
-        setZonasDefensa(zd);
+        const serverSnap = snapConvocatoria(map, za, zd);
+        const draft = readConvocatoriaDraft(equipo?.id_equipo, id);
+        if (draft) {
+          setSelected(draft.selected || {});
+          setZonasAtaque(draft.zonasAtaque || {});
+          setZonasDefensa(draft.zonasDefensa || {});
+          setEstadoConv('borrador');
+        } else {
+          setSelected(map);
+          setZonasAtaque(za);
+          setZonasDefensa(zd);
+          setEstadoConv(conv.estado === 'guardada' ? 'guardada' : 'borrador');
+        }
         setPlantillas(alins);
         setFedOk(fed?.estados || {});
+        setSavedSnap(serverSnap);
+        setLoaded(true);
       })
       .catch((e) => setError(e.message));
-  }, [id]);
+  }, [id, equipo?.id_equipo, canReadCuotas]);
 
   const convocados = useMemo(
     () => Object.keys(selected).filter((jid) => selected[jid]),
@@ -158,7 +204,21 @@ export default function Convocatoria() {
     return next;
   };
 
-  const tieneFederacion = (jid) => Boolean(fedOk[jid]);
+  const tieneFederacion = (jid) => !canReadCuotas || Boolean(fedOk[jid]);
+
+  const dispDe = (jid) => byId[jid]?.disponibilidad || 'disponible';
+
+  const puedeConvocarPorEstado = (jid) => {
+    const disp = dispDe(jid);
+    return disp !== 'lesion' && disp !== 'sancion';
+  };
+
+  const errorDisponibilidad = (jid) => {
+    const j = byId[jid];
+    const nombre = j ? `${j.nombre} ${j.apellido}`.trim() : 'Esta jugadora';
+    if (dispDe(jid) === 'sancion') return `${nombre} está sancionada y no se puede convocar.`;
+    return `${nombre} está lesionada y no se puede convocar.`;
+  };
 
   const toggleConvocado = (jid) => {
     setSelected((prev) => {
@@ -167,6 +227,10 @@ export default function Convocatoria() {
         delete next[jid];
         removeFromZonas(jid);
       } else {
+        if (!puedeConvocarPorEstado(jid)) {
+          setError(errorDisponibilidad(jid));
+          return prev;
+        }
         if (!tieneFederacion(jid)) {
           setError('Sin federación pagada no se puede convocar. Márcala en Club → Cuotas.');
           return prev;
@@ -208,6 +272,11 @@ export default function Convocatoria() {
 
       if ((rol === 'titular' || rol === 'banquillo') && !already) {
         setError('Solo jugadoras convocadas pueden ir a alineación o banquillo');
+        return prev;
+      }
+
+      if (!already && !puedeConvocarPorEstado(jid)) {
+        setError(errorDisponibilidad(jid));
         return prev;
       }
 
@@ -332,6 +401,11 @@ export default function Convocatoria() {
   };
 
   const onDragStart = (e, jid) => {
+    if (tab === 'convocatoria' && !selected[jid] && !puedeConvocarPorEstado(jid)) {
+      e.preventDefault();
+      setError(errorDisponibilidad(jid));
+      return;
+    }
     if (tab === 'convocatoria' && !selected[jid] && !tieneFederacion(jid)) {
       e.preventDefault();
       setError('Sin federación pagada no se puede convocar. Márcala en Club → Cuotas.');
@@ -411,6 +485,10 @@ export default function Convocatoria() {
 
   const { onPointerDragStart, ghost } = usePointerDnD({
     canStart: (jid) => {
+      if (tab === 'convocatoria' && !selected[jid] && !puedeConvocarPorEstado(jid)) {
+        setError(errorDisponibilidad(jid));
+        return false;
+      }
       if (tab === 'convocatoria' && !selected[jid] && !tieneFederacion(jid)) {
         setError('Sin federación pagada no se puede convocar. Márcala en Club → Cuotas.');
         return false;
@@ -425,6 +503,32 @@ export default function Convocatoria() {
       return j ? `#${j.dorsal ?? '—'} ${j.nombre}` : '…';
     },
   });
+
+  const currentSnap = snapConvocatoria(selected, zonasAtaque, zonasDefensa);
+  const dirty = Boolean(loaded && savedSnap != null && currentSnap !== savedSnap);
+  const mostrarBorrador = estadoConv !== 'guardada' || dirty;
+
+  // Borrador solo en este navegador (no es guardado en el servidor).
+  useEffect(() => {
+    if (!loaded || !canWriteConvocatoria) return;
+    if (dirty) {
+      writeConvocatoriaDraft(equipo?.id_equipo, id, {
+        selected,
+        zonasAtaque,
+        zonasDefensa,
+      });
+      setEstadoConv('borrador');
+    }
+  }, [
+    loaded,
+    canWriteConvocatoria,
+    dirty,
+    selected,
+    zonasAtaque,
+    zonasDefensa,
+    equipo?.id_equipo,
+    id,
+  ]);
 
   const buildItemsPayload = () =>
     Object.entries(selected).map(([id_jugador, rol]) => {
@@ -442,18 +546,24 @@ export default function Convocatoria() {
       };
     });
 
-  const persist = async (confirmada = false) => {
+  const persist = async () => {
     setSaving(true);
     setError('');
     setStatus('');
     try {
-      await api.saveConvocatoria(id, {
+      const out = await api.saveConvocatoria(id, {
         items: buildItemsPayload(),
-        confirmada,
+        estado: 'guardada',
       });
-      setStatus(confirmada ? 'Convocatoria confirmada' : 'Convocatoria guardada');
+      const snap = snapConvocatoria(selected, zonasAtaque, zonasDefensa);
+      setEstadoConv(out?.estado === 'guardada' ? 'guardada' : 'borrador');
+      setSavedSnap(snap);
+      clearConvocatoriaDraft(equipo?.id_equipo, id);
+      setStatus('Convocatoria guardada');
+      return true;
     } catch (err) {
       setError(err.message);
+      return false;
     } finally {
       setSaving(false);
     }
@@ -584,22 +694,33 @@ export default function Convocatoria() {
     <>
       <header className="page-head">
         <div>
-          <p className="page-kicker">MI CLUB / CONVOCATORIAS</p>
+          <p className="page-kicker">
+            <Link to={`/partidos/${id}`}>PARTIDO</Link>
+            {' / CONVOCATORIA'}
+          </p>
           <h1>Convocatoria y alineación</h1>
         </div>
-        <div className="add-player-actions">
-          <Link to="/partidos">
-            <button type="button" className="ghost">
-              Volver
-            </button>
-          </Link>
-          <button type="button" disabled={saving || !canWriteConvocatoria} onClick={() => persist(true)}>
-            {saving
-              ? 'Guardando…'
-              : canWriteConvocatoria
-                ? 'Confirmar convocatoria'
-                : 'Solo lectura'}
+        <Link className="page-back" to={`/partidos/${id}`}>
+          <button type="button" className="ghost">
+            <IcoFlecha />
+            Volver
           </button>
+        </Link>
+        <div className="add-player-actions">
+          {canWriteConvocatoria && (dirty || estadoConv !== 'guardada') && (
+            <button
+              type="button"
+              disabled={saving || (!dirty && estadoConv === 'guardada')}
+              onClick={persist}
+            >
+              {saving ? 'Guardando…' : 'Guardar convocatoria'}
+            </button>
+          )}
+          {!canWriteConvocatoria && (
+            <button type="button" disabled>
+              Solo lectura
+            </button>
+          )}
         </div>
       </header>
 
@@ -632,10 +753,31 @@ export default function Convocatoria() {
         {kicker}
         {partido && new Date(partido.fecha) > new Date() ? ' — Se aproxima el partido' : ''}
       </p>
-      <p className="conv-dnd-hint muted">{hint}</p>
-      <p className="conv-dnd-hint muted">
-        Solo se pueden convocar jugadoras con <strong>federación pagada</strong> (Club → Cuotas).
+      <p className="conv-estado-line">
+        <span className={`conv-estado-badge estado-${mostrarBorrador ? 'borrador' : 'guardada'}`}>
+          {mostrarBorrador ? 'Borrador' : 'Guardada'}
+        </span>
+        {mostrarBorrador ? (
+          <span className="muted">
+            {dirty
+              ? 'Borrador en este dispositivo · Guardar convocatoria lo confirma en el servidor'
+              : 'Aún no se ha guardado en el servidor'}
+          </span>
+        ) : null}
       </p>
+      <p className="conv-dnd-hint muted">{hint}</p>
+      {jugadores.some((j) => !tieneFederacion(j.id_jugador)) && (
+        <p className="conv-dnd-hint muted">
+          Hay jugadoras sin licencia federativa
+          {canReadCuotas ? (
+            <>
+              . Márcala en <Link to="/club/cuotas">Cuotas</Link> para poder convocarlas.
+            </>
+          ) : (
+            '. Quien gestione las cuotas tiene que marcar la federación antes de convocarlas.'
+          )}
+        </p>
+      )}
 
       {error && <p className="error">{error}</p>}
       {status && <p className="club-status saved">{status}</p>}
@@ -667,13 +809,15 @@ export default function Convocatoria() {
               const zd = zonaDefensaDe[j.id_jugador];
               const esConvTab = tab === 'convocatoria';
               const fed = tieneFederacion(j.id_jugador);
-              const bloqueada = esConvTab && !checked && !fed;
+              const convocable = puedeConvocarPorEstado(j.id_jugador);
+              const bloqueada = esConvTab && !checked && (!fed || !convocable);
+              const disp = j.disponibilidad || 'disponible';
               return (
                 <div
                   key={j.id_jugador}
                   className={`conv-player${checked ? ' on' : ''}${dragId === j.id_jugador ? ' dragging' : ''}${
                     bloqueada ? ' conv-player-blocked' : ''
-                  }`}
+                  }${disp !== 'disponible' ? ` conv-disp-${disp}` : ''}`}
                   data-drag-id={j.id_jugador}
                   draggable={!bloqueada}
                   onDragStart={(e) => onDragStart(e, j.id_jugador)}
@@ -704,8 +848,14 @@ export default function Convocatoria() {
                       {j.posiciones?.[0] || 'Sin posición'}
                       {za ? ` · ATK ${shortZona(za)}` : ''}
                       {zd ? ` · DEF ${shortZona(zd)}` : ''}
-                      {bloqueada ? ' · Sin federación' : ''}
+                      {!convocable
+                        ? ` · ${disp === 'sancion' ? 'Sancionada' : 'Lesionada'} · no se puede convocar`
+                        : ''}
+                      {convocable && bloqueada ? ' · Sin federación' : ''}
                     </small>
+                  </span>
+                  <span className={`conv-disp-badge conv-disp-badge-${disp}`}>
+                    {DISP_LABEL[disp] || disp}
                   </span>
                   <span className="conv-grip" aria-hidden="true">
                     ⋮⋮
@@ -800,7 +950,11 @@ export default function Convocatoria() {
                       <strong>
                         #{j.dorsal ?? '—'} {j.nombre} {j.apellido}
                       </strong>
-                      <small>{j.posiciones?.[0] || '—'}</small>
+                      <small>
+                        {j.posiciones?.[0] || '—'}
+                        {' · '}
+                        {DISP_LABEL[j.disponibilidad || 'disponible']}
+                      </small>
                     </div>
                     <div className="conv-selected-actions">
                       <select
@@ -831,15 +985,6 @@ export default function Convocatoria() {
             </div>
           )}
 
-          <button
-            type="button"
-            className="ghost full"
-            style={{ marginTop: '1rem' }}
-            disabled={saving || !canWriteConvocatoria}
-            onClick={() => persist(false)}
-          >
-            {canWriteConvocatoria ? 'Guardar borrador' : 'Solo lectura'}
-          </button>
         </section>
       </div>
 
@@ -874,8 +1019,14 @@ export default function Convocatoria() {
                   <button type="button" className="ghost" onClick={() => aplicarPlantilla(p)}>
                     Aplicar
                   </button>
-                  <button type="button" className="ghost danger" onClick={() => borrarPlantilla(p)}>
-                    Eliminar
+                  <button
+                    type="button"
+                    className="btn-icon-del"
+                    title="Eliminar alineación"
+                    aria-label={`Eliminar ${p.nombre}`}
+                    onClick={() => borrarPlantilla(p)}
+                  >
+                    <IcoBasura />
                   </button>
                 </div>
               </div>
@@ -895,7 +1046,9 @@ export default function Convocatoria() {
         <div className="staff-row">
           <div>
             <span>Entrenador</span>
-            <strong>{equipo?.correo?.split('@')[0] || 'Entrenador'}</strong>
+            <strong>
+              {equipo?.datos?.entrenador_nombre || miembro?.nombre || 'Entrenador'}
+            </strong>
           </div>
           <div>
             <span>Club</span>

@@ -1,13 +1,14 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { api, isAbortError, mediaUrl } from '../api';
+import { api, isAbortError } from '../api';
+import AuthImage from '../components/AuthImage';
 import { useAuth } from '../auth';
+import { IcoBasura, IcoLapiz } from '../components/ActionIcons';
 import { useAbortable } from '../useAbortable';
 
 const TABS = [
   { id: 'datos', label: 'Datos del equipo' },
   { id: 'temporada', label: 'Temporada' },
-  { id: 'cuotas', label: 'Cuotas', to: '/club/cuotas' },
 ];
 
 function initials(nombre = '') {
@@ -27,7 +28,7 @@ function Field({ label, value }) {
 }
 
 export default function Club() {
-  const { equipo, canManageClub } = useAuth();
+  const { equipo, canManageClub, canReadCuotas } = useAuth();
   const [tab, setTab] = useState('datos');
   const [temporadas, setTemporadas] = useState([]);
   const [tempMsg, setTempMsg] = useState('');
@@ -77,43 +78,46 @@ export default function Club() {
           <p className="page-kicker">CLUB</p>
           <h1>Datos del equipo</h1>
         </div>
-        <div className="add-player-actions">
-          <Link to="/club/cuotas">
-            <button type="button" className="ghost">
-              Cuotas
-            </button>
-          </Link>
-          {canManageClub && (
-            <Link to="/club/miembros">
-              <button type="button" className="ghost">
-                Miembros
-              </button>
-            </Link>
-          )}
-          {tab === 'datos' && canManageClub && (
-            <Link to="/ajustes?tab=club">
-              <button type="button">Editar en Ajustes</button>
-            </Link>
-          )}
-        </div>
       </header>
 
       <div className="filters roster-filters club-tabs">
-        {TABS.map((t) =>
-          t.to ? (
-            <Link key={t.id} to={t.to}>
-              {t.label}
-            </Link>
-          ) : (
-            <button
-              type="button"
-              key={t.id}
-              className={tab === t.id ? 'active' : ''}
-              onClick={() => setTab(t.id)}
-            >
-              {t.label}
-            </button>
-          ),
+        {TABS.map((t) => (
+          <button
+            type="button"
+            key={t.id}
+            className={tab === t.id ? 'active' : ''}
+            onClick={() => setTab(t.id)}
+          >
+            {t.label}
+          </button>
+        ))}
+        {(canReadCuotas || canManageClub) && (
+          <div className="filters-end">
+            {canReadCuotas && (
+              <Link to="/club/cuotas">
+                <button type="button" className="ghost">
+                  Cuotas
+                </button>
+              </Link>
+            )}
+            {canManageClub && (
+              <Link to="/club/miembros">
+                <button type="button" className="ghost">
+                  Miembros
+                </button>
+              </Link>
+            )}
+            {tab === 'datos' && canManageClub && (
+              <Link
+                to="/ajustes?tab=club"
+                className="btn-icon-edit"
+                title="Editar en Ajustes"
+                aria-label="Editar en Ajustes"
+              >
+                <IcoLapiz />
+              </Link>
+            )}
+          </div>
         )}
       </div>
 
@@ -130,7 +134,7 @@ export default function Club() {
               <div className="club-identity">
                 <div className="club-escudo">
                   {d?.img_escudo ? (
-                    <img src={mediaUrl(d.img_escudo)} alt="Escudo" />
+                    <AuthImage path={d.img_escudo} alt="Escudo" />
                   ) : (
                     <span>{escudoLabel}</span>
                   )}
@@ -316,7 +320,9 @@ export default function Club() {
                         </button>
                         <button
                           type="button"
-                          className="ghost danger"
+                          className="btn-icon-del"
+                          title="Eliminar temporada"
+                          aria-label={`Eliminar temporada ${t.nombre}`}
                           onClick={async () => {
                             if (
                               !confirm(
@@ -335,14 +341,16 @@ export default function Club() {
                             }
                           }}
                         >
-                          Eliminar
+                          <IcoBasura />
                         </button>
                       </>
                     )}
                     {t.estado === 'archivada' && (
                       <button
                         type="button"
-                        className="ghost danger"
+                        className="btn-icon-del"
+                        title="Eliminar temporada"
+                        aria-label={`Eliminar temporada ${t.nombre}`}
                         onClick={async () => {
                           if (
                             !confirm(
@@ -361,7 +369,7 @@ export default function Club() {
                           }
                         }}
                       >
-                        Eliminar
+                        <IcoBasura />
                       </button>
                     )}
                   </div>

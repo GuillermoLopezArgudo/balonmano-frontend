@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { api, isAbortError } from '../api';
 import { useAuth } from '../auth';
+import { IcoBasura, IcoFlecha } from '../components/ActionIcons';
 import { useAbortable } from '../useAbortable';
 
 const MES_LABEL = {
@@ -27,7 +28,7 @@ function mesPagado(j, m) {
 }
 
 export default function Cuotas() {
-  const { canWriteCuotas } = useAuth();
+  const { canWriteCuotas, canReadCuotas } = useAuth();
   const [temporadas, setTemporadas] = useState([]);
   const [idTemporada, setIdTemporada] = useState('');
   const [data, setData] = useState(null);
@@ -197,6 +198,10 @@ export default function Cuotas() {
     return `TEMPORADA ${data.temporada_nombre || ''}`.trim();
   }, [data]);
 
+  if (!canReadCuotas) {
+    return <Navigate to="/club" replace />;
+  }
+
   return (
     <div className="cuotas-page">
       <header className="page-head">
@@ -207,13 +212,12 @@ export default function Cuotas() {
             Cuota mensual (sep–jun) y licencia federativa. Sin federación no se puede convocar.
           </p>
         </div>
-        <div className="add-player-actions">
-          <Link to="/club">
-            <button type="button" className="ghost">
-              Volver al club
-            </button>
-          </Link>
-        </div>
+        <Link className="page-back" to="/club">
+          <button type="button" className="ghost">
+            <IcoFlecha />
+            Volver al club
+          </button>
+        </Link>
       </header>
 
       <div className="cuotas-toolbar">
@@ -371,11 +375,13 @@ export default function Cuotas() {
                   <div className="cuotas-bulk-group cuotas-bulk-group-end">
                     <button
                       type="button"
-                      className="ghost danger"
+                      className="btn-icon-del"
                       disabled={busy || !someSelected}
+                      title="Borrar pagos seleccionados"
+                      aria-label="Borrar pagos seleccionados"
                       onClick={() => runBulk('limpiar')}
                     >
-                      Borrar
+                      <IcoBasura />
                     </button>
                     <button
                       type="button"

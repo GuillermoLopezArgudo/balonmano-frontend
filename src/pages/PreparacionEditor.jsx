@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api';
 import { useAuth } from '../auth';
+import { IcoFlecha, IcoLapiz } from '../components/ActionIcons';
 import { TIPOS_PREP, labelTipo } from './PreparacionFisica';
 
 const empty = {
@@ -17,8 +18,11 @@ export default function PreparacionEditor() {
   const { id } = useParams();
   const isNew = !id || id === 'nueva';
   const navigate = useNavigate();
+  const location = useLocation();
   const { canWriteFisico } = useAuth();
-  const soloLectura = !canWriteFisico;
+  const mayWrite = canWriteFisico;
+  const editing = isNew || (mayWrite && location.pathname.endsWith('/editar'));
+  const soloLectura = !editing;
 
   const [form, setForm] = useState(empty);
   const [loading, setLoading] = useState(!isNew);
@@ -83,7 +87,7 @@ export default function PreparacionEditor() {
       if (isNew) {
         const created = await api.createPreparacion(payload);
         setStatus('Preparación creada');
-        navigate(`/preparacion/${created.id_preparacion}`, { replace: true });
+        navigate(`/preparacion/${created.id_preparacion}/editar`, { replace: true });
       } else {
         await api.updatePreparacion(id, payload);
         setStatus('Guardado');
@@ -104,24 +108,48 @@ export default function PreparacionEditor() {
       <header className="page-head">
         <div>
           <p className="page-kicker">CONDICIÓN FÍSICA</p>
-          <h1>{isNew ? 'Nueva preparación' : form.nombre || 'Preparación'}</h1>
+          <h1>
+            {isNew
+              ? 'Nueva preparación'
+              : editing
+                ? `Editar · ${form.nombre || 'Preparación'}`
+                : form.nombre || 'Preparación'}
+          </h1>
           {!isNew && (
             <p className="muted" style={{ margin: '0.25rem 0 0' }}>
               {labelTipo(form.tipo)}
             </p>
           )}
         </div>
+        <Link className="page-back" to="/preparacion">
+          <button type="button" className="ghost">
+            <IcoFlecha />
+            Volver
+          </button>
+        </Link>
         <div className="add-player-actions">
-          <Link to="/preparacion">
-            <button type="button" className="ghost">
-              Volver
-            </button>
-          </Link>
+          {mayWrite && !editing && !isNew && (
+            <Link
+              to={`/preparacion/${id}/editar`}
+              className="btn-icon-edit"
+              title="Editar"
+              aria-label="Editar preparación"
+            >
+              <IcoLapiz />
+            </Link>
+          )}
         </div>
       </header>
 
       {error && <p className="error">{error}</p>}
       {status && <p className="club-status saved">{status}</p>}
+      {soloLectura && (
+        <p className="hint">
+          {mayWrite
+            ? 'Modo consulta. Usa Editar para cambiar la sesión.'
+            : 'Solo lectura. El preparador físico o un entrenador pueden editar.'}
+        </p>
+      )}
 
       <form className="panel club-card prep-form" onSubmit={onSubmit}>
         <div className="form-grid">
@@ -218,18 +246,13 @@ export default function PreparacionEditor() {
               {saving ? 'Guardando…' : isNew ? 'Crear preparación' : 'Guardar cambios'}
             </button>
             {!isNew && (
-              <Link to="/preparacion">
+              <Link to={`/preparacion/${id}`}>
                 <button type="button" className="ghost">
                   Cancelar
                 </button>
               </Link>
             )}
           </div>
-        )}
-        {soloLectura && (
-          <p className="muted" style={{ marginTop: '1rem' }}>
-            Solo lectura. El preparador físico o un entrenador pueden editar.
-          </p>
         )}
       </form>
     </>

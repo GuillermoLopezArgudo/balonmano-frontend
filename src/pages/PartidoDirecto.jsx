@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api';
 import { useAuth } from '../auth';
+import { IcoBasura, IcoLapiz } from '../components/ActionIcons';
+import SinAcceso from '../components/SinAcceso';
 import {
   CourtHeatMap,
   CourtShotMap,
@@ -16,16 +18,27 @@ import {
   fmtClock,
   loadClock,
   saveClock,
+  clearActiveLiveIfPartido,
   setActiveLive,
 } from '../liveClock';
 
-const ACCIONES = [
-  { key: 'lanzamiento', label: 'Lanzamiento', needsShotMap: true },
-  { key: 'parada', label: 'Parada', tipo: 'Parada', needsShotMap: true },
-  { key: 'gol_rival', label: 'Gol rival', tipo: 'Gol recibido', needsShotMap: true },
+const ACCIONES_PRIMARY = [
+  { key: 'lanzamiento', label: 'Lanzamiento', needsShotMap: true, needsGoalMap: true },
+  { key: 'parada', label: 'Parada', tipo: 'Parada', needsShotMap: true, needsGoalMap: true },
+  { key: 'gol_rival', label: 'Gol rival', tipo: 'Gol recibido', needsShotMap: true, needsGoalMap: true },
   { key: 'perdida', label: 'Pérdida', tipo: 'Pérdida', needsShotMap: false },
   { key: 'sancion', label: 'Sanción', needsShotMap: false },
 ];
+
+const ACCIONES_SECONDARY = [
+  { key: 'recuperacion', label: 'Recuperación', tipo: 'Recuperación', needsShotMap: false },
+  { key: 'falta_cometida', label: 'Falta com.', tipo: 'Falta cometida', needsShotMap: false },
+  { key: 'falta_recibida', label: 'Falta rec.', tipo: 'Falta recibida', needsShotMap: false },
+  { key: 'poste', label: 'Poste', tipo: 'Poste', needsShotMap: true, needsGoalMap: true },
+];
+
+const ACCIONES = [...ACCIONES_PRIMARY, ...ACCIONES_SECONDARY];
+const SECONDARY_KEYS = new Set(ACCIONES_SECONDARY.map((a) => a.key));
 
 const SANCION_TIPOS = [
   { key: '2min', label: "2'", tipo: 'Exclusión 2 min' },
@@ -85,11 +98,25 @@ function mapTipoToForm(tipoNombre) {
     return { accion: 'lanzamiento', sancionTipo: '2min' };
   }
   if (n.includes('parada')) return { accion: 'parada', sancionTipo: '2min' };
-  if (n.includes('recibid')) return { accion: 'gol_rival', sancionTipo: '2min' };
+  if (n.includes('recibid') && n.includes('gol')) {
+    return { accion: 'gol_rival', sancionTipo: '2min' };
+  }
   if (n.includes('pérdida') || n.includes('perdida')) {
     return { accion: 'perdida', sancionTipo: '2min' };
   }
-  if (n.includes('exclusión') || n.includes('exclusion') || n.includes("2")) {
+  if (n.includes('recuperación') || n.includes('recuperacion')) {
+    return { accion: 'recuperacion', sancionTipo: '2min' };
+  }
+  if (n.includes('falta') && n.includes('recibid')) {
+    return { accion: 'falta_recibida', sancionTipo: '2min' };
+  }
+  if (n.includes('falta')) return { accion: 'falta_cometida', sancionTipo: '2min' };
+  if (n === 'poste') return { accion: 'poste', sancionTipo: '2min' };
+  if (n === 'fuera') return { accion: 'fuera', sancionTipo: '2min' };
+  if (n.includes('técnica') || n.includes('tecnica')) {
+    return { accion: 'tecnica', sancionTipo: '2min' };
+  }
+  if (n.includes('exclusión') || n.includes('exclusion') || /\b2\s*min/.test(n)) {
     return { accion: 'sancion', sancionTipo: '2min' };
   }
   if (n.includes('amarilla')) return { accion: 'sancion', sancionTipo: 'amarilla' };
@@ -127,7 +154,7 @@ function applyScorePatch(score, patch) {
 export default function PartidoDirecto() {
   const { id: routeId } = useParams();
   const navigate = useNavigate();
-  const { equipo, canWriteDirecto } = useAuth();
+  const { equipo, canWriteDirecto, canWritePartidos, canRead } = useAuth();
   const [partidoId, setPartidoId] = useState(routeId || '');
   const [partido, setPartido] = useState(null);
   const [partidos, setPartidos] = useState([]);
@@ -140,6 +167,7 @@ export default function PartidoDirecto() {
   const [running, setRunning] = useState(false);
   const [clockForId, setClockForId] = useState(null);
   const [accion, setAccion] = useState('lanzamiento');
+  const [masAcciones, setMasAcciones] = useState(false);
   const [sancionTipo, setSancionTipo] = useState('2min');
   const [jugadorId, setJugadorId] = useState('');
   const [zona, setZona] = useState('');
@@ -157,21 +185,26 @@ export default function PartidoDirecto() {
   const [error, setError] = useState('');
   const tickRef = useRef(null);
 
-  const needsShotMap = ACCIONES.find((a) => a.key === accion)?.needsShotMap ?? false;
+  const accionMeta = ACCIONES.find((a) => a.key === accion);
+  const needsShotMap = accionMeta?.needsShotMap ?? false;
+  const needsGoalMap = accionMeta?.needsGoalMap ?? false;
   const esParada = accion === 'parada';
   const esGolRival = accion === 'gol_rival';
   const esLanzamiento = accion === 'lanzamiento';
+  const esPoste = accion === 'poste';
+  const esFuera = accion === 'fuera';
   const esSancion = accion === 'sancion';
   const esPerdida = accion === 'perdida';
+  const needsLlegada = needsShotMap && !esPerdida;
   const opcionesContexto = esPerdida ? PERDIDAS : LLEGADAS;
   const esPorteraAccion = esParada || esGolRival;
 
   const jugadoresParaAccion = useMemo(() => {
     if (esPorteraAccion) return jugadores.filter(isPortera);
-    // Lanzamientos: solo jugadoras de campo (sin porteras)
-    if (esLanzamiento) return jugadores.filter((j) => !isPortera(j));
+    // Tiros de campo: solo jugadoras de campo (sin porteras)
+    if (esLanzamiento || esPoste || esFuera) return jugadores.filter((j) => !isPortera(j));
     return jugadores;
-  }, [jugadores, esPorteraAccion, esLanzamiento]);
+  }, [jugadores, esPorteraAccion, esLanzamiento, esPoste, esFuera]);
 
   // Ajustar selección al cambiar de acción (portera ↔ campo)
   useEffect(() => {
@@ -200,12 +233,15 @@ export default function PartidoDirecto() {
         setPartido(p);
         if (p) setScore({ local: p.goles_local, visitante: p.goles_visitante });
 
+        // Convocatoria guardada → solo convocadas; si no → plantilla completa
         let pool = jugs.filter((j) => j.activo !== false);
         if (pid) {
           try {
             const conv = await api.getConvocatoria(pid);
-            const convIds = new Set((conv.items || []).map((i) => i.id_jugador));
-            if (convIds.size) pool = jugs.filter((j) => convIds.has(j.id_jugador));
+            if (conv.estado === 'guardada' && (conv.items || []).length) {
+              const convIds = new Set(conv.items.map((i) => i.id_jugador));
+              pool = jugs.filter((j) => convIds.has(j.id_jugador));
+            }
           } catch {
             /* plantilla completa */
           }
@@ -344,6 +380,7 @@ export default function PartidoDirecto() {
     const mapped = mapTipoToForm(t?.nombre);
     setEditingId(a.id_accion);
     setAccion(mapped.accion);
+    if (SECONDARY_KEYS.has(mapped.accion)) setMasAcciones(true);
     setSancionTipo(mapped.sancionTipo);
     setJugadorId(a.id_jugador || '');
     setZona(a.zona || '');
@@ -419,16 +456,29 @@ export default function PartidoDirecto() {
       setError('Selecciona partido y jugador');
       return;
     }
-    if (needsShotMap && (!zona || !zonaPorteria)) {
+    if (needsShotMap && !zona) {
       setError(
         esPorteraAccion
-          ? 'Marca desde dónde lanzó el rival y la casilla de portería'
-          : 'Marca origen en la pista y destino (portería o fuera)',
+          ? 'Marca desde dónde lanzó el rival'
+          : 'Marca el origen en la pista',
       );
       return;
     }
-    if (accion === 'lanzamiento' && isPortera(jugadores.find((j) => j.id_jugador === jugadorId) || {})) {
-      setError('Un lanzamiento se asigna a una jugadora de campo, no a la portera');
+    if (needsGoalMap && !zonaPorteria) {
+      setError(
+        esPorteraAccion
+          ? 'Marca la casilla de portería'
+          : esPoste
+            ? 'Marca dónde tocó el poste'
+            : 'Marca destino (portería o fuera)',
+      );
+      return;
+    }
+    if (
+      (esLanzamiento || esPoste || esFuera) &&
+      isPortera(jugadores.find((j) => j.id_jugador === jugadorId) || {})
+    ) {
+      setError('Esa acción se asigna a una jugadora de campo, no a la portera');
       return;
     }
     if (esPorteraAccion && !isPortera(jugadores.find((j) => j.id_jugador === jugadorId) || {})) {
@@ -439,7 +489,7 @@ export default function PartidoDirecto() {
       setError('Elige una casilla dentro de la portería (no fuera).');
       return;
     }
-    if ((needsShotMap || esPerdida) && !opcionesContexto.some((o) => o.key === contexto)) {
+    if ((needsLlegada || esPerdida) && !opcionesContexto.some((o) => o.key === contexto)) {
       setError(esPerdida ? 'Elige el tipo de pérdida' : 'Elige cómo llega el lanzamiento');
       return;
     }
@@ -474,9 +524,12 @@ export default function PartidoDirecto() {
         minuto: editingId && prev ? prev.minuto : minuto,
         segundo: editingId && prev ? prev.segundo : segundo,
         zona: needsShotMap ? zona : null,
-        zona_porteria: needsShotMap ? zonaPorteria : null,
-        es_contraataque: needsShotMap && (esLanzamiento || esGolRival) ? esContraataque : false,
-        contexto: needsShotMap || esPerdida ? contexto : null,
+        zona_porteria: needsGoalMap ? zonaPorteria : null,
+        es_contraataque:
+          needsShotMap && (esLanzamiento || esGolRival || esPoste || esFuera)
+            ? esContraataque
+            : false,
+        contexto: needsLlegada || esPerdida ? contexto : null,
         id_rival_jugador: idRivalJug,
       };
 
@@ -537,14 +590,22 @@ export default function PartidoDirecto() {
 
   const recent = [...acciones].slice(-8).reverse();
 
-  const calorPista = useMemo(() => {
-    const counts = {};
+  const { calorEquipo, calorRival } = useMemo(() => {
+    const tipoById = Object.fromEntries(tipos.map((t) => [t.id_tipo_accion, t.nombre]));
+    const equipoCounts = {};
+    const rivalCounts = {};
     for (const a of acciones) {
       if (!a.zona) continue;
-      counts[a.zona] = (counts[a.zona] || 0) + 1;
+      const n = (tipoById[a.id_tipo_accion] || '').toLowerCase();
+      const esRival =
+        (n.includes('gol') && n.includes('recibid')) || n.includes('parada');
+      const bucket = esRival ? rivalCounts : equipoCounts;
+      bucket[a.zona] = (bucket[a.zona] || 0) + 1;
     }
-    return counts;
-  }, [acciones]);
+    return { calorEquipo: equipoCounts, calorRival: rivalCounts };
+  }, [acciones, tipos]);
+
+  if (!canRead('directo')) return <SinAcceso que="el partido en directo" />;
 
   return (
     <>
@@ -578,15 +639,21 @@ export default function PartidoDirecto() {
                   Resumen
                 </button>
               </Link>
-              {partido?.estado !== 'jugado' && (
+              {canWritePartidos &&
+                partido?.estado !== 'jugado' &&
+                partido?.estado !== 'sin_resultado' && (
                 <button
                   type="button"
                   className="live-cerrar-btn"
                   disabled={saving}
                   onClick={async () => {
+                    const conGoles = (score.local || 0) > 0 || (score.visitante || 0) > 0;
+                    const estado = conGoles ? 'jugado' : 'sin_resultado';
                     if (
                       !window.confirm(
-                        '¿Cerrar el partido? Se marcará como jugado y irás al resumen.',
+                        conGoles
+                          ? '¿Cerrar el partido? Se marcará como jugado y irás al resumen.'
+                          : '¿Cerrar sin resultado? No sumará en analítica. Irás al resumen.',
                       )
                     ) {
                       return;
@@ -596,10 +663,11 @@ export default function PartidoDirecto() {
                     try {
                       setRunning(false);
                       await api.updatePartido(partidoId, {
-                        estado: 'jugado',
+                        estado,
                         goles_local: score.local,
                         goles_visitante: score.visitante,
                       });
+                      clearActiveLiveIfPartido(partidoId);
                       navigate(`/partidos/${partidoId}/resumen`);
                     } catch (err) {
                       setError(err.message);
@@ -613,7 +681,7 @@ export default function PartidoDirecto() {
               )}
             </>
           )}
-          <Link to="/partidos">
+          <Link to={partidoId ? `/partidos/${partidoId}` : '/partidos'}>
             <button type="button" className="ghost">
               Salir
             </button>
@@ -676,8 +744,8 @@ export default function PartidoDirecto() {
         <section className="panel club-card registro-accion live-registro">
           <h2>Registro acción</h2>
 
-          <div className="live-acciones">
-            {ACCIONES.map((a) => (
+          <div className="live-acciones" role="group" aria-label="Acciones principales">
+            {ACCIONES_PRIMARY.map((a) => (
               <button
                 type="button"
                 key={a.key}
@@ -690,15 +758,57 @@ export default function PartidoDirecto() {
                     setZona('');
                     setZonaPorteria('');
                     setEsContraataque(false);
-                  } else if (a.key === 'parada') {
-                    setEsContraataque(false);
+                  } else {
+                    if (!a.needsGoalMap) setZonaPorteria('');
+                    else if (a.key === 'poste') setZonaPorteria('');
+                    if (a.key === 'parada') setEsContraataque(false);
                   }
                 }}
               >
                 {a.label}
               </button>
             ))}
+            <button
+              type="button"
+              className={`live-acciones-more${masAcciones ? ' active' : ''}${
+                SECONDARY_KEYS.has(accion) ? ' has-sel' : ''
+              }`}
+              onClick={() => setMasAcciones((v) => !v)}
+              aria-expanded={masAcciones}
+            >
+              {masAcciones ? 'Menos' : 'Más…'}
+            </button>
           </div>
+          {masAcciones && (
+            <div
+              className="live-acciones live-acciones-sec"
+              role="group"
+              aria-label="Más acciones"
+            >
+              {ACCIONES_SECONDARY.map((a) => (
+                <button
+                  type="button"
+                  key={a.key}
+                  className={accion === a.key ? 'active' : ''}
+                  onClick={() => {
+                    setAccion(a.key);
+                    setError('');
+                    setContexto('');
+                    if (!a.needsShotMap) {
+                      setZona('');
+                      setZonaPorteria('');
+                      setEsContraataque(false);
+                    } else {
+                      if (!a.needsGoalMap) setZonaPorteria('');
+                      else if (a.key === 'poste') setZonaPorteria('');
+                    }
+                  }}
+                >
+                  {a.label}
+                </button>
+              ))}
+            </div>
+          )}
 
           {esSancion && (
             <div className="live-sancion-tipos" role="group" aria-label="Tipo de sanción">
@@ -813,7 +923,7 @@ export default function PartidoDirecto() {
             </div>
           )}
 
-          {(needsShotMap || esPerdida) && (
+          {(needsLlegada || esPerdida) && (
             <div className="live-contexto">
               <p className="live-contexto-label">
                 {esPerdida ? 'Tipo de pérdida' : 'Cómo llega al lanzamiento'}
@@ -843,7 +953,7 @@ export default function PartidoDirecto() {
             </div>
           )}
 
-          {needsShotMap && (esLanzamiento || esGolRival) && (
+          {needsShotMap && (esLanzamiento || esGolRival || esPoste || esFuera) && (
             <label className="live-contra-check">
               <input
                 type="checkbox"
@@ -865,26 +975,39 @@ export default function PartidoDirecto() {
                 title={esPorteraAccion ? 'Origen · tiro rival' : 'Origen · pista'}
                 emptyLabel={esPorteraAccion ? 'Desde dónde lanzó el rival' : 'Toca una zona'}
               />
-              <GoalShotMap
-                value={zonaPorteria}
-                onChange={setZonaPorteria}
-                showFuera={esLanzamiento}
-                title={
-                  esParada
-                    ? 'Destino · parada'
-                    : esGolRival
-                      ? 'Destino · gol recibido'
-                      : 'Destino · portería'
-                }
-                emptyLabel={esPorteraAccion ? 'Casilla de portería' : 'Puerta o fuera'}
-                hint={
-                  esParada
-                    ? 'Pista = tiro rival · Portería = zona de la parada'
-                    : esGolRival
-                      ? 'Pista = tiro rival · Portería = dónde entró el gol'
-                      : 'Dentro = gol · Fuera = fallado'
-                }
-              />
+              {needsGoalMap && (
+                <GoalShotMap
+                  value={zonaPorteria}
+                  onChange={setZonaPorteria}
+                  showFuera={esLanzamiento}
+                  mode={esPoste ? 'posts' : 'goal'}
+                  title={
+                    esParada
+                      ? 'Destino · parada'
+                      : esGolRival
+                        ? 'Destino · gol recibido'
+                        : esPoste
+                          ? 'Destino · poste'
+                          : 'Destino · portería'
+                  }
+                  emptyLabel={
+                    esPorteraAccion
+                      ? 'Casilla de portería'
+                      : esPoste
+                        ? 'Elige un palo'
+                        : 'Puerta o fuera'
+                  }
+                  hint={
+                    esParada
+                      ? 'Pista = tiro rival · Portería = zona de la parada'
+                      : esGolRival
+                        ? 'Pista = tiro rival · Portería = dónde entró el gol'
+                        : esPoste
+                          ? 'Solo los palos: izquierdo, larguero o derecho'
+                          : 'Dentro = gol · Fuera = fallado'
+                  }
+                />
+              )}
             </div>
           )}
 
@@ -911,11 +1034,31 @@ export default function PartidoDirecto() {
         </section>
 
         <section className="panel club-card live-heat">
-          <h2>Mapa de actividad</h2>
+          <h2>Mapas de actividad</h2>
           <p className="panel-hint">
-            Zonas desde las que ha habido más acción en este partido. El verde más intenso es la zona más usada.
+            Origen en pista. Verde más intenso = zona más usada. Izquierda: tu equipo ·
+            Derecha: rival (paradas y goles recibidos).
           </p>
-          <CourtHeatMap counts={calorPista} />
+          <div className="live-heat-pair">
+            <div className="live-heat-col">
+              <CourtHeatMap
+                counts={calorEquipo}
+                title={equipo?.datos?.nombre_corto || equipo?.datos?.nombre || 'Tu equipo'}
+                gradientId="heatEquipo"
+              />
+            </div>
+            <div className="live-heat-col">
+              <CourtHeatMap
+                counts={calorRival}
+                title={
+                  partido?.es_local === false
+                    ? partido?.equipo_local_nombre || 'Rival'
+                    : partido?.equipo_visitante_nombre || 'Rival'
+                }
+                gradientId="heatRival"
+              />
+            </div>
+          </div>
         </section>
 
         <section className="panel club-card live-feed-panel">
@@ -948,21 +1091,23 @@ export default function PartidoDirecto() {
                     <div className="live-feed-actions">
                       <button
                         type="button"
-                        className="ghost live-feed-btn"
+                        className="btn-icon-edit"
                         disabled={saving}
                         onClick={() => empezarEdicion(a)}
                         title="Editar"
+                        aria-label="Editar acción"
                       >
-                        Editar
+                        <IcoLapiz size={16} />
                       </button>
                       <button
                         type="button"
-                        className="ghost live-feed-btn live-feed-btn-del"
+                        className="btn-icon-del"
                         disabled={saving}
                         onClick={() => borrarAccion(a)}
                         title="Borrar"
+                        aria-label="Borrar acción"
                       >
-                        Borrar
+                        <IcoBasura size={16} />
                       </button>
                     </div>
                   )}

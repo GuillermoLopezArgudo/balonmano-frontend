@@ -47,13 +47,6 @@ const IcoAnalitica = (
   </Icon>
 );
 
-const IcoInformes = (
-  <Icon>
-    <path d="M7 3h7l4 4v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" />
-    <path d="M14 3v4h4M9 12h7M9 16h7M9 8h2" />
-  </Icon>
-);
-
 const IcoClub = (
   <Icon>
     <path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-9.5z" />
@@ -90,23 +83,23 @@ const IcoFisico = (
 
 const links = [
   { to: '/', label: 'Resumen', ico: IcoResumen, end: true },
-  { to: '/plantilla', label: 'Plantilla', ico: IcoPlantilla },
-  { to: '/partidos', label: 'Partidos', ico: IcoPartidos },
-  { to: '/jugadas', label: 'Jugadas', ico: IcoJugadas },
+  { to: '/plantilla', label: 'Plantilla', ico: IcoPlantilla, area: 'plantilla' },
+  { to: '/partidos', label: 'Partidos', ico: IcoPartidos, area: 'partidos' },
+  { to: '/jugadas', label: 'Jugadas', ico: IcoJugadas, area: 'jugadas' },
   {
     to: '/preparacion/entrenamiento',
-    label: 'Físico/Entrenamiento',
+    label: 'Entrenamientos',
     ico: IcoFisico,
     match: '/preparacion',
+    area: 'fisico',
   },
-  { to: '/analitica', label: 'Analítica', ico: IcoAnalitica },
-  { to: '/informes', label: 'Informes', ico: IcoInformes },
-  { to: '/club', label: 'Club', ico: IcoClub },
+  { to: '/analitica', label: 'Analítica', ico: IcoAnalitica, area: 'analitica' },
+  { to: '/club', label: 'Club', ico: IcoClub, area: 'club' },
   { to: '/ajustes', label: 'Ajustes', ico: IcoAjustes },
 ];
 
 export default function AppShell() {
-  const { equipo, miembro, logout } = useAuth();
+  const { equipo, miembro, logout, canRead } = useAuth();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const navId = useId();
@@ -205,7 +198,7 @@ export default function AppShell() {
         </div>
 
         <nav>
-          {links.map((l) => (
+          {links.filter((l) => !l.area || canRead(l.area)).map((l) => (
             <NavLink
               key={l.to}
               to={l.to}

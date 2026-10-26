@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { api } from '../api';
+import { passwordError } from '../password';
 import { useAuth } from '../auth';
 
 function temporadaActualNombre(ref = new Date()) {
@@ -111,8 +112,9 @@ export default function Registro() {
       setError('Indica el nombre del entrenador / responsable');
       return;
     }
-    if (!form.correo || form.password.length < 8) {
-      setError('Correo y contraseña (mín. 8 caracteres) son obligatorios');
+    const passMsg = passwordError(form.password);
+    if (!form.correo || passMsg) {
+      setError(passMsg || 'El correo es obligatorio');
       return;
     }
     if (form.password !== form.password2) {
@@ -311,6 +313,7 @@ export default function Registro() {
                   required
                   minLength={8}
                 />
+                <p className="muted">Mayúscula, minúscula y un número.</p>
               </div>
               <div className="field">
                 <label>Confirmar contraseña</label>

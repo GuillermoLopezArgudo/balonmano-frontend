@@ -32,9 +32,16 @@ export const FUERA_ZONAS = [
   { key: 'FD', label: 'Fuera der.', short: '→' },
 ];
 
+/** Palos / larguero (acción Poste). */
+export const POSTE_ZONAS = [
+  { key: 'PL', label: 'Palo izq.', short: 'Palo I' },
+  { key: 'LG', label: 'Larguero', short: 'Larguero' },
+  { key: 'PR', label: 'Palo der.', short: 'Palo D' },
+];
+
 const PISTA_LABEL = Object.fromEntries(PISTA_ZONAS.map((z) => [z.key, z.label]));
 const PORTERIA_LABEL = Object.fromEntries(
-  [...PORTERIA_ZONAS, ...FUERA_ZONAS].map((z) => [z.key, z.label]),
+  [...PORTERIA_ZONAS, ...FUERA_ZONAS, ...POSTE_ZONAS].map((z) => [z.key, z.label]),
 );
 
 export function labelPista(key) {
@@ -105,14 +112,18 @@ function heatFill(count, max) {
 }
 
 /** Pista de solo lectura: más verde cuanto más se ha lanzado desde esa zona. */
-export function CourtHeatMap({ counts = {} }) {
+export function CourtHeatMap({
+  counts = {},
+  title = 'Origen · pista',
+  gradientId = 'courtHeat',
+}) {
   const values = Object.values(counts);
   const total = values.reduce((sum, n) => sum + n, 0);
   const max = values.reduce((m, n) => Math.max(m, n), 0);
   return (
     <div className="shot-map shot-map-heat">
       <div className="shot-map-head">
-        <strong>Origen · pista</strong>
+        <strong>{title}</strong>
         <span>{total ? `${total} acción${total === 1 ? '' : 'es'}` : 'Sin actividad'}</span>
       </div>
       <svg
@@ -121,7 +132,7 @@ export function CourtHeatMap({ counts = {} }) {
         role="img"
         aria-label="Mapa de actividad por zona"
       >
-        <HandballCourtMarks gradientId="courtHeat" />
+        <HandballCourtMarks gradientId={gradientId} />
         {PISTA_CELLS.map((c) => {
           const n = counts[c.key] || 0;
           const hot = max > 0 && n === max;
@@ -213,12 +224,13 @@ export function CourtShotMap({
   );
 }
 
-/** Portería 3×3; opcionalmente zonas fuera (alto / izq / der). */
+/** Portería 3×3; opcionalmente zonas fuera (alto / izq / der) o solo palos (mode posts). */
 export function GoalShotMap({
   value,
   onChange,
   hint = 'Dentro = gol · Fuera = fallado',
   showFuera = true,
+  mode = 'goal', // 'goal' | 'posts'
   title = 'Destino · portería',
   emptyLabel = 'Puerta o fuera',
 }) {
@@ -229,6 +241,54 @@ export function GoalShotMap({
   ];
 
   const pick = (key) => () => onChange(key);
+
+  if (mode === 'posts') {
+    return (
+      <div className="shot-map shot-map-goal-only">
+        <div className="shot-map-head">
+          <strong>{title}</strong>
+          <span>{value ? labelPorteria(value) : emptyLabel}</span>
+        </div>
+        <div className="goal-map goal-map-posts" role="group" aria-label="Palos de la portería">
+          <button
+            type="button"
+            className={`goal-post-bar${value === 'LG' ? ' selected' : ''}`}
+            onClick={pick('LG')}
+            aria-pressed={value === 'LG'}
+            title="Larguero"
+          >
+            Larguero
+          </button>
+          <div className="goal-post-sides">
+            <button
+              type="button"
+              className={`goal-post-side left${value === 'PL' ? ' selected' : ''}`}
+              onClick={pick('PL')}
+              aria-pressed={value === 'PL'}
+              title="Palo izquierdo"
+            >
+              <span>Palo</span>
+              <small>izq.</small>
+            </button>
+            <div className="goal-post-mouth" aria-hidden="true">
+              <span>Portería</span>
+            </div>
+            <button
+              type="button"
+              className={`goal-post-side right${value === 'PR' ? ' selected' : ''}`}
+              onClick={pick('PR')}
+              aria-pressed={value === 'PR'}
+              title="Palo derecho"
+            >
+              <span>Palo</span>
+              <small>der.</small>
+            </button>
+          </div>
+        </div>
+        {hint ? <p className="goal-map-hint">{hint}</p> : null}
+      </div>
+    );
+  }
 
   const frame = (
     <div className="goal-map-frame">

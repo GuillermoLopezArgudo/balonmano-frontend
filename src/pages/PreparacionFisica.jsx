@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api';
 import { useAuth } from '../auth';
+import { IcoBasura, IcoLapiz, IcoVer } from '../components/ActionIcons';
 import { FisicoTabs } from './Entrenamientos';
 
 export const TIPOS_PREP = [
@@ -89,16 +90,9 @@ export default function PreparacionFisica() {
     <>
       <header className="page-head">
         <div>
-          <p className="page-kicker">CONDICIÓN FÍSICA</p>
-          <h1>Preparación física</h1>
+          <p className="page-kicker">ENTRENAMIENTOS · FÍSICO</p>
+          <h1>Sesiones físicas</h1>
         </div>
-        {canWriteFisico && (
-          <div className="add-player-actions">
-            <Link to="/preparacion/nueva">
-              <button type="button">Nueva preparación</button>
-            </Link>
-          </div>
-        )}
       </header>
 
       <FisicoTabs />
@@ -117,6 +111,11 @@ export default function PreparacionFisica() {
             {t.label}
           </button>
         ))}
+        {canWriteFisico && (
+          <Link to="/preparacion/nueva" className="filters-end">
+            <button type="button">Nueva preparación</button>
+          </Link>
+        )}
       </div>
 
       <div className="field roster-search">
@@ -165,20 +164,35 @@ export default function PreparacionFisica() {
                   {p.objetivo && <p className="muted prep-objetivo">{p.objetivo}</p>}
                 </div>
                 <div className="prep-row-actions">
-                  <Link to={`/preparacion/${p.id_preparacion}`}>
-                    <button type="button" className="ghost">
-                      {canWriteFisico ? 'Abrir' : 'Ver'}
-                    </button>
+                  <Link
+                    to={`/preparacion/${p.id_preparacion}`}
+                    className="btn-icon-view"
+                    title="Ver"
+                    aria-label="Ver preparación"
+                  >
+                    <IcoVer />
                   </Link>
                   {canWriteFisico && (
-                    <button
-                      type="button"
-                      className="ghost danger"
-                      disabled={busy}
-                      onClick={() => borrar(p)}
-                    >
-                      Eliminar
-                    </button>
+                    <>
+                      <Link
+                        to={`/preparacion/${p.id_preparacion}/editar`}
+                        className="btn-icon-edit"
+                        title="Editar"
+                        aria-label="Editar preparación"
+                      >
+                        <IcoLapiz />
+                      </Link>
+                      <button
+                        type="button"
+                        className="btn-icon-del"
+                        disabled={busy}
+                        title="Eliminar"
+                        aria-label="Eliminar preparación"
+                        onClick={() => borrar(p)}
+                      >
+                        <IcoBasura />
+                      </button>
+                    </>
                   )}
                 </div>
               </div>

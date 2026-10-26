@@ -1,30 +1,77 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { api, isAbortError, mediaUrl } from '../api';
+import { api, isAbortError } from '../api';
 import { useAuth } from '../auth';
 import { useAbortable } from '../useAbortable';
 
+function soyLocalPartido(partido, idEquipo) {
+  if (!partido || !idEquipo) return true;
+  const myId = String(idEquipo);
+  if (
+    partido.es_local != null &&
+    partido.id_equipo != null &&
+    String(partido.id_equipo) === myId
+  ) {
+    return Boolean(partido.es_local);
+  }
+  return String(partido.id_equipo_local) === myId;
+}
+
+function rivalPartido(partido, idEquipo) {
+  const local = soyLocalPartido(partido, idEquipo);
+  return (
+    (local ? partido.equipo_visitante_nombre : partido.equipo_local_nombre) ||
+    'Rival por definir'
+  );
+}
+
 function resultadoVsEquipo(partido, idEquipo) {
   if (!partido || !idEquipo) return null;
-  const soyLocal = partido.id_equipo_local === idEquipo;
-  const gf = soyLocal ? partido.goles_local : partido.goles_visitante;
-  const gc = soyLocal ? partido.goles_visitante : partido.goles_local;
-  const rival = soyLocal ? partido.equipo_visitante_nombre : partido.equipo_local_nombre;
+  const soyLocal = soyLocalPartido(partido, idEquipo);
+  const gf = soyLocal ? partido.goles_local ?? 0 : partido.goles_visitante ?? 0;
+  const gc = soyLocal ? partido.goles_visitante ?? 0 : partido.goles_local ?? 0;
+  const rival = rivalPartido(partido, idEquipo);
   let marca = 'E';
-  if (gf > gc) marca = 'G';
-  if (gf < gc) marca = 'P';
-  return { marca, gf, gc, rival, fecha: partido.fecha };
+  let marcaLabel = 'Empate';
+  if (gf > gc) {
+    marca = 'V';
+    marcaLabel = 'Victoria';
+  } else if (gf < gc) {
+    marca = 'D';
+    marcaLabel = 'Derrota';
+  }
+  return {
+    marca,
+    marcaLabel,
+    gf,
+    gc,
+    rival,
+    condicion: soyLocal ? 'Local' : 'Visitante',
+    fecha: partido.fecha,
+  };
+}
+
+function fmtFechaPartido(iso) {
+  if (!iso) return '';
+  return new Date(iso).toLocaleString('es-ES', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
 export default function Dashboard() {
-  const { equipo } = useAuth();
+  const { equipo, canWritePartidos } = useAuth();
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
 
   useAbortable(async ({ signal, alive }) => {
     try {
       const d = await api.getDashboard({ signal });
-      if (alive()) setData(d);
+      if (!alive()) return;
+      setData(d);
     } catch (e) {
       if (!alive() || isAbortError(e)) return;
       setError(e.message);
@@ -34,17 +81,22 @@ export default function Dashboard() {
   const forma = useMemo(() => {
     if (!data?.ultimos_partidos?.length || !equipo?.id_equipo) return [];
     return data.ultimos_partidos
+      .filter((p) => (p.estado || 'jugado') === 'jugado')
       .slice(0, 5)
       .map((p) => resultadoVsEquipo(p, equipo.id_equipo))
       .filter(Boolean);
   }, [data, equipo]);
 
   const proximo = data?.proximos_partidos?.[0];
-  const zonaMedia = useMemo(() => {
-    if (!data?.efectividad_por_posicion?.length) return 0;
-    const vals = data.efectividad_por_posicion.map((r) => r.efectividad);
-    return Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
-  }, [data]);
+  const proximoLocal = proximo ? soyLocalPartido(proximo, equipo?.id_equipo) : true;
+  const proximoRival = proximo
+    ? rivalPartido(proximo, equipo?.id_equipo)
+    : null;
+  const nosotrosNombre =
+    equipo?.datos?.nombre_corto ||
+    equipo?.datos?.nombre ||
+    data?.equipo_nombre ||
+    'Tu equipo';
 
   if (error) return <p className="error">{error}</p>;
   if (!data) return <p className="muted">Cargando resumen…</p>;
@@ -64,10 +116,10 @@ export default function Dashboard() {
         <div>
           <p className="page-kicker">{eyebrow}</p>
           <h1>Resumen del equipo</h1>
+          <p className="muted" style={{ marginTop: '0.35rem' }}>
+            Vista general: próximos partidos, estado del club y atajos del día a día.
+          </p>
         </div>
-        <Link to="/partidos/nuevo">
-          <button type="button">+ Registrar partido</button>
-        </Link>
       </header>
 
       <div className="metrics">
@@ -83,90 +135,140 @@ export default function Dashboard() {
           <span>Eficacia de tiro</span>
           <strong className="c-purple">{data.efectividad}%</strong>
         </div>
-        <div className="metric">
-          <span>Eficacia por zona</span>
-          <strong className="c-orange">{zonaMedia}%</strong>
-        </div>
       </div>
 
       <div className="grid-2 dash-main">
-        <section className="panel">
-          <h2>Producción ofensiva</h2>
-          <p className="panel-hint">Distribución por posición</p>
-          {data.efectividad_por_posicion.map((row, i) => (
-            <div className="bar-row" key={row.posicion}>
-              <span>{row.posicion}</span>
-              <div className="bar-track">
-                <div
-                  className={`bar-fill c${i % 5}`}
-                  style={{ width: `${Math.min(Math.max(row.efectividad || 0, 0), 100)}%` }}
-                />
-              </div>
-              <strong>{row.efectividad}%</strong>
+        <section className="panel dash-gk-panel">
+          <div className="dash-panel-head">
+            <div>
+              <h2>Portería</h2>
+              <p className="panel-hint">Paradas y goles recibidos del equipo</p>
             </div>
-          ))}
-          {!data.efectividad_por_posicion.length && (
-            <p className="muted">Sin datos de producción todavía</p>
-          )}
+            <Link to="/analitica?seccion=porteros">
+              <button type="button" className="ghost">
+                Detalle
+              </button>
+            </Link>
+          </div>
+          <div className="dash-gk-grid">
+            <div className="dash-gk-stat">
+              <span>Paradas</span>
+              <strong className="c-lime">{data.paradas ?? 0}</strong>
+              <small>
+                {(data.lanzamientos_recibidos ?? 0) > 0
+                  ? `${data.lanzamientos_recibidos} tiros recibidos`
+                  : 'Sin tiros aún'}
+              </small>
+            </div>
+            <div className="dash-gk-stat">
+              <span>Goles encajados</span>
+              <strong className="c-orange">{data.goles_recibidos ?? 0}</strong>
+              <small>En portería propia</small>
+            </div>
+            <div className="dash-gk-stat">
+              <span>% paradas</span>
+              <strong className="c-cyan">{data.efectividad_paradas ?? 0}%</strong>
+              <small>Paradas / tiros</small>
+            </div>
+          </div>
         </section>
 
-        <section className="match-card">
+        <section className="match-card dash-next-card">
           <div className="match-card-body">
-            <span className="match-tag">
-              {proximo?.jornada ? `Jornada ${proximo.jornada}` : 'Próximo partido'}
-            </span>
-            <div className="match-teams">
-              <div>
-                <span className="dot lime" />
-                {proximo?.equipo_local_nombre || data.equipo_nombre}
-              </div>
-              <strong>vs</strong>
-              <div>
-                <span className="dot purple" />
-                {proximo?.equipo_visitante_nombre || 'Por definir'}
-              </div>
+            <div className="dash-next-tags">
+              <span className="match-tag">Próximo partido</span>
+              {proximo?.jornada != null && (
+                <span className="match-tag match-tag-muted">Jornada {proximo.jornada}</span>
+              )}
+              {proximo && (
+                <span className="match-tag match-tag-muted">
+                  {proximoLocal ? 'Local' : 'Visitante'}
+                </span>
+              )}
             </div>
-            <p className="muted">
-              {proximo
-                ? new Date(proximo.fecha).toLocaleString()
-                : 'Aún no hay partidos programados'}
-            </p>
-          </div>
-          <div
-            className="match-card-photo"
-            style={
-              proximo?.img_portada
-                ? {
-                    backgroundImage: `linear-gradient(160deg, rgba(11, 14, 20, 0.15), rgba(11, 14, 20, 0.82)), url(${mediaUrl(proximo.img_portada)})`,
-                  }
-                : undefined
-            }
-          >
-            <p>
-              {proximo
-                ? new Date(proximo.fecha).toLocaleDateString('es-ES', {
-                    weekday: 'short',
-                    day: 'numeric',
-                    month: 'short',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })
-                : 'Programa tu próximo partido'}
-            </p>
+            {proximo ? (
+              <>
+                <div className="dash-next-vs">
+                  <div className="dash-next-side is-us">
+                    <span className="dot lime" />
+                    <strong>{nosotrosNombre}</strong>
+                  </div>
+                  <span className="dash-next-sep">vs</span>
+                  <div className="dash-next-side is-rival">
+                    <span className="dot purple" />
+                    <strong title={proximoRival}>{proximoRival}</strong>
+                  </div>
+                </div>
+                <p className="dash-next-when">{fmtFechaPartido(proximo.fecha)}</p>
+                {(proximo.pabellon || proximo.competicion) && (
+                  <p className="muted dash-next-meta">
+                    {[proximo.competicion, proximo.pabellon].filter(Boolean).join(' · ')}
+                  </p>
+                )}
+                <div className="dash-next-actions">
+                  <Link to={`/partidos/${proximo.id_partido}`}>
+                    <button type="button" className="ghost">
+                      Ver partido
+                    </button>
+                  </Link>
+                  <Link to="/partidos">
+                    <button type="button" className="ghost">
+                      Calendario
+                    </button>
+                  </Link>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="muted" style={{ margin: '0.5rem 0 1rem' }}>
+                  No hay partidos programados todavía.
+                </p>
+                {canWritePartidos && (
+                  <Link to="/partidos/nuevo">
+                    <button type="button">Programar partido</button>
+                  </Link>
+                )}
+              </>
+            )}
           </div>
         </section>
       </div>
 
+      <section className="panel" style={{ marginTop: '1rem' }}>
+        <h2>Eficacia por posición</h2>
+        <p className="panel-hint">Goles / lanzamientos por familia de posición</p>
+        {data.efectividad_por_posicion.map((row, i) => (
+          <div className="bar-row" key={row.posicion}>
+            <span>{row.posicion}</span>
+            <div className="bar-track">
+              <div
+                className={`bar-fill c${i % 5}`}
+                style={{ width: `${Math.min(Math.max(row.efectividad || 0, 0), 100)}%` }}
+              />
+            </div>
+            <strong>{row.efectividad}%</strong>
+          </div>
+        ))}
+        {!data.efectividad_por_posicion.length && (
+          <p className="muted">Sin datos de eficacia todavía</p>
+        )}
+      </section>
+
       <section className="panel forma-panel">
-        <h2>Forma reciente</h2>
+        <h2>Últimos resultados</h2>
         <div className="forma-row">
           {forma.length ? (
             forma.map((f, i) => (
-              <div key={`${f.rival}-${i}`} className={`forma-chip ${f.marca.toLowerCase()}`}>
+              <div
+                key={`${f.rival}-${f.fecha}-${i}`}
+                className={`forma-chip ${f.marca.toLowerCase()}`}
+                title={`${f.marcaLabel} ${f.gf}-${f.gc} · ${f.condicion} vs ${f.rival}`}
+              >
                 <strong>
                   {f.marca} {f.gf}-{f.gc}
                 </strong>
-                <span>{f.rival}</span>
+                <span className="forma-chip-rival">{f.rival}</span>
+                <small className="forma-chip-meta">{f.condicion}</small>
               </div>
             ))
           ) : (

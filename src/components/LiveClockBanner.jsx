@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useAuth } from '../auth';
 import {
   HALF_MINUTES,
   fmtClock,
@@ -8,6 +9,7 @@ import {
 } from '../liveClock';
 
 export default function LiveClockBanner() {
+  const { canRead } = useAuth();
   const location = useLocation();
   const [state, setState] = useState(() => liveBannerState());
 
@@ -22,7 +24,7 @@ export default function LiveClockBanner() {
     };
   }, []);
 
-  if (!state) return null;
+  if (!state || !canRead('directo')) return null;
 
   const onDirecto =
     location.pathname === `/partidos/${state.id_partido}/directo` ||

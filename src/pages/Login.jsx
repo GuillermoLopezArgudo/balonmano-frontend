@@ -71,6 +71,11 @@ export default function Login() {
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [notice] = useState(() => {
+    const text = sessionStorage.getItem('siete_login_notice') || '';
+    if (text) sessionStorage.removeItem('siete_login_notice');
+    return text;
+  });
 
   if (isAuth) return <Navigate to="/" replace />;
 
@@ -224,11 +229,16 @@ export default function Login() {
                 </p>
               )}
             </div>
+            {notice && <p className="club-status saved">{notice}</p>}
             {error && <p className="error">{error}</p>}
             <button type="submit" className="full" disabled={loading}>
               {loading ? 'Entrando…' : 'Entrar en SIETE'}
             </button>
             <p className="auth-foot muted">
+              {/* Olvidé la contraseña desactivado: no hay servicio SMTP.
+              <Link to="/recuperar">¿Olvidaste la contraseña?</Link>
+              <br />
+              */}
               ¿Nuevo club? <Link to="/registro">Registrar equipo</Link>
               <br />
               ¿Te invitaron? Usa el enlace que te enviaron para crear tu contraseña.

@@ -72,7 +72,7 @@
 .brand-badge {
   width: 42px;
   height: 42px;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   background: var(--lime);
   color: #0a0a0a;
   display: grid;
@@ -179,7 +179,7 @@
   width: min(420px, 100%);
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 20px;
+  border-radius: var(--radius);
   padding: 2rem 1.75rem;
   box-shadow: 0 12px 40px var(--shadow);
 }
@@ -435,7 +435,7 @@
     letter-spacing: 0.01em;
     padding: 0.55rem 0.2rem;
     border: 1px solid var(--line);
-    border-radius: 10px;
+    border-radius: var(--radius-sm);
     border-bottom-width: 1px;
     background: var(--panel);
     color: var(--muted);
@@ -583,7 +583,7 @@
 .onboard-card {
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 18px;
+  border-radius: var(--radius);
   padding: 1.75rem 1.6rem 1.4rem;
   box-shadow: 0 12px 40px var(--shadow);
 }
@@ -782,7 +782,7 @@
   align-items: center;
   justify-content: center;
   border: none !important;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   background: transparent !important;
   color: var(--muted) !important;
   font-weight: 500;

@@ -63,7 +63,7 @@
 .club-escudo {
   width: 96px;
   height: 96px;
-  border-radius: 14px;
+  border-radius: var(--radius);
   border: 1px solid var(--line);
   background: var(--panel-2);
   display: grid;
@@ -136,7 +136,7 @@
 .escudo-preview {
   width: 64px;
   height: 64px;
-  border-radius: 12px;
+  border-radius: var(--radius);
   background: var(--panel-2);
   border: 1px solid var(--line);
   display: grid;
@@ -156,7 +156,7 @@
 
 .miembros-page {
   width: 100%;
-  max-width: 960px;
+  max-width: none;
 }
 
 .miembros-page-head {
@@ -181,6 +181,56 @@
   font-size: 0.92rem;
   line-height: 1.45;
   max-width: 36rem;
+}
+
+.miembros-leyenda {
+  margin: 0 0 1rem;
+  padding: 0.65rem 0.9rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.miembros-leyenda summary {
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text);
+  list-style-position: outside;
+}
+
+.miembros-leyenda summary::-webkit-details-marker {
+  color: var(--muted);
+}
+
+.miembros-leyenda-list {
+  margin: 0.75rem 0 0.15rem;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.miembros-leyenda-list li {
+  display: grid;
+  gap: 0.15rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--line);
+  font-size: 0.86rem;
+  line-height: 1.4;
+}
+
+.miembros-leyenda-list li:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.miembros-leyenda-list strong {
+  font-size: 0.82rem;
+}
+
+.miembros-leyenda-list span {
+  color: var(--muted);
 }
 
 .miembros-kpis {
@@ -225,12 +275,14 @@
 
 .miembros-tabs {
   display: flex;
-  gap: 0.4rem;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
   margin-bottom: 1rem;
-  padding: 0.3rem;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 999px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
@@ -240,6 +292,34 @@
   display: none;
 }
 
+.miembros-tabs .filters-end {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 0 0 auto;
+}
+
+.miembros-tabs .filters-end button,
+.miembros-tabs .filters-end a button {
+  flex: 0 0 auto;
+  width: auto;
+}
+
+.miembros-tabs button.filters-end,
+.miembros-tabs .filters-end > button:not(.ghost) {
+  background: var(--lime);
+  border-color: var(--lime);
+  color: #0a0a0a;
+}
+
+.miembros-tabs button.filters-end:hover,
+.miembros-tabs .filters-end > button:not(.ghost):hover {
+  background: var(--lime-hover);
+  border-color: var(--lime-hover);
+  color: #0a0a0a;
+}
+
 .miembros-tabs button {
   flex: 1 1 auto;
   display: inline-flex;
@@ -247,16 +327,22 @@
   justify-content: center;
   gap: 0.4rem;
   min-height: 40px;
-  padding: 0.45rem 0.85rem;
-  border: 0;
-  border-radius: 999px;
+  padding: 0.55rem 0.95rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
   background: transparent;
-  color: var(--muted);
+  color: var(--text);
   font: inherit;
-  font-size: 0.88rem;
-  font-weight: 600;
+  font-size: 0.85rem;
+  font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
+}
+
+.miembros-tabs button:hover:not(.active) {
+  background: var(--panel-2);
+  border-color: color-mix(in srgb, var(--lime) 35%, var(--line));
+  color: var(--text);
 }
 
 .miembros-tabs button em {
@@ -264,13 +350,14 @@
   font-size: 0.75rem;
   font-weight: 700;
   padding: 0.1rem 0.45rem;
-  border-radius: 999px;
+  border-radius: var(--radius-sm);
   background: var(--panel-2);
   color: var(--muted);
 }
 
 .miembros-tabs button.active {
   background: var(--lime);
+  border-color: var(--lime);
   color: #0b111b;
 }
 
@@ -331,7 +418,7 @@
   word-break: break-all;
   margin: 0.75rem 0;
   padding: 0.75rem 0.85rem;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   background: var(--panel-2);
   border: 1px solid var(--line);
   font-size: 0.8rem;
@@ -618,7 +705,7 @@
   display: inline-block;
   margin-left: 0.35rem;
   padding: 0.1rem 0.45rem;
-  border-radius: 999px;
+  border-radius: var(--radius-sm);
   font-size: 0.68rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -684,10 +771,17 @@
   }
 
   .analitica-toolbar > *,
+  .analitica-toolbar-period,
   .gk-anal-filters > *,
   .gk-zone-head > * {
     width: 100%;
     min-width: 0;
+    margin-left: 0;
+  }
+
+  .analitica-temp-field select {
+    max-width: none;
+    width: 100%;
   }
 
   .gk-summary {
@@ -809,7 +903,9 @@
 
   .page-head .add-player-actions {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
     gap: 0.5rem;
     width: 100%;
   }
@@ -854,7 +950,7 @@
   align-items: flex-start;
   justify-content: space-between;
   padding: 0.85rem 1rem;
-  border-radius: 12px;
+  border-radius: var(--radius);
   background: var(--panel-2);
 }
 
@@ -897,7 +993,7 @@
 .prep-tipo-badge {
   display: inline-block;
   padding: 0.12rem 0.45rem;
-  border-radius: 999px;
+  border-radius: var(--radius-sm);
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -1142,7 +1238,7 @@
   margin: 0 0 1rem;
   padding: 0.9rem 1rem;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--radius);
   background: var(--panel-2);
 }
 
@@ -1244,7 +1340,7 @@
   min-width: 2.45rem;
   min-height: 2.45rem;
   padding: 0;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   font-size: 0.95rem;
 }
 
@@ -1275,7 +1371,7 @@
   min-height: 2.2rem;
   padding: 0.2rem 0.45rem;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--muted);
   font-size: 0.78rem;

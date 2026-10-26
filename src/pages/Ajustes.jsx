@@ -1,21 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { api, mediaUrl } from '../api';
+import { api } from '../api';
+import AuthImage from '../components/AuthImage';
+import { passwordError } from '../password';
 import { useAuth } from '../auth';
 import { getSavedTema, saveTema } from '../theme';
 
 const TABS_BASE = [
   { id: 'cuenta', label: 'Cuenta' },
   { id: 'club', label: 'Club', adminOnly: true },
-  { id: 'notificaciones', label: 'Notificaciones' },
   { id: 'preferencias', label: 'Preferencias' },
   { id: 'seguridad', label: 'Seguridad' },
-];
-
-const IDIOMAS = [
-  { value: 'es', label: 'Español' },
-  { value: 'ca', label: 'Catalán' },
-  { value: 'en', label: 'English' },
 ];
 
 const CATEGORIAS = [
@@ -65,16 +60,9 @@ function defaultsFromSesion(equipo, miembro, saved = {}) {
       ? miembro.nombre || ''
       : (d.entrenador_nombre || saved.nombre || '').trim(),
     correo: isMember ? miembro.correo || '' : equipo?.correo || '',
-    idioma: saved.idioma || 'es',
     cargo: isMember ? miembro.cargo || '' : 'Entrenador principal',
     esAdmin: !miembro || miembro.permiso === 'administrador',
-    notifEmail: saved.notifEmail !== false,
-    notifDirecto: saved.notifDirecto !== false,
-    notifResumen: !!saved.notifResumen,
-    notifConvocatoria: saved.notifConvocatoria !== false,
     tema: getSavedTema(),
-    zonaHoraria: saved.zonaHoraria || 'Europe/Madrid',
-    semanaInicio: saved.semanaInicio || 'lunes',
     club_nombre: d.nombre || '',
     nombre_corto: d.nombre_corto || d.nombre || '',
     entrenador_nombre: d.entrenador_nombre || '',
@@ -190,32 +178,20 @@ export default function Ajustes() {
         prefsKey(equipo?.id_equipo),
         JSON.stringify({
           nombre: form.nombre,
-          idioma: form.idioma,
-          notifEmail: form.notifEmail,
-          notifDirecto: form.notifDirecto,
-          notifResumen: form.notifResumen,
-          notifConvocatoria: form.notifConvocatoria,
           tema: form.tema,
-          zonaHoraria: form.zonaHoraria,
-          semanaInicio: form.semanaInicio,
         }),
       );
       saveTema(form.tema);
 
       if (pass.nueva) {
-        if (pass.nueva.length < 8) {
-          throw new Error('La nueva contraseña debe tener al menos 8 caracteres');
-        }
+        const passMsg = passwordError(pass.nueva);
+        if (passMsg) throw new Error(passMsg);
         if (pass.nueva !== pass.confirmar) {
           throw new Error('Las contraseñas nuevas no coinciden');
         }
         if (!pass.actual) {
           throw new Error('Indica la contraseña actual');
         }
-        await api.changePassword({
-          password_actual: pass.actual,
-          password_nueva: pass.nueva,
-        });
       }
 
       if (miembro) {
@@ -248,6 +224,19 @@ export default function Ajustes() {
         });
       }
 
+      if (pass.nueva) {
+        await api.changePassword({
+          password_actual: pass.actual,
+          password_nueva: pass.nueva,
+        });
+        sessionStorage.setItem(
+          'siete_login_notice',
+          'Contraseña actualizada. Entra de nuevo.',
+        );
+        logout();
+        return;
+      }
+
       await refreshSesion();
       await refreshEquipo();
       setPass({ actual: '', nueva: '', confirmar: '' });
@@ -267,9 +256,6 @@ export default function Ajustes() {
           <p className="page-kicker">CUENTA · CONFIGURACIÓN</p>
           <h1>Ajustes</h1>
         </div>
-        <button type="button" disabled={saving || (!dirty && !pass.nueva)} onClick={guardar}>
-          {saving ? 'Guardando…' : 'Guardar cambios'}
-        </button>
       </header>
 
       <div className="filters roster-filters">
@@ -283,6 +269,14 @@ export default function Ajustes() {
             {t.label}
           </button>
         ))}
+        <button
+          type="button"
+          className="filters-end"
+          disabled={saving || (!dirty && !pass.nueva)}
+          onClick={guardar}
+        >
+          {saving ? 'Guardando…' : 'Guardar cambios'}
+        </button>
       </div>
 
       {msg && <p className="ok-msg">{msg}</p>}
@@ -325,16 +319,6 @@ export default function Ajustes() {
               />
             </div>
             <div className="field">
-              <label>Idioma</label>
-              <select value={form.idioma} onChange={(e) => setField('idioma', e.target.value)}>
-                {IDIOMAS.map((i) => (
-                  <option key={i.value} value={i.value}>
-                    {i.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="field">
               <label>Cargo</label>
               <input
                 value={
@@ -362,7 +346,7 @@ export default function Ajustes() {
             <div className="club-identity">
               <div className="club-escudo">
                 {form.img_escudo ? (
-                  <img src={mediaUrl(form.img_escudo)} alt="Escudo" />
+                  <AuthImage path={form.img_escudo} alt="Escudo" />
                 ) : (
                   <span>{escudoLabel}</span>
                 )}
@@ -477,61 +461,13 @@ export default function Ajustes() {
         </div>
       )}
 
-      {tab === 'notificaciones' && (
-        <section className="panel">
-          <h2>Notificaciones</h2>
-          <div className="ajustes-toggles">
-            <label className="ajustes-toggle">
-              <div>
-                <strong>Recibir por correo electrónico</strong>
-                <small>Avisos relevantes del club y la temporada</small>
-              </div>
-              <input
-                type="checkbox"
-                checked={form.notifEmail}
-                onChange={(e) => setField('notifEmail', e.target.checked)}
-              />
-            </label>
-            <label className="ajustes-toggle">
-              <div>
-                <strong>Estadísticas en directo</strong>
-                <small>Alertas cuando hay un partido en vivo</small>
-              </div>
-              <input
-                type="checkbox"
-                checked={form.notifDirecto}
-                onChange={(e) => setField('notifDirecto', e.target.checked)}
-              />
-            </label>
-            <label className="ajustes-toggle">
-              <div>
-                <strong>Resumen semanal</strong>
-                <small>Informe automático cada lunes</small>
-              </div>
-              <input
-                type="checkbox"
-                checked={form.notifResumen}
-                onChange={(e) => setField('notifResumen', e.target.checked)}
-              />
-            </label>
-            <label className="ajustes-toggle">
-              <div>
-                <strong>Convocatorias</strong>
-                <small>Cuando se confirma o cambia una convocatoria</small>
-              </div>
-              <input
-                type="checkbox"
-                checked={form.notifConvocatoria}
-                onChange={(e) => setField('notifConvocatoria', e.target.checked)}
-              />
-            </label>
-          </div>
-        </section>
-      )}
-
       {tab === 'preferencias' && (
         <section className="panel">
           <h2>Preferencias de la app</h2>
+          <p className="muted" style={{ marginTop: 0 }}>
+            Solo el tema se aplica de verdad. Idioma y notificaciones por correo llegarán más
+            adelante.
+          </p>
           <div className="form-grid club-form">
             <div className="field">
               <label>Tema</label>
@@ -539,27 +475,6 @@ export default function Ajustes() {
                 <option value="oscuro">Oscuro</option>
                 <option value="claro">Claro</option>
                 <option value="sistema">Sistema</option>
-              </select>
-            </div>
-            <div className="field">
-              <label>Zona horaria</label>
-              <select
-                value={form.zonaHoraria}
-                onChange={(e) => setField('zonaHoraria', e.target.value)}
-              >
-                <option value="Europe/Madrid">Europe/Madrid</option>
-                <option value="Atlantic/Canary">Atlantic/Canary</option>
-                <option value="Europe/Lisbon">Europe/Lisbon</option>
-              </select>
-            </div>
-            <div className="field">
-              <label>Inicio de semana</label>
-              <select
-                value={form.semanaInicio}
-                onChange={(e) => setField('semanaInicio', e.target.value)}
-              >
-                <option value="lunes">Lunes</option>
-                <option value="domingo">Domingo</option>
               </select>
             </div>
           </div>
@@ -593,7 +508,7 @@ export default function Ajustes() {
                 }}
                 autoComplete="new-password"
                 minLength={8}
-                placeholder="Mínimo 8 caracteres"
+                placeholder="Mayúscula, minúscula y un número"
               />
             </div>
             <div className="field">
