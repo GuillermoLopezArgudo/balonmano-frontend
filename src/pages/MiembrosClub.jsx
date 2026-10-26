@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { api, isAbortError } from '../api';
 import { useAuth } from '../auth';
+import { IcoFlecha } from '../components/ActionIcons';
 import { CARGOS, CARGOS_UNICOS, writeLabelsForCargo } from '../permisos';
 import { useAbortable } from '../useAbortable';
 import { onMiembrosChanged } from '../useClubRealtime';
@@ -250,6 +251,12 @@ export default function MiembrosClub() {
           <p className="page-kicker">CLUB · EQUIPO TÉCNICO</p>
           <h1>Miembros</h1>
         </div>
+        <Link className="page-back" to="/club">
+          <button type="button" className="ghost">
+            <IcoFlecha />
+            Volver
+          </button>
+        </Link>
       </header>
 
       {canManageClub && (
@@ -294,11 +301,6 @@ export default function MiembrosClub() {
           </button>
         ))}
         <div className="filters-end">
-          <Link to="/club">
-            <button type="button" className="ghost">
-              Club
-            </button>
-          </Link>
           <button
             type="button"
             className={showInvite ? 'ghost' : ''}

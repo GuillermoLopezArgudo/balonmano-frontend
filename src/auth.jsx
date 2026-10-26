@@ -23,6 +23,10 @@ export function AuthProvider({ children }) {
   }, [equipo?.id_equipo]);
 
   const logout = useCallback(() => {
+    const t = localStorage.getItem('data_token');
+    if (t) {
+      api.logout().catch(() => {});
+    }
     localStorage.removeItem('data_token');
     localStorage.removeItem('data_equipo');
     localStorage.removeItem('data_miembro');

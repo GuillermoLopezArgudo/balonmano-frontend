@@ -267,7 +267,16 @@ button.page-back,
 a.volver-link {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.4rem;
+  padding: var(--ctrl-py) var(--ctrl-px);
+  font-size: var(--ctrl-fs);
+  font-weight: var(--ctrl-fw);
+  line-height: var(--ctrl-lh);
+  min-height: var(--ctrl-mh);
+  border-radius: var(--radius-sm);
+  box-sizing: border-box;
+  white-space: nowrap;
 }
 
 .page-back svg,
@@ -298,6 +307,33 @@ a.volver-link svg {
   justify-self: stretch;
   width: 100%;
   justify-content: flex-end;
+}
+
+/* Acciones del page-head: mismo tamaño/forma que Volver y filtros */
+.page-head .add-player-actions > button:not(.btn-icon-del):not(.btn-icon-edit):not(.btn-icon-view),
+.page-head .add-player-actions > a:not(.btn-icon-view):not(.btn-icon-edit):not(.btn-icon-del) > button {
+  padding: var(--ctrl-py) var(--ctrl-px);
+  font-size: var(--ctrl-fs);
+  font-weight: var(--ctrl-fw);
+  line-height: var(--ctrl-lh);
+  min-height: var(--ctrl-mh);
+  border-radius: var(--radius-sm);
+  flex: 0 0 auto;
+  width: auto;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+.page-head .add-player-actions > a.btn-icon-view,
+.page-head .add-player-actions > a.btn-icon-edit,
+.page-head .add-player-actions > .btn-icon-del,
+.page-head > a.btn-icon-view,
+.page-head > a.btn-icon-edit {
+  width: var(--ctrl-icon);
+  height: var(--ctrl-icon);
+  min-width: var(--ctrl-icon);
+  min-height: var(--ctrl-icon);
+  flex: 0 0 var(--ctrl-icon);
 }
 
 .page-head h1 {
@@ -569,10 +605,13 @@ button.btn-seg {
   background: transparent;
   color: var(--text);
   border: 1px solid var(--line);
-  padding: 0.55rem 0.95rem;
-  font-weight: 700;
-  font-size: 0.85rem;
+  padding: var(--ctrl-py) var(--ctrl-px);
+  font-weight: var(--ctrl-fw);
+  font-size: var(--ctrl-fs);
+  line-height: var(--ctrl-lh);
+  min-height: var(--ctrl-mh);
   border-radius: var(--radius-sm);
+  box-sizing: border-box;
 }
 
 .btn-seg:hover,
@@ -608,10 +647,13 @@ button.btn-play {
   background: transparent;
   color: var(--text);
   border: 1px solid var(--line);
-  padding: 0.55rem 0.95rem;
-  font-size: 0.85rem;
-  font-weight: 700;
+  padding: var(--ctrl-py) var(--ctrl-px);
+  font-size: var(--ctrl-fs);
+  font-weight: var(--ctrl-fw);
+  line-height: var(--ctrl-lh);
+  min-height: var(--ctrl-mh);
   border-radius: var(--radius-sm);
+  box-sizing: border-box;
 }
 
 .btn-play:hover,
@@ -636,10 +678,13 @@ button.full {
   background: transparent;
   color: var(--text);
   border: 1px solid var(--line);
-  padding: 0.55rem 0.95rem;
-  font-weight: 700;
-  font-size: 0.85rem;
+  padding: var(--ctrl-py) var(--ctrl-px);
+  font-weight: var(--ctrl-fw);
+  font-size: var(--ctrl-fs);
+  line-height: var(--ctrl-lh);
+  min-height: var(--ctrl-mh);
   border-radius: var(--radius-sm);
+  box-sizing: border-box;
 }
 
 .filters a {
@@ -648,11 +693,14 @@ button.full {
   background: transparent;
   color: var(--text);
   border: 1px solid var(--line);
-  padding: 0.55rem 0.95rem;
-  font-weight: 700;
-  font-size: 0.85rem;
+  padding: var(--ctrl-py) var(--ctrl-px);
+  font-weight: var(--ctrl-fw);
+  font-size: var(--ctrl-fs);
+  line-height: var(--ctrl-lh);
+  min-height: var(--ctrl-mh);
   border-radius: var(--radius-sm);
   text-decoration: none;
+  box-sizing: border-box;
 }
 
 .filters a > button {
@@ -689,12 +737,16 @@ button.full {
   max-width: none;
   white-space: nowrap;
   margin-left: auto;
-  padding: 0.55rem 0.95rem;
-  min-height: 0;
+  padding: var(--ctrl-py) var(--ctrl-px);
+  font-size: var(--ctrl-fs);
+  font-weight: var(--ctrl-fw);
+  line-height: var(--ctrl-lh);
+  min-height: var(--ctrl-mh);
   background: var(--lime);
   color: #0a0a0a;
   border: 1px solid var(--lime);
   border-radius: var(--radius-sm);
+  box-sizing: border-box;
 }
 
 .filters .filters-end a:not(.btn-icon-edit):not(.btn-icon-view):not(.btn-icon-del) {
@@ -711,21 +763,23 @@ button.full {
   width: auto;
   max-width: none;
   white-space: nowrap;
-  padding: 0.55rem 0.95rem;
-  min-height: 0;
+  padding: var(--ctrl-py) var(--ctrl-px);
+  min-height: var(--ctrl-mh);
   background: transparent;
   color: var(--text);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
-  font-weight: 700;
-  font-size: 0.85rem;
+  font-weight: var(--ctrl-fw);
+  font-size: var(--ctrl-fs);
+  line-height: var(--ctrl-lh);
+  box-sizing: border-box;
 }
 
 .filters .filters-end a.btn-icon-edit {
-  flex: 0 0 36px;
-  width: 36px;
-  height: 36px;
-  min-width: 36px;
+  flex: 0 0 var(--ctrl-icon);
+  width: var(--ctrl-icon);
+  height: var(--ctrl-icon);
+  min-width: var(--ctrl-icon);
   padding: 0;
 }
 
@@ -896,13 +950,16 @@ button.full {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.55rem 0.95rem;
+  padding: var(--ctrl-py) var(--ctrl-px);
   border-radius: var(--radius-sm);
   border: 1px solid var(--line);
   color: var(--text);
   background: transparent;
-  font-weight: 700;
-  font-size: 0.85rem;
+  font-weight: var(--ctrl-fw);
+  font-size: var(--ctrl-fs);
+  line-height: var(--ctrl-lh);
+  min-height: var(--ctrl-mh);
+  box-sizing: border-box;
   cursor: pointer;
 }
 
@@ -999,9 +1056,12 @@ button.full {
   color: var(--text);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
-  padding: 0.55rem 0.95rem;
-  font-weight: 700;
-  font-size: 0.85rem;
+  padding: var(--ctrl-py) var(--ctrl-px);
+  font-weight: var(--ctrl-fw);
+  font-size: var(--ctrl-fs);
+  line-height: var(--ctrl-lh);
+  min-height: var(--ctrl-mh);
+  box-sizing: border-box;
 }
 
 .wizard-step.active {
@@ -1708,6 +1768,28 @@ button.ghost.danger:hover {
   .workspace {
     padding: 1.35rem 1.5rem 2rem;
   }
+
+  /* Tablet: misma estructura page-head que desktop */
+  .page-head {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+
+  .page-head > .page-back,
+  .page-head > a.btn-icon-view,
+  .page-head > a.btn-icon-edit {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+    align-self: center;
+  }
+
+  .page-head .add-player-actions,
+  .page-head .add-player-actions.page-head-actions-end {
+    grid-column: 1 / -1;
+    width: 100%;
+    justify-self: stretch;
+  }
 }
 
 /* Safe areas (notch / home indicator) */
@@ -1754,9 +1836,10 @@ button.ghost.danger:hover {
   }
 
   .btn-seg,
-  .filters button {
-    padding: 0.55rem 0.8rem;
-    font-size: 0.8rem;
+  .filters button:not(.filters-end) {
+    padding: var(--ctrl-py) var(--ctrl-px);
+    font-size: var(--ctrl-fs);
+    min-height: var(--ctrl-mh);
   }
 
   .live-acciones,
@@ -1784,9 +1867,10 @@ button.ghost.danger:hover {
 .btn-icon-del,
 a.btn-icon-view,
 a.btn-icon-edit {
-  width: 36px;
-  height: 36px;
-  min-width: 36px;
+  width: var(--ctrl-icon);
+  height: var(--ctrl-icon);
+  min-width: var(--ctrl-icon);
+  min-height: var(--ctrl-icon);
   padding: 0;
   border-radius: var(--radius-sm);
   line-height: 1;

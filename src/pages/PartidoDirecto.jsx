@@ -623,7 +623,7 @@ export default function PartidoDirecto() {
             Volver
           </button>
         </Link>
-        <div className="add-player-actions">
+        <div className="add-player-actions page-head-actions-end">
           {!routeId && (
             <select
               value={partidoId}

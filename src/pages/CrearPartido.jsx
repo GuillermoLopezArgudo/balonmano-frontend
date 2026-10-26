@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api';
 import { useAuth } from '../auth';
-import { IcoBasura, IcoFlecha } from '../components/ActionIcons';
+import { IcoBasura, IcoFlecha, IcoLapiz } from '../components/ActionIcons';
 
 const STEPS = [
   { id: 1, label: 'Partido' },
@@ -192,6 +192,22 @@ export default function CrearPartido() {
       setBusqueda(created.nombre);
       setRivales(await api.getRivales());
       setField('id_rival', created.id_rival);
+      setError('');
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const editarRival = async (id, nombreActual) => {
+    const siguiente = window.prompt('Nuevo nombre del rival', nombreActual || '');
+    if (siguiente == null) return;
+    const nombre = siguiente.trim();
+    if (!nombre || nombre === nombreActual) return;
+    try {
+      const updated = await api.updateRival(id, { nombre });
+      setRivales((prev) =>
+        prev.map((e) => (e.id_rival === id ? { ...e, nombre: updated.nombre } : e)),
+      );
       setError('');
     } catch (err) {
       setError(err.message);
@@ -463,6 +479,18 @@ export default function CrearPartido() {
                       <strong>{nombre}</strong>
                       <small>Rival</small>
                     </span>
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-icon-edit"
+                    title="Editar nombre"
+                    aria-label={`Editar ${nombre}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      editarRival(rv.id_rival, nombre);
+                    }}
+                  >
+                    <IcoLapiz size={16} />
                   </button>
                   <button
                     type="button"

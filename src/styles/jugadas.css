@@ -37,7 +37,29 @@
 .jugada-row-actions {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 0.4rem;
+}
+
+.jugada-row-actions > a.btn-icon-view,
+.jugada-row-actions > a.btn-icon-edit,
+.jugada-row-actions > .btn-icon-del {
+  flex: 0 0 var(--ctrl-icon);
+  align-self: center;
+}
+
+.jugada-row-actions > button.ghost {
+  flex: 0 0 auto;
+  height: var(--ctrl-icon);
+  min-height: var(--ctrl-icon);
+  padding: 0 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--ctrl-fs);
+  font-weight: var(--ctrl-fw);
+  line-height: 1;
+  box-sizing: border-box;
 }
 
 .jugada-editor-meta {
@@ -473,9 +495,15 @@
     width: 100%;
   }
 
-  .jugada-row-actions a,
-  .jugada-row-actions button {
-    flex: 1;
+  .jugada-row-actions > a.btn-icon-view,
+  .jugada-row-actions > a.btn-icon-edit,
+  .jugada-row-actions > .btn-icon-del {
+    flex: 0 0 var(--ctrl-icon);
+  }
+
+  .jugada-row-actions > button.ghost {
+    flex: 1 1 auto;
+    min-width: 4.5rem;
   }
 }
 
@@ -509,6 +537,8 @@
 .jugada-board-wrap-full {
   overflow-x: hidden;
   max-width: 100%;
+  display: flex;
+  justify-content: center;
 }
 
 .jugada-board.jugada-board-full .hb-fase-tag {
@@ -519,17 +549,42 @@
 /* Campo completo / media pista horizontal */
 .jugada-board.jugada-board-full {
   aspect-ratio: 2 / 1;
-  min-height: min(56vw, 420px);
-  width: 100%;
+  width: min(100%, 880px);
+  min-height: 0;
   max-width: 100%;
   padding: 0;
   display: block;
   grid-template-columns: none;
   grid-template-rows: none;
   gap: 0;
+  margin-inline: auto;
 }
 
 .jugada-board.jugada-board-media {
-  aspect-ratio: 1.15 / 1;
-  min-height: min(62vw, 460px);
+  aspect-ratio: 1.75 / 1;
+  width: min(100%, 1260px);
+  min-height: 0;
+}
+
+/* Tablet: ancho completo, proporción un poco más alta para tocar */
+@media (max-width: 1024px) {
+  .jugada-board.jugada-board-full,
+  .jugada-board.jugada-board-media {
+    width: 100%;
+  }
+
+  .jugada-board.jugada-board-media {
+    aspect-ratio: 1.5 / 1;
+  }
+}
+
+/* Móvil: más altura útil para piezas y gestos */
+@media (max-width: 640px) {
+  .jugada-board.jugada-board-full {
+    aspect-ratio: 1.85 / 1;
+  }
+
+  .jugada-board.jugada-board-media {
+    aspect-ratio: 1.28 / 1;
+  }
 }

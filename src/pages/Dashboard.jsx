@@ -116,9 +116,6 @@ export default function Dashboard() {
         <div>
           <p className="page-kicker">{eyebrow}</p>
           <h1>Resumen del equipo</h1>
-          <p className="muted" style={{ marginTop: '0.35rem' }}>
-            Vista general: próximos partidos, estado del club y atajos del día a día.
-          </p>
         </div>
       </header>
 

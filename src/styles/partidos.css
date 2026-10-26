@@ -785,9 +785,12 @@
   color: #0a0a0a;
   border: 1px solid var(--lime);
   border-radius: var(--radius-sm);
-  padding: 0.55rem 0.95rem;
-  font-size: 0.85rem;
-  font-weight: 800;
+  padding: var(--ctrl-py) var(--ctrl-px);
+  font-size: var(--ctrl-fs);
+  font-weight: var(--ctrl-fw);
+  line-height: var(--ctrl-lh);
+  min-height: var(--ctrl-mh);
+  box-sizing: border-box;
 }
 
 .conv-toolbar-end:disabled {
@@ -797,12 +800,15 @@
 .conv-badge,
 .conv-tab {
   border-radius: var(--radius-sm);
-  padding: 0.55rem 0.95rem;
-  font-size: 0.85rem;
-  font-weight: 700;
+  padding: var(--ctrl-py) var(--ctrl-px);
+  font-size: var(--ctrl-fs);
+  font-weight: var(--ctrl-fw);
+  line-height: var(--ctrl-lh);
+  min-height: var(--ctrl-mh);
   border: 1px solid var(--line);
   background: transparent;
   color: var(--text);
+  box-sizing: border-box;
 }
 
 .conv-badge.active,
@@ -1601,11 +1607,11 @@ body.conv-pointer-dragging .conv-selected-row.drag-over {
     flex: 0 1 auto;
     width: auto;
     min-width: 0;
-    min-height: 44px;
+    min-height: var(--ctrl-mh);
     margin: 0;
-    padding: 0.45rem 0.7rem;
-    font-size: 0.82rem;
-    line-height: 1.2;
+    padding: var(--ctrl-py) var(--ctrl-px);
+    font-size: var(--ctrl-fs);
+    line-height: var(--ctrl-lh);
     white-space: nowrap;
     text-align: center;
   }
@@ -1613,7 +1619,7 @@ body.conv-pointer-dragging .conv-selected-row.drag-over {
   .conv-toolbar-end {
     margin-left: auto;
     flex: 0 0 auto;
-    min-height: 44px;
+    min-height: var(--ctrl-mh);
   }
 }
 
@@ -2058,19 +2064,24 @@ body.conv-pointer-dragging .conv-selected-row.drag-over {
     gap: 0.45rem;
   }
 
-  .add-player-actions .live-cerrar-btn,
   .add-player-actions a:not(.btn-icon-view):not(.btn-icon-edit):not(.btn-icon-del),
-  .add-player-actions button:not(.btn-icon-del) {
-    flex: 1 1 auto;
-    min-height: 44px;
+  .add-player-actions button:not(.btn-icon-del):not(.live-cerrar-btn) {
+    flex: 0 1 auto;
+    min-height: var(--ctrl-mh);
+  }
+
+  .add-player-actions .live-cerrar-btn {
+    flex: 0 0 auto;
+    width: auto;
+    min-height: var(--ctrl-mh);
   }
 
   .add-player-actions a.btn-icon-view,
   .add-player-actions a.btn-icon-edit,
   .add-player-actions .btn-icon-del {
-    flex: 0 0 36px;
-    width: 36px;
-    min-height: 36px;
+    flex: 0 0 var(--ctrl-icon);
+    width: var(--ctrl-icon);
+    min-height: var(--ctrl-icon);
     align-self: center;
   }
 
@@ -3019,7 +3030,10 @@ body.conv-pointer-dragging .conv-selected-row.drag-over {
 .live-cerrar-btn {
   background: var(--lime) !important;
   color: #0a0a0a !important;
-  font-weight: 800;
+  border: 1px solid var(--lime);
+  flex: 0 0 auto;
+  width: auto;
+  white-space: nowrap;
 }
 
 .match-result-card {
@@ -3372,8 +3386,9 @@ body.conv-pointer-dragging .conv-selected-row.drag-over {
 
   .page-head > a.btn-icon-view,
   .page-head > a.btn-icon-edit {
-    align-self: flex-end;
-    width: 36px;
+    align-self: center;
+    width: var(--ctrl-icon);
+    height: var(--ctrl-icon);
   }
 
   .page-head .add-player-actions {
@@ -3393,13 +3408,16 @@ body.conv-pointer-dragging .conv-selected-row.drag-over {
   .page-head .add-player-actions > a:not(.btn-icon-view):not(.btn-icon-edit):not(.btn-icon-del) > button,
   .page-head .add-player-actions > button {
     width: auto;
+    min-height: var(--ctrl-mh);
+    padding: var(--ctrl-py) var(--ctrl-px);
+    font-size: var(--ctrl-fs);
   }
 
   .page-head .add-player-actions > a.btn-icon-view,
   .page-head .add-player-actions > a.btn-icon-edit,
   .page-head .add-player-actions > .btn-icon-del {
-    flex: 0 0 36px;
-    width: 36px;
+    flex: 0 0 var(--ctrl-icon);
+    width: var(--ctrl-icon);
   }
 
   .filters {
@@ -3411,13 +3429,25 @@ body.conv-pointer-dragging .conv-selected-row.drag-over {
     gap: 0.4rem;
   }
 
-  .filters button {
+  .filters > button:not(.filters-end) {
     flex: 1 1 calc(50% - 0.4rem);
     max-width: calc(50% - 0.2rem);
     min-width: 0;
+    min-height: var(--ctrl-mh);
     white-space: normal;
-    line-height: 1.2;
+    line-height: var(--ctrl-lh);
     text-align: center;
+  }
+
+  .filters > .filters-end,
+  .filters > a.filters-end,
+  .filters > button.filters-end {
+    flex: 0 0 auto;
+    width: auto;
+    max-width: none;
+    min-height: var(--ctrl-mh);
+    margin-left: auto;
+    white-space: nowrap;
   }
 
   .metrics {
@@ -3708,14 +3738,21 @@ body.conv-pointer-dragging .conv-selected-row.drag-over {
   .live-sancion-btn,
   .filters button,
   .btn-seg {
-    min-height: 44px;
+    min-height: var(--ctrl-mh);
   }
 
-  .page-head .add-player-actions button,
-  .page-head > a > button,
-  .page-head > button,
-  .live-submit,
+  .page-head .add-player-actions > button:not(.btn-icon-del),
+  .page-head .add-player-actions > a:not(.btn-icon-view):not(.btn-icon-edit):not(.btn-icon-del) > button,
+  .page-head > .page-back > button,
+  .page-head > button.page-back,
+  .page-head > button:not(.btn-icon-del),
   .wizard-nav button {
+    min-height: var(--ctrl-mh);
+    padding: var(--ctrl-py) var(--ctrl-px);
+    font-size: var(--ctrl-fs);
+  }
+
+  .live-submit {
     min-height: 48px;
   }
 

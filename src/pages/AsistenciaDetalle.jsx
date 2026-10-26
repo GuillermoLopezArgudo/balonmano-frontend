@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useParams } from 'react-router-dom';
 import { api } from '../api';
 import { useAuth } from '../auth';
 import { IcoFlecha, IcoLapiz } from '../components/ActionIcons';
@@ -27,7 +27,6 @@ function fromDateInput(value) {
 
 export default function AsistenciaDetalle() {
   const { id } = useParams();
-  const navigate = useNavigate();
   const location = useLocation();
   const { canWriteFisico } = useAuth();
   const editing = canWriteFisico && location.pathname.endsWith('/editar');
@@ -163,20 +162,15 @@ export default function AsistenciaDetalle() {
     <>
       <header className="page-head">
         <div>
-          <p className="page-kicker">
-            <Link to="/preparacion/asistencia">ASISTENCIA</Link>
-            {' / SESIÓN'}
-          </p>
+          <p className="page-kicker">ASISTENCIA · SESIÓN</p>
           <h1>{editing ? 'Editar asistencia' : 'Asistencia'}</h1>
         </div>
-        <button
-          type="button"
-          className="ghost page-back"
-          onClick={() => navigate('/preparacion/asistencia')}
-        >
-          <IcoFlecha />
-          Volver
-        </button>
+        <Link className="page-back" to="/preparacion/asistencia">
+          <button type="button" className="ghost">
+            <IcoFlecha />
+            Volver
+          </button>
+        </Link>
         <div className="add-player-actions">
           {canWriteFisico && !editing && (
             <Link

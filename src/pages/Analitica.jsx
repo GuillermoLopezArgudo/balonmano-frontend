@@ -647,11 +647,6 @@ export default function Analitica() {
         <div>
           <p className="page-kicker">RENDIMIENTO · {equipo?.datos?.nombre || 'EQUIPO'}</p>
           <h1>Analítica</h1>
-          <p className="muted" style={{ marginTop: '0.35rem' }}>
-            {puedeExportar
-              ? 'Gráficos, tendencias y exportación PDF / CSV.'
-              : 'Gráficos y tendencias.'}
-          </p>
         </div>
       </header>
 

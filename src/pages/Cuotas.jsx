@@ -212,13 +212,10 @@ export default function Cuotas() {
         <Link className="page-back" to="/club">
           <button type="button" className="ghost">
             <IcoFlecha />
-            Volver al club
+            Volver
           </button>
         </Link>
       </header>
-      <p className="cuotas-lead">
-        Cuota mensual (sep–jun) y licencia federativa. Sin federación no se puede convocar.
-      </p>
 
       <div className="cuotas-toolbar">
         <div className="field cuotas-temp-field">

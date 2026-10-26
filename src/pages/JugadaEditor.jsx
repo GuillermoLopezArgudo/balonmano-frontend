@@ -1352,8 +1352,8 @@ export default function JugadaEditor({ variant = 'jugada' }) {
       <header className="page-head">
         <div>
           <p className="page-kicker">
-            <Link to={basePath}>{isEntrenamiento ? 'ENTRENAMIENTOS' : 'JUGADAS'}</Link>
-            {' / '}
+            {isEntrenamiento ? 'ENTRENAMIENTOS' : 'JUGADAS'}
+            {' · '}
             {isNew ? 'NUEVA' : editing ? 'EDITAR' : 'VER'}
           </p>
           <h1>

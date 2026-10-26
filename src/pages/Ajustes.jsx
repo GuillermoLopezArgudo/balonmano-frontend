@@ -2,15 +2,15 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../api';
 import AuthImage from '../components/AuthImage';
+import PasswordInput from '../components/PasswordInput';
 import { passwordError } from '../password';
 import { useAuth } from '../auth';
 import { getSavedTema, saveTema } from '../theme';
 
 const TABS_BASE = [
-  { id: 'cuenta', label: 'Cuenta' },
+  { id: 'cuenta', label: 'Cuenta y seguridad' },
   { id: 'club', label: 'Club', adminOnly: true },
   { id: 'preferencias', label: 'Preferencias' },
-  { id: 'seguridad', label: 'Seguridad' },
 ];
 
 const CATEGORIAS = [
@@ -102,6 +102,12 @@ export default function Ajustes() {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    // Compat: ?tab=seguridad → Cuenta y seguridad
+    if (tabParam === 'seguridad') {
+      setTab('cuenta');
+      setSearchParams({}, { replace: true });
+      return;
+    }
     if (tabIds.has(tabParam) && tabParam !== tab) setTab(tabParam);
     else if (tabParam && !tabIds.has(tabParam)) {
       setTab('cuenta');
@@ -269,14 +275,6 @@ export default function Ajustes() {
             {t.label}
           </button>
         ))}
-        <button
-          type="button"
-          className="filters-end"
-          disabled={saving || (!dirty && !pass.nueva)}
-          onClick={guardar}
-        >
-          {saving ? 'Guardando…' : 'Guardar cambios'}
-        </button>
       </div>
 
       {msg && <p className="ok-msg">{msg}</p>}
@@ -284,7 +282,7 @@ export default function Ajustes() {
 
       {tab === 'cuenta' && (
         <section className="panel">
-          <h2>Datos de la cuenta</h2>
+          <h2>Cuenta y seguridad</h2>
           <div className="ajustes-profile">
             <span className="ajustes-avatar">{avatarLetter}</span>
             <div>
@@ -336,10 +334,65 @@ export default function Ajustes() {
               administrador.
             </p>
           )}
+
+          <h3 className="ajustes-subhead">Cambiar contraseña</h3>
+          <div className="form-grid club-form">
+            <PasswordInput
+              id="ajustes-pass-actual"
+              label="Contraseña actual"
+              value={pass.actual}
+              autoComplete="current-password"
+              onChange={(e) => {
+                setPass((p) => ({ ...p, actual: e.target.value }));
+                setDirty(true);
+              }}
+            />
+            <PasswordInput
+              id="ajustes-pass-nueva"
+              label="Nueva contraseña"
+              value={pass.nueva}
+              autoComplete="new-password"
+              minLength={8}
+              placeholder="Mayúscula, minúscula y un número"
+              showStrength
+              onChange={(e) => {
+                setPass((p) => ({ ...p, nueva: e.target.value }));
+                setDirty(true);
+              }}
+            />
+            <PasswordInput
+              id="ajustes-pass-confirm"
+              label="Confirmar nueva contraseña"
+              value={pass.confirmar}
+              autoComplete="new-password"
+              onChange={(e) => {
+                setPass((p) => ({ ...p, confirmar: e.target.value }));
+                setDirty(true);
+              }}
+            />
+          </div>
+
+          <div className="ajustes-save-row">
+            <button
+              type="button"
+              disabled={saving || (!dirty && !pass.nueva)}
+              onClick={guardar}
+            >
+              {saving ? 'Guardando…' : 'Guardar'}
+            </button>
+          </div>
+
+          <div className="ajustes-danger">
+            <p className="muted">Cerrar sesión en este dispositivo</p>
+            <button type="button" className="ghost" onClick={logout}>
+              Cerrar sesión
+            </button>
+          </div>
         </section>
       )}
 
       {tab === 'club' && canManageClub && (
+        <>
         <div className="club-grid">
           <section className="panel club-card">
             <h2>Identidad del club</h2>
@@ -457,17 +510,19 @@ export default function Ajustes() {
                 </select>
               </div>
             </div>
+            <div className="ajustes-save-row">
+              <button type="button" disabled={saving || !dirty} onClick={guardar}>
+                {saving ? 'Guardando…' : 'Guardar'}
+              </button>
+            </div>
           </section>
         </div>
+        </>
       )}
 
       {tab === 'preferencias' && (
         <section className="panel">
-          <h2>Preferencias de la app</h2>
-          <p className="muted" style={{ marginTop: 0 }}>
-            Solo el tema se aplica de verdad. Idioma y notificaciones por correo llegarán más
-            adelante.
-          </p>
+          <h2>Preferencias</h2>
           <div className="form-grid club-form">
             <div className="field">
               <label>Tema</label>
@@ -481,57 +536,6 @@ export default function Ajustes() {
         </section>
       )}
 
-      {tab === 'seguridad' && (
-        <section className="panel">
-          <h2>Seguridad</h2>
-          <div className="form-grid club-form">
-            <div className="field">
-              <label>Contraseña actual</label>
-              <input
-                type="password"
-                value={pass.actual}
-                onChange={(e) => {
-                  setPass((p) => ({ ...p, actual: e.target.value }));
-                  setDirty(true);
-                }}
-                autoComplete="current-password"
-              />
-            </div>
-            <div className="field">
-              <label>Nueva contraseña</label>
-              <input
-                type="password"
-                value={pass.nueva}
-                onChange={(e) => {
-                  setPass((p) => ({ ...p, nueva: e.target.value }));
-                  setDirty(true);
-                }}
-                autoComplete="new-password"
-                minLength={8}
-                placeholder="Mayúscula, minúscula y un número"
-              />
-            </div>
-            <div className="field">
-              <label>Confirmar nueva contraseña</label>
-              <input
-                type="password"
-                value={pass.confirmar}
-                onChange={(e) => {
-                  setPass((p) => ({ ...p, confirmar: e.target.value }));
-                  setDirty(true);
-                }}
-                autoComplete="new-password"
-              />
-            </div>
-          </div>
-          <div className="ajustes-danger">
-            <p className="muted">Cerrar sesión en este dispositivo</p>
-            <button type="button" className="ghost" onClick={logout}>
-              Cerrar sesión
-            </button>
-          </div>
-        </section>
-      )}
     </>
   );
 }

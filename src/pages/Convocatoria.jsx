@@ -694,10 +694,7 @@ export default function Convocatoria() {
     <>
       <header className="page-head">
         <div>
-          <p className="page-kicker">
-            <Link to={`/partidos/${id}`}>PARTIDO</Link>
-            {' / CONVOCATORIA'}
-          </p>
+          <p className="page-kicker">PARTIDO · CONVOCATORIA</p>
           <h1>Convocatoria y alineación</h1>
         </div>
         <Link className="page-back" to={`/partidos/${id}`}>

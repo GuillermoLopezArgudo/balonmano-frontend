@@ -1255,8 +1255,10 @@
     font-size: 0.65rem;
   }
 
-  .jugada-board.jugada-board-full {
-    min-height: min(48vw, 280px);
+  .jugada-board.jugada-board-full,
+  .jugada-board.jugada-board-media {
+    width: 100%;
+    min-height: 0;
   }
 
   .jugada-board-full .jugada-pieza {

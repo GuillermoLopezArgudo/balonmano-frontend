@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { api } from '../api';
+import PasswordInput from '../components/PasswordInput';
 import { passwordError } from '../password';
 import { useAuth } from '../auth';
 
@@ -303,29 +304,25 @@ export default function Registro() {
                   required
                 />
               </div>
-              <div className="field">
-                <label>Contraseña</label>
-                <input
-                  type="password"
-                  placeholder="••••••••"
-                  value={form.password}
-                  onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  required
-                  minLength={8}
-                />
-                <p className="muted">Mayúscula, minúscula y un número.</p>
-              </div>
-              <div className="field">
-                <label>Confirmar contraseña</label>
-                <input
-                  type="password"
-                  placeholder="Repite la contraseña"
-                  value={form.password2}
-                  onChange={(e) => setForm({ ...form, password2: e.target.value })}
-                  required
-                  minLength={8}
-                />
-              </div>
+              <PasswordInput
+                id="registro-password"
+                label="Contraseña"
+                value={form.password}
+                placeholder="••••••••"
+                required
+                minLength={8}
+                showStrength
+                onChange={(e) => setForm({ ...form, password: e.target.value })}
+              />
+              <PasswordInput
+                id="registro-password2"
+                label="Confirmar contraseña"
+                value={form.password2}
+                placeholder="Repite la contraseña"
+                required
+                minLength={8}
+                onChange={(e) => setForm({ ...form, password2: e.target.value })}
+              />
               {error && <p className="error">{error}</p>}
               <div className="onboard-actions">
                 <Link to="/login" className="btn-back">

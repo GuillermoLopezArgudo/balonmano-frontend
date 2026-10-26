@@ -101,9 +101,6 @@ export default function Entrenamientos() {
         <div>
           <p className="page-kicker">ENTRENAMIENTOS</p>
           <h1>Entrenamientos</h1>
-          <p className="muted" style={{ marginTop: '0.35rem' }}>
-            Plantillas de ejercicios en pista, como las jugadas. Útiles si cambia el cuerpo técnico.
-          </p>
         </div>
       </header>
 

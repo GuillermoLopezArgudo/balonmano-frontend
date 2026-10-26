@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { api } from '../api';
 import AuthImage from '../components/AuthImage';
 import { useAuth } from '../auth';
-import { IcoLapiz } from '../components/ActionIcons';
+import { IcoFlecha, IcoLapiz } from '../components/ActionIcons';
 import { HandballCourtMarks, PISTA_CELLS } from '../components/ShotMaps';
 
 function edad(fecha) {
@@ -199,22 +199,28 @@ export default function JugadorDetalle() {
     <>
       <header className="page-head">
         <div>
-          <p className="page-kicker">
-            <Link to="/plantilla">PLANTILLA</Link> / FICHA
-          </p>
+          <p className="page-kicker">PLANTILLA · FICHA</p>
           <h1>
             {j.nombre} {j.apellido}
           </h1>
         </div>
+        <Link className="page-back" to="/plantilla">
+          <button type="button" className="ghost">
+            <IcoFlecha />
+            Volver
+          </button>
+        </Link>
         {canWritePlantilla && (
-          <Link
-            to={`/plantilla/${id}/editar`}
-            className="btn-icon-edit"
-            title="Editar perfil"
-            aria-label="Editar perfil"
-          >
-            <IcoLapiz />
-          </Link>
+          <div className="add-player-actions page-head-actions-end">
+            <Link
+              to={`/plantilla/${id}/editar`}
+              className="btn-icon-edit"
+              title="Editar perfil"
+              aria-label="Editar perfil"
+            >
+              <IcoLapiz />
+            </Link>
+          </div>
         )}
       </header>
 

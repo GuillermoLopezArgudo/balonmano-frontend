@@ -24,6 +24,14 @@
   --danger: #ff5c7a;
   --radius: 16px;
   --radius-sm: 12px;
+  /* Controles chrome (Volver, filtros, Guardar, Cerrar…): mismo tamaño en PC/tablet/móvil */
+  --ctrl-py: 0.55rem;
+  --ctrl-px: 0.95rem;
+  --ctrl-fs: 0.85rem;
+  --ctrl-fw: 700;
+  --ctrl-lh: 1.25;
+  --ctrl-mh: 2.25rem; /* 36px: alinea con iconos 36×36 */
+  --ctrl-icon: 36px;
   --font: 'Outfit', sans-serif;
   --display: 'Space Grotesk', 'Outfit', sans-serif;
   --sidebar-w: 240px;

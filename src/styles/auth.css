@@ -809,6 +809,39 @@
   line-height: 1.3;
 }
 
+.password-strength {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin-top: 0.35rem;
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+.password-strength strong {
+  font-weight: 700;
+}
+
+.password-strength span {
+  color: var(--muted);
+}
+
+.password-strength--weak strong {
+  color: var(--danger);
+}
+
+.password-strength--fair strong {
+  color: var(--orange);
+}
+
+.password-strength--ok strong {
+  color: var(--teal);
+}
+
+.password-strength--strong strong {
+  color: var(--lime);
+}
+
 [data-theme='claro'] .password-toggle:hover,
 [data-theme='claro'] .password-toggle:focus-visible {
   background: rgba(0, 0, 0, 0.05);

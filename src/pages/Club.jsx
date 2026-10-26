@@ -107,6 +107,13 @@ export default function Club() {
                 </button>
               </Link>
             )}
+            {canManageClub && (
+              <Link to="/club/auditoria">
+                <button type="button" className="ghost">
+                  Auditoría
+                </button>
+              </Link>
+            )}
             {tab === 'datos' && canManageClub && (
               <Link
                 to="/ajustes?tab=club"

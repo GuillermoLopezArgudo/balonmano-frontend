@@ -22,6 +22,7 @@ import Analitica from './pages/Analitica';
 import Club from './pages/Club';
 import Cuotas from './pages/Cuotas';
 import MiembrosClub from './pages/MiembrosClub';
+import Auditoria from './pages/Auditoria';
 import Ajustes from './pages/Ajustes';
 import AnadirJugador from './pages/AnadirJugador';
 import CrearPartido from './pages/CrearPartido';
@@ -100,6 +101,7 @@ const router = createBrowserRouter([
           { path: 'club', element: <Club /> },
           { path: 'club/cuotas', element: <Cuotas /> },
           { path: 'club/miembros', element: <MiembrosClub /> },
+          { path: 'club/auditoria', element: <Auditoria /> },
           { path: 'ajustes', element: <Ajustes /> },
         ],
       },

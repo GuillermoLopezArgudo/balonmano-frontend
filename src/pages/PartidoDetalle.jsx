@@ -192,10 +192,7 @@ export default function PartidoDetalle() {
     <>
       <header className="page-head">
         <div>
-          <p className="page-kicker">
-            <Link to="/partidos">PARTIDOS</Link>
-            {' / FICHA'}
-          </p>
+          <p className="page-kicker">PARTIDOS · FICHA</p>
           <h1>Ficha del partido</h1>
         </div>
         <Link className="page-back" to="/partidos">

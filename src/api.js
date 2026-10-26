@@ -120,8 +120,18 @@ export function setUnauthorizedHandler(fn) {
 
 export const api = {
   login: (data, opts) => request('/auth/login', { method: 'POST', body: JSON.stringify(data), ...opts }),
+  logout: (opts) => request('/auth/logout', { method: 'POST', body: '{}', ...opts }),
   registro: (data, opts) =>
     request('/auth/registro', { method: 'POST', body: JSON.stringify(data), ...opts }),
+  getAuditoria: (opts = {}) => {
+    const { limit = 50, offset = 0, accion, q, ...rest } = opts;
+    const params = new URLSearchParams();
+    params.set('limit', String(limit));
+    params.set('offset', String(offset));
+    if (accion) params.set('accion', accion);
+    if (q) params.set('q', q);
+    return request(`/auditoria/?${params}`, rest);
+  },
   forgotPassword: (data, opts) =>
     request('/auth/password/forgot', { method: 'POST', body: JSON.stringify(data), ...opts }),
   resetPassword: (data, opts) =>
@@ -199,6 +209,8 @@ export const api = {
   getRivales: (opts) => request('/rivales/', opts),
   createRival: (data, opts) =>
     request('/rivales/', { method: 'POST', body: JSON.stringify(data), ...opts }),
+  updateRival: (id, data, opts) =>
+    request(`/rivales/${id}`, { method: 'PATCH', body: JSON.stringify(data), ...opts }),
   deleteRival: (id, opts) => request(`/rivales/${id}`, { method: 'DELETE', ...opts }),
   getRivalJugadoras: (idRival, opts) => request(`/rivales/${idRival}/jugadoras`, opts),
   upsertRivalJugadora: (idRival, data, opts) =>

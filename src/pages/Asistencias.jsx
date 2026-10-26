@@ -115,10 +115,6 @@ export default function Asistencias() {
         <div>
           <p className="page-kicker">ASISTENCIA</p>
           <h1>Asistencia</h1>
-          <p className="muted" style={{ marginTop: '0.35rem' }}>
-            Una sesión por día (un entrenamiento). El resumen de presentes y faltas aparece en la
-            ficha de cada jugadora.
-          </p>
         </div>
       </header>
 

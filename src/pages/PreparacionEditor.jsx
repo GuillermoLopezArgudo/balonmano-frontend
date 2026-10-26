@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api';
 import { useAuth } from '../auth';
 import { IcoFlecha, IcoLapiz } from '../components/ActionIcons';
-import { TIPOS_PREP, labelTipo } from './PreparacionFisica';
+import { TIPOS_PREP } from './PreparacionFisica';
 
 const empty = {
   nombre: '',
@@ -115,11 +115,6 @@ export default function PreparacionEditor() {
                 ? `Editar · ${form.nombre || 'Preparación'}`
                 : form.nombre || 'Preparación'}
           </h1>
-          {!isNew && (
-            <p className="muted" style={{ margin: '0.25rem 0 0' }}>
-              {labelTipo(form.tipo)}
-            </p>
-          )}
         </div>
         <Link className="page-back" to="/preparacion">
           <button type="button" className="ghost">
