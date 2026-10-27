@@ -85,13 +85,11 @@ export default function PreparacionEditor() {
     };
     try {
       if (isNew) {
-        const created = await api.createPreparacion(payload);
-        setStatus('Preparación creada');
-        navigate(`/preparacion/${created.id_preparacion}/editar`, { replace: true });
+        await api.createPreparacion(payload);
       } else {
         await api.updatePreparacion(id, payload);
-        setStatus('Guardado');
       }
+      navigate('/preparacion', { replace: true });
     } catch (err) {
       setError(err.message);
     } finally {
@@ -237,16 +235,12 @@ export default function PreparacionEditor() {
 
         {!soloLectura && (
           <div className="prep-form-actions">
+            <button type="button" className="ghost" onClick={() => navigate('/preparacion')}>
+              Cancelar
+            </button>
             <button type="submit" disabled={saving}>
               {saving ? 'Guardando…' : isNew ? 'Crear preparación' : 'Guardar cambios'}
             </button>
-            {!isNew && (
-              <Link to={`/preparacion/${id}`}>
-                <button type="button" className="ghost">
-                  Cancelar
-                </button>
-              </Link>
-            )}
           </div>
         )}
       </form>

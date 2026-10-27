@@ -1306,10 +1306,6 @@
     flex: 1 1 calc(50% - 0.4rem);
   }
 
-  .prep-form-actions > * {
-    flex: 1 1 100%;
-  }
-
   .acta-print .live-feed-item {
     grid-template-columns: 44px minmax(0, 1fr);
   }

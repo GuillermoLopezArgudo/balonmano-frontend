@@ -96,14 +96,11 @@ export function useJugadaEditorState({ id, isNew, isEntrenamiento, basePath, may
     try {
       const payload = toPayload(state);
       if (isNew) {
-        const created = await api.createJugada(payload);
-        setStatus(isEntrenamiento ? 'Entrenamiento guardado' : 'Jugada guardada');
-        navigate(`${basePath}/${created.id_jugada}/editar`, { replace: true });
+        await api.createJugada(payload);
       } else {
-        const updated = await api.updateJugada(id, payload);
-        setState(fromApi(updated));
-        setStatus('Cambios guardados');
+        await api.updateJugada(id, payload);
       }
+      navigate(basePath, { replace: true });
     } catch (e) {
       setError(e.message);
     } finally {

@@ -916,16 +916,13 @@
   }
 
   .informes-actions,
-  .acta-footer,
-  .prep-form-actions {
+  .acta-footer {
     flex-wrap: wrap;
     gap: 0.5rem;
   }
 
   .informes-actions > *,
-  .acta-footer button,
-  .prep-form-actions button,
-  .prep-form-actions a {
+  .acta-footer button {
     flex: 1 1 auto;
     min-width: 0;
   }
@@ -990,9 +987,42 @@
 
 .prep-form-actions {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  width: 100%;
+  max-width: 100%;
   margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+  box-sizing: border-box;
+}
+
+.prep-form-actions > button {
+  flex: 0 1 auto;
+  width: auto;
+  min-width: 10rem;
+  min-height: var(--ctrl-mh);
+  padding: var(--ctrl-py) var(--ctrl-px);
+  font-size: var(--ctrl-fs);
+  font-weight: var(--ctrl-fw);
+  line-height: var(--ctrl-lh);
+  border-radius: var(--radius-sm);
+  box-sizing: border-box;
+}
+
+@media (max-width: 1024px) {
+  .prep-form-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    justify-content: stretch;
+  }
+
+  .prep-form-actions > button {
+    width: 100%;
+    min-width: 0;
+  }
 }
 
 .prep-tipo-badge {
@@ -1087,8 +1117,7 @@
     min-height: 44px;
   }
 
-  .prep-form-actions > * {
-    flex: 1 1 auto;
+  .prep-form-actions > button {
     min-height: 44px;
   }
 
