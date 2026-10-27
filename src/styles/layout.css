@@ -283,6 +283,37 @@ a.volver-link {
 a.volver-link svg {
   display: block;
   flex: 0 0 auto;
+  width: 1em;
+  height: 1em;
+  margin: 0;
+  vertical-align: middle;
+}
+
+/* Volver dentro del grupo de CTAs (p. ej. Actualizar + Volver): misma alineación de flecha */
+.page-head .add-player-actions .page-back {
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+  grid-column: auto;
+  grid-row: auto;
+  justify-self: auto;
+}
+
+.page-head .add-player-actions .page-back > button,
+.page-head .add-player-actions > button:has(svg) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.page-head .add-player-actions .page-back svg,
+.page-head .add-player-actions > button svg {
+  display: block;
+  flex: 0 0 auto;
+  width: 1em;
+  height: 1em;
+  margin: 0;
 }
 
 .page-head .add-player-actions:not(:has(a, button)) {

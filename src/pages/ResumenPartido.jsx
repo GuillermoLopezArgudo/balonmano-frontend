@@ -254,16 +254,16 @@ export default function ResumenPartido() {
           </p>
           <h1>Resumen del partido</h1>
         </div>
-        <div className="add-player-actions page-head-actions-beside">
+        <Link className="page-back" to={`/partidos/${id}`}>
+          <button type="button" className="ghost">
+            <IcoFlecha />
+            Volver
+          </button>
+        </Link>
+        <div className="add-player-actions page-head-actions-end resumen-export-bar">
           <button type="button" onClick={exportarPdf}>
             Exportar PDF
           </button>
-          <Link to={`/partidos/${id}`}>
-            <button type="button" className="ghost">
-              <IcoFlecha />
-              Volver
-            </button>
-          </Link>
         </div>
       </header>
 

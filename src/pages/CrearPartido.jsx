@@ -469,12 +469,14 @@ export default function CrearPartido() {
                   <button
                     type="button"
                     className="rival-item-main"
-                    onClick={() => setField('id_rival', rv.id_rival)}
+                    onClick={() =>
+                      setField('id_rival', selected ? '' : rv.id_rival)
+                    }
                   >
                     <span className="rival-avatar">{initials(nombre)}</span>
                     <span>
                       <strong>{nombre}</strong>
-                      <small>Rival</small>
+                      <small>{selected ? 'Toca para quitar' : 'Rival'}</small>
                     </span>
                   </button>
                   <button
@@ -523,10 +525,17 @@ export default function CrearPartido() {
           {rival && (
             <div className="rival-selected">
               <span className="rival-avatar xl">{initials(rival.nombre || '')}</span>
-              <div>
+              <div className="rival-selected-info">
                 <strong>{rival.nombre}</strong>
                 <small>Seleccionado como rival</small>
               </div>
+              <button
+                type="button"
+                className="ghost rival-selected-clear"
+                onClick={() => setField('id_rival', '')}
+              >
+                Quitar
+              </button>
             </div>
           )}
 

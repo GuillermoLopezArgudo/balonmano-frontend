@@ -726,21 +726,6 @@ export default function Convocatoria() {
             {t.id === 'banquillo' ? ` ${banquillo.length}` : ''}
           </button>
         ))}
-        {canWriteConvocatoria && (dirty || estadoConv !== 'guardada') && (
-          <button
-            type="button"
-            className="conv-toolbar-end"
-            disabled={saving || (!dirty && estadoConv === 'guardada')}
-            onClick={persist}
-          >
-            {saving ? 'Guardando…' : 'Guardar convocatoria'}
-          </button>
-        )}
-        {!canWriteConvocatoria && (
-          <button type="button" className="conv-toolbar-end" disabled>
-            Solo lectura
-          </button>
-        )}
       </div>
 
       <p className="conv-status-line">
@@ -870,15 +855,32 @@ export default function Convocatoria() {
         </section>
 
         <section className="panel club-card">
-          <h2>
-            {fase === 'ataque'
-              ? 'Alineación ataque'
-              : fase === 'defensa'
-                ? 'Alineación defensa'
-                : tab === 'banquillo'
-                  ? 'Banquillo'
-                  : 'Selección actual'}
-          </h2>
+          <div className="conv-panel-head">
+            <h2>
+              {fase === 'ataque'
+                ? 'Alineación ataque'
+                : fase === 'defensa'
+                  ? 'Alineación defensa'
+                  : tab === 'banquillo'
+                    ? 'Banquillo'
+                    : 'Selección actual'}
+            </h2>
+            {tab === 'convocatoria' && canWriteConvocatoria && (dirty || estadoConv !== 'guardada') && (
+              <button
+                type="button"
+                className="conv-save-btn"
+                disabled={saving || (!dirty && estadoConv === 'guardada')}
+                onClick={persist}
+              >
+                {saving ? 'Guardando…' : 'Guardar convocatoria'}
+              </button>
+            )}
+            {tab === 'convocatoria' && !canWriteConvocatoria && (
+              <button type="button" className="conv-save-btn" disabled>
+                Solo lectura
+              </button>
+            )}
+          </div>
 
           {esCampo ? (
             <>

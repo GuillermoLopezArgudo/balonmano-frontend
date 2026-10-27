@@ -93,7 +93,7 @@ export default function Auditoria() {
           <button type="button" className="ghost" onClick={() => setTick((n) => n + 1)}>
             Actualizar
           </button>
-          <Link to="/club">
+          <Link className="page-back" to="/club">
             <button type="button" className="ghost">
               <IcoFlecha />
               Volver

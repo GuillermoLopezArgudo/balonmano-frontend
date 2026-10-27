@@ -300,15 +300,13 @@ export default function MiembrosClub() {
             <em>{t.n}</em>
           </button>
         ))}
-        <div className="filters-end">
-          <button
-            type="button"
-            className={showInvite ? 'ghost' : ''}
-            onClick={() => setShowInvite((v) => !v)}
-          >
-            {showInvite ? 'Cerrar' : 'Invitar'}
-          </button>
-        </div>
+        <button
+          type="button"
+          className={`miembros-invite-cta${showInvite ? ' is-open' : ''}`}
+          onClick={() => setShowInvite((v) => !v)}
+        >
+          {showInvite ? 'Cerrar' : 'Invitar'}
+        </button>
       </div>
 
       {showInvite && (

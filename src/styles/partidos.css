@@ -1,5 +1,25 @@
 /* Partidos, live, convocatoria, campo, shot maps de partido */
 
+/* Exportar PDF: fila propia bajo el título (no en filtros) */
+.resumen-export-bar {
+  margin: 0;
+}
+
+.resumen-export-bar > button {
+  min-height: var(--ctrl-mh);
+}
+
+@media (max-width: 1024px) {
+  .resumen-export-bar {
+    justify-content: stretch;
+  }
+
+  .resumen-export-bar > button {
+    flex: 1 1 auto;
+    width: 100%;
+  }
+}
+
 .acta-layout {
   grid-template-columns: 1.35fr 0.9fr;
 }
@@ -733,6 +753,11 @@
   background: rgba(191, 255, 0, 0.06);
 }
 
+.rival-selected-info {
+  flex: 1;
+  min-width: 0;
+}
+
 .rival-selected strong {
   display: block;
 }
@@ -742,6 +767,11 @@
   margin-top: 0.2rem;
   color: var(--muted);
   font-size: 0.78rem;
+}
+
+.rival-selected-clear {
+  flex: 0 0 auto;
+  margin-left: auto;
 }
 
 .confirm-grid {
@@ -777,8 +807,34 @@
   margin-bottom: 0.65rem;
 }
 
-.conv-toolbar-end {
-  margin-left: auto;
+.conv-badge,
+.conv-tab {
+  border-radius: var(--radius-sm);
+  padding: var(--ctrl-py) var(--ctrl-px);
+  font-size: var(--ctrl-fs);
+  font-weight: var(--ctrl-fw);
+  line-height: var(--ctrl-lh);
+  min-height: var(--ctrl-mh);
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text);
+  box-sizing: border-box;
+}
+
+.conv-panel-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  margin-bottom: 0.85rem;
+}
+
+.conv-panel-head h2 {
+  margin: 0;
+}
+
+.conv-save-btn {
   flex: 0 0 auto;
   white-space: nowrap;
   background: var(--lime);
@@ -793,22 +849,8 @@
   box-sizing: border-box;
 }
 
-.conv-toolbar-end:disabled {
+.conv-save-btn:disabled {
   opacity: 0.65;
-}
-
-.conv-badge,
-.conv-tab {
-  border-radius: var(--radius-sm);
-  padding: var(--ctrl-py) var(--ctrl-px);
-  font-size: var(--ctrl-fs);
-  font-weight: var(--ctrl-fw);
-  line-height: var(--ctrl-lh);
-  min-height: var(--ctrl-mh);
-  border: 1px solid var(--line);
-  background: transparent;
-  color: var(--text);
-  box-sizing: border-box;
 }
 
 .conv-badge.active,
@@ -1608,33 +1650,35 @@ body.conv-pointer-dragging .conv-selected-row.drag-over {
   }
 }
 
-/* Convocatoria: en móvil/tablet las pestañas no estiran al 100% para dejar sitio a Guardar */
+/* Convocatoria: pestañas a ancho completo en móvil/tablet */
 @media (max-width: 1024px) {
   .conv-toolbar {
-    display: flex;
-    flex-wrap: wrap;
-    overflow: visible;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: 0.45rem;
+    width: 100%;
   }
 
   .conv-badge,
   .conv-tab {
-    flex: 0 1 auto;
-    width: auto;
+    width: 100%;
     min-width: 0;
     min-height: var(--ctrl-mh);
     margin: 0;
-    padding: var(--ctrl-py) var(--ctrl-px);
+    padding: var(--ctrl-py) 0.5rem;
     font-size: var(--ctrl-fs);
     line-height: var(--ctrl-lh);
     white-space: nowrap;
     text-align: center;
   }
 
-  .conv-toolbar-end {
-    margin-left: auto;
-    flex: 0 0 auto;
-    min-height: var(--ctrl-mh);
+  .conv-panel-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .conv-save-btn {
+    width: 100%;
   }
 }
 

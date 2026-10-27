@@ -138,7 +138,7 @@ export default function AnadirJugador() {
           </p>
           <h1>{isEdit ? 'Editar jugador' : 'Añadir jugador'}</h1>
         </div>
-        <div className="add-player-actions">
+        <div className="add-player-actions add-player-actions-head">
           <Link to={isEdit ? `/plantilla/${id}` : '/plantilla'}>
             <button type="button" className="ghost">
               Cancelar
@@ -276,6 +276,21 @@ export default function AnadirJugador() {
                 <span>kg</span>
               </div>
             </div>
+          </div>
+
+          <div className="add-player-actions add-player-actions-foot">
+            <Link to={isEdit ? `/plantilla/${id}` : '/plantilla'}>
+              <button type="button" className="ghost">
+                Cancelar
+              </button>
+            </Link>
+            <button type="submit" disabled={saving}>
+              {saving
+                ? 'Guardando…'
+                : isEdit
+                  ? 'Guardar cambios'
+                  : 'Crear jugador'}
+            </button>
           </div>
         </section>
       </div>

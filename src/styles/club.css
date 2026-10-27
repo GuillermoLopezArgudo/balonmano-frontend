@@ -311,7 +311,7 @@
 .miembros-tabs {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: stretch;
   gap: 0.5rem;
   margin-bottom: 1rem;
   padding: 0;
@@ -327,42 +327,17 @@
   display: none;
 }
 
-.miembros-tabs .filters-end {
-  display: flex;
-  align-items: stretch;
-  gap: 0.5rem;
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.miembros-tabs .filters-end button,
-.miembros-tabs .filters-end a button {
-  flex: 1 1 auto;
-  width: 100%;
-  min-height: 40px;
-}
-
-.miembros-tabs button.filters-end,
-.miembros-tabs .filters-end > button:not(.ghost) {
-  background: var(--lime);
-  border-color: var(--lime);
-  color: #0a0a0a;
-}
-
-.miembros-tabs button.filters-end:hover,
-.miembros-tabs .filters-end > button:not(.ghost):hover {
-  background: var(--lime-hover);
-  border-color: var(--lime-hover);
-  color: #0a0a0a;
-}
-
-.miembros-tabs button {
-  flex: 1 1 auto;
+.miembros-tabs > button {
+  flex: 1 1 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
-  min-height: 40px;
+  min-width: 0;
+  min-height: 44px;
+  height: auto;
+  align-self: stretch;
+  box-sizing: border-box;
   padding: 0.55rem 0.95rem;
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
@@ -375,7 +350,31 @@
   white-space: nowrap;
 }
 
-.miembros-tabs button:hover:not(.active) {
+.miembros-tabs button:hover:not(.active):not(.miembros-invite-cta) {
+  background: var(--panel-2);
+  border-color: color-mix(in srgb, var(--lime) 35%, var(--line));
+  color: var(--text);
+}
+
+.miembros-tabs > button.miembros-invite-cta {
+  background: var(--lime);
+  border-color: var(--lime);
+  color: #0a0a0a;
+}
+
+.miembros-tabs > button.miembros-invite-cta:hover {
+  background: var(--lime-hover);
+  border-color: var(--lime-hover);
+  color: #0a0a0a;
+}
+
+.miembros-tabs > button.miembros-invite-cta.is-open {
+  background: transparent;
+  border-color: var(--line);
+  color: var(--text);
+}
+
+.miembros-tabs > button.miembros-invite-cta.is-open:hover {
   background: var(--panel-2);
   border-color: color-mix(in srgb, var(--lime) 35%, var(--line));
   color: var(--text);
@@ -538,23 +537,13 @@
     border-radius: var(--radius-sm);
   }
 
-  .miembros-tabs button,
-  .miembros-tabs .filters-end {
+  .miembros-tabs > button {
     flex: 1 1 0;
-  }
-
-  .miembros-tabs button {
     flex-direction: column;
     gap: 0.15rem;
     padding: 0.55rem 0.4rem;
     font-size: 0.78rem;
-  }
-
-  .miembros-tabs .filters-end button {
-    flex-direction: column;
-    justify-content: center;
-    padding: 0.55rem 0.4rem;
-    font-size: 0.78rem;
+    min-height: 3.35rem;
   }
 
   .miembros-invite-grid {
@@ -882,11 +871,13 @@
   .miembros-tabs {
     flex-wrap: wrap;
     overflow-x: hidden;
+    align-items: stretch;
   }
 
-  .miembros-tabs button {
-    flex: 1 1 auto;
-    min-height: 44px;
+  .miembros-tabs > button {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 3.35rem;
   }
 
   .miembros-invite-actions {
