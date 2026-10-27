@@ -258,25 +258,39 @@
     gap: 0.4rem;
   }
 
-  .filters > button:not(.filters-end) {
+  .filters > button:not(.filters-end),
+  .filters > .filters-end,
+  .filters > a.filters-end,
+  .filters > button.filters-end {
     flex: 1 1 calc(50% - 0.4rem);
     max-width: calc(50% - 0.2rem);
     min-width: 0;
     min-height: var(--ctrl-mh);
+    margin-left: 0;
     white-space: normal;
     line-height: var(--ctrl-lh);
     text-align: center;
+    box-sizing: border-box;
   }
 
-  .filters > .filters-end,
-  .filters > a.filters-end,
-  .filters > button.filters-end {
-    flex: 0 0 auto;
-    width: auto;
+  .filters > a.filters-end {
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+
+  .filters > a.filters-end > button,
+  .filters > a.filters-end > button:not(.ghost) {
+    flex: 1 1 auto;
+    width: 100%;
     max-width: none;
+    margin-left: 0;
     min-height: var(--ctrl-mh);
-    margin-left: auto;
-    white-space: nowrap;
+    white-space: normal;
+    line-height: var(--ctrl-lh);
   }
 
   .metrics {

@@ -191,13 +191,13 @@
     font-size: 1rem;
   }
 
-  .add-player-actions {
+  .add-player-actions:not(.add-player-actions-foot) {
     flex-wrap: wrap;
     gap: 0.45rem;
   }
 
-  .add-player-actions a:not(.btn-icon-view):not(.btn-icon-edit):not(.btn-icon-del),
-  .add-player-actions button:not(.btn-icon-del):not(.live-cerrar-btn) {
+  .add-player-actions:not(.add-player-actions-foot) a:not(.btn-icon-view):not(.btn-icon-edit):not(.btn-icon-del),
+  .add-player-actions:not(.add-player-actions-foot) button:not(.btn-icon-del):not(.live-cerrar-btn) {
     flex: 0 1 auto;
     min-height: var(--ctrl-mh);
   }
@@ -208,9 +208,9 @@
     min-height: var(--ctrl-mh);
   }
 
-  .add-player-actions a.btn-icon-view,
-  .add-player-actions a.btn-icon-edit,
-  .add-player-actions .btn-icon-del {
+  .add-player-actions:not(.add-player-actions-foot) a.btn-icon-view,
+  .add-player-actions:not(.add-player-actions-foot) a.btn-icon-edit,
+  .add-player-actions:not(.add-player-actions-foot) .btn-icon-del {
     flex: 0 0 var(--ctrl-icon);
     width: var(--ctrl-icon);
     min-height: var(--ctrl-icon);

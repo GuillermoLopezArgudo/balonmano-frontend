@@ -230,9 +230,8 @@
 }
 
 form.add-player .add-player-actions.add-player-actions-foot {
-  display: flex;
-  flex-wrap: nowrap;
-  flex-direction: row;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   align-items: stretch;
   gap: 0.65rem;
   width: 100%;
@@ -241,33 +240,28 @@ form.add-player .add-player-actions.add-player-actions-foot {
   border-top: 1px solid var(--line);
 }
 
-form.add-player .add-player-actions.add-player-actions-foot > a,
-form.add-player .add-player-actions.add-player-actions-foot > button {
-  flex: 1 1 0;
-  min-width: 0;
-  width: auto;
-}
-
 form.add-player .add-player-actions.add-player-actions-foot > a {
   display: flex;
+  min-width: 0;
 }
 
 form.add-player .add-player-actions.add-player-actions-foot > a > button,
-form.add-player .add-player-actions.add-player-actions-foot > button {
+form.add-player .add-player-actions.add-player-actions-foot > button[type='submit'] {
   width: 100%;
+  min-width: 0;
   min-height: var(--ctrl-mh);
+  padding: var(--ctrl-py) var(--ctrl-px);
+  font-size: var(--ctrl-fs);
+  font-weight: var(--ctrl-fw);
+  line-height: var(--ctrl-lh);
+  border-radius: var(--radius-sm);
+  box-sizing: border-box;
+  justify-content: center;
 }
 
 @media (max-width: 1024px) {
   form.add-player .add-player-actions.add-player-actions-foot {
-    flex-wrap: nowrap;
-    flex-direction: row;
-  }
-
-  form.add-player .add-player-actions.add-player-actions-foot > a,
-  form.add-player .add-player-actions.add-player-actions-foot > button {
-    flex: 1 1 0;
-    min-width: 0;
+    grid-template-columns: 1fr 1fr;
   }
 }
 
