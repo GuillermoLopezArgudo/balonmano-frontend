@@ -4,6 +4,7 @@ import { api } from '../api';
 import { useAuth } from '../auth';
 import { IcoBasura, IcoLapiz, IcoVer } from '../components/ActionIcons';
 import FisicoTabs from '../components/FisicoTabs';
+import PageHeader from '../components/PageHeader';
 
 export const TIPOS_PREP = [
   { value: 'fuerza', label: 'Fuerza' },
@@ -88,12 +89,13 @@ export default function PreparacionFisica() {
 
   return (
     <>
-      <header className="page-head">
-        <div>
-          <p className="page-kicker">ENTRENAMIENTOS · FÍSICO</p>
-          <h1>Sesiones físicas</h1>
-        </div>
-      </header>
+      <PageHeader kicker="ENTRENAMIENTOS · FÍSICO" title="Sesiones físicas">
+        {canWriteFisico && (
+          <Link to="/preparacion/nueva">
+            <button type="button">Nueva preparación</button>
+          </Link>
+        )}
+      </PageHeader>
 
       <FisicoTabs />
 
@@ -111,11 +113,6 @@ export default function PreparacionFisica() {
             {t.label}
           </button>
         ))}
-        {canWriteFisico && (
-          <Link to="/preparacion/nueva" className="filters-end">
-            <button type="button">Nueva preparación</button>
-          </Link>
-        )}
       </div>
 
       <div className="field roster-search">
