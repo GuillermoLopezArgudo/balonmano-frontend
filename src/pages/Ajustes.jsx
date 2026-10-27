@@ -397,14 +397,14 @@ export default function Ajustes() {
           <section className="panel club-card">
             <h2>Identidad del club</h2>
             <div className="club-identity">
-              <div className="club-escudo">
-                {form.img_escudo ? (
-                  <AuthImage path={form.img_escudo} alt="Escudo" />
-                ) : (
-                  <span>{escudoLabel}</span>
-                )}
-              </div>
-              <div className="club-identity-fields">
+              <div className="club-identity-media">
+                <div className="club-escudo">
+                  {form.img_escudo ? (
+                    <AuthImage path={form.img_escudo} alt="Escudo" />
+                  ) : (
+                    <span>{escudoLabel}</span>
+                  )}
+                </div>
                 <div className="escudo-actions">
                   <label className="btn-outline" style={{ display: 'inline-block', cursor: 'pointer' }}>
                     {form.img_escudo ? 'Cambiar escudo' : 'Subir escudo'}
@@ -425,9 +425,9 @@ export default function Ajustes() {
                     </button>
                   )}
                 </div>
-                <p className="hint" style={{ margin: '0.35rem 0 0.75rem' }}>
-                  PNG o JPG · máx. 2MB
-                </p>
+                <p className="hint club-escudo-hint">PNG o JPG · máx. 2MB</p>
+              </div>
+              <div className="club-identity-fields">
                 <div className="field">
                   <label>Nombre corto</label>
                   <input

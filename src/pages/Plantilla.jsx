@@ -146,6 +146,13 @@ export default function Plantilla() {
           {eyebrow && <p className="page-kicker">{eyebrow}</p>}
           <h1>Plantilla</h1>
         </div>
+        {canWritePlantilla && (
+          <div className="add-player-actions page-head-actions-beside">
+            <Link to="/plantilla/nuevo">
+              <button type="button">+ Añadir jugador</button>
+            </Link>
+          </div>
+        )}
       </header>
 
       <div className="filters roster-filters">
@@ -159,11 +166,6 @@ export default function Plantilla() {
             {f.key}: {counts[f.key] ?? 0}
           </button>
         ))}
-        {canWritePlantilla && (
-          <Link to="/plantilla/nuevo" className="filters-end">
-            <button type="button">+ Añadir jugador</button>
-          </Link>
-        )}
       </div>
 
       <div className="field roster-search">

@@ -254,12 +254,17 @@ export default function ResumenPartido() {
           </p>
           <h1>Resumen del partido</h1>
         </div>
-        <Link className="page-back" to={`/partidos/${id}`}>
-          <button type="button" className="ghost">
-            <IcoFlecha />
-            Volver
+        <div className="add-player-actions page-head-actions-beside">
+          <button type="button" onClick={exportarPdf}>
+            Exportar PDF
           </button>
-        </Link>
+          <Link to={`/partidos/${id}`}>
+            <button type="button" className="ghost">
+              <IcoFlecha />
+              Volver
+            </button>
+          </Link>
+        </div>
       </header>
 
       <div className="filters roster-filters no-print">
@@ -273,9 +278,6 @@ export default function ResumenPartido() {
             {t.label}
           </button>
         ))}
-        <button type="button" className="filters-end" onClick={exportarPdf}>
-          Exportar acta PDF
-        </button>
       </div>
 
       {error && <p className="error no-print">{error}</p>}

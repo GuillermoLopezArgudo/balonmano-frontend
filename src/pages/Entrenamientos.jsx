@@ -102,17 +102,16 @@ export default function Entrenamientos() {
           <p className="page-kicker">ENTRENAMIENTOS</p>
           <h1>Entrenamientos</h1>
         </div>
-      </header>
-
-      <FisicoTabs
-        end={
-          canWriteFisico ? (
-            <Link to="/preparacion/entrenamiento/nueva" className="filters-end">
+        {canWriteFisico && (
+          <div className="add-player-actions page-head-actions-beside">
+            <Link to="/preparacion/entrenamiento/nueva">
               <button type="button">Nuevo entrenamiento</button>
             </Link>
-          ) : null
-        }
-      />
+          </div>
+        )}
+      </header>
+
+      <FisicoTabs />
 
       <div className="field roster-search">
         <label htmlFor="ent-q" className="sr-only">

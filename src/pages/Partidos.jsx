@@ -151,6 +151,13 @@ export default function Partidos() {
           <p className="page-kicker">TEMPORADA {temporadaLabel}</p>
           <h1>Partidos</h1>
         </div>
+        {canWritePartidos && (
+          <div className="add-player-actions page-head-actions-beside">
+            <Link to="/partidos/nuevo">
+              <button type="button">+ Nuevo partido</button>
+            </Link>
+          </div>
+        )}
       </header>
 
       <div className="filters roster-filters">
@@ -170,11 +177,6 @@ export default function Partidos() {
             {f.label}
           </button>
         ))}
-        {canWritePartidos && (
-          <Link to="/partidos/nuevo" className="filters-end">
-            <button type="button">+ Nuevo partido</button>
-          </Link>
-        )}
       </div>
 
       <section className="panel cal-filters">

@@ -89,12 +89,17 @@ export default function Auditoria() {
           <p className="page-kicker">CLUB · SEGURIDAD</p>
           <h1>Auditoría</h1>
         </div>
-        <Link className="page-back" to="/club">
-          <button type="button" className="ghost">
-            <IcoFlecha />
-            Volver
+        <div className="add-player-actions page-head-actions-beside">
+          <button type="button" className="ghost" onClick={() => setTick((n) => n + 1)}>
+            Actualizar
           </button>
-        </Link>
+          <Link to="/club">
+            <button type="button" className="ghost">
+              <IcoFlecha />
+              Volver
+            </button>
+          </Link>
+        </div>
       </header>
 
       <div className="filters roster-filters">
@@ -111,11 +116,6 @@ export default function Auditoria() {
             {f.label}
           </button>
         ))}
-        <div className="filters-end">
-          <button type="button" className="ghost" onClick={() => setTick((n) => n + 1)}>
-            Actualizar
-          </button>
-        </div>
       </div>
 
       <form

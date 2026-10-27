@@ -69,38 +69,50 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.75rem;
+  align-items: stretch;
 }
 
 .dash-gk-stat {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 7.25rem;
   padding: 0.85rem 0.9rem;
   border-radius: var(--radius-sm);
   background: var(--panel-2);
   border: 1px solid var(--line);
+  box-sizing: border-box;
 }
 
 .dash-gk-stat span {
   display: block;
+  min-height: 2.4em;
   color: var(--muted);
   font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: 0.06em;
+  line-height: 1.2;
   text-transform: uppercase;
 }
 
 .dash-gk-stat strong {
   display: block;
-  margin-top: 0.4rem;
+  margin-top: 0.35rem;
   font-family: var(--display);
   font-size: 1.65rem;
   font-weight: 700;
   letter-spacing: -0.02em;
+  line-height: 1.1;
 }
 
 .dash-gk-stat small {
   display: block;
-  margin-top: 0.3rem;
+  margin-top: auto;
+  padding-top: 0.35rem;
+  min-height: 2.4em;
   color: var(--muted);
   font-size: 0.75rem;
+  line-height: 1.25;
 }
 
 .dash-next-tags {
@@ -202,11 +214,19 @@
   .dash-gk-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.45rem;
+    align-items: stretch;
   }
 
   .dash-gk-stat {
-    padding: 0.65rem 0.5rem;
+    padding: 0.65rem 0.45rem;
     min-width: 0;
+    min-height: 6.75rem;
+  }
+
+  .dash-gk-stat span {
+    font-size: 0.62rem;
+    letter-spacing: 0.04em;
+    min-height: 2.5em;
   }
 
   .dash-gk-stat strong {
@@ -214,8 +234,9 @@
   }
 
   .dash-gk-stat small {
-    font-size: 0.65rem;
+    font-size: 0.62rem;
     line-height: 1.25;
+    min-height: 2.5em;
   }
 
   .dash-next-card {

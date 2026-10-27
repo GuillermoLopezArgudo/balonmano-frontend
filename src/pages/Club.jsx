@@ -139,12 +139,14 @@ export default function Club() {
             <section className="panel club-card">
               <h2>Identidad del club</h2>
               <div className="club-identity">
-                <div className="club-escudo">
-                  {d?.img_escudo ? (
-                    <AuthImage path={d.img_escudo} alt="Escudo" />
-                  ) : (
-                    <span>{escudoLabel}</span>
-                  )}
+                <div className="club-identity-media">
+                  <div className="club-escudo">
+                    {d?.img_escudo ? (
+                      <AuthImage path={d.img_escudo} alt="Escudo" />
+                    ) : (
+                      <span>{escudoLabel}</span>
+                    )}
+                  </div>
                 </div>
                 <div className="club-identity-fields">
                   <Field label="Nombre corto" value={d?.nombre_corto} />

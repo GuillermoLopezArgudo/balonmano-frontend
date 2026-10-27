@@ -1579,8 +1579,23 @@ body.conv-pointer-dragging .conv-selected-row.drag-over {
 
 .alin-template-actions {
   display: flex;
+  align-items: stretch;
   gap: 0.4rem;
   flex-shrink: 0;
+}
+
+.alin-template-actions > button.ghost {
+  min-height: var(--ctrl-mh);
+  box-sizing: border-box;
+}
+
+.alin-template-actions > .btn-icon-del {
+  width: var(--ctrl-mh);
+  min-width: var(--ctrl-mh);
+  height: auto;
+  min-height: var(--ctrl-mh);
+  align-self: stretch;
+  box-sizing: border-box;
 }
 
 @media (max-width: 900px) {
@@ -1703,11 +1718,23 @@ body.conv-pointer-dragging .conv-selected-row.drag-over {
 
   .alin-template-actions {
     display: flex;
+    align-items: stretch;
     gap: 0.45rem;
+    width: 100%;
   }
 
-  .alin-template-actions button {
-    flex: 1;
+  .alin-template-actions > button.ghost {
+    flex: 1 1 auto;
+    min-height: var(--ctrl-mh);
+  }
+
+  .alin-template-actions > .btn-icon-del {
+    flex: 0 0 var(--ctrl-mh);
+    width: var(--ctrl-mh);
+    min-width: var(--ctrl-mh);
+    min-height: var(--ctrl-mh);
+    height: auto;
+    align-self: stretch;
   }
 }
 
@@ -3390,6 +3417,23 @@ body.conv-pointer-dragging .conv-selected-row.drag-over {
     justify-self: stretch;
   }
 
+  .page-head .add-player-actions.page-head-actions-beside {
+    width: auto;
+    max-width: min(100%, 18rem);
+    justify-self: end;
+    grid-column: 2;
+    grid-row: 1;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .page-head .add-player-actions.page-head-actions-beside > a > button,
+  .page-head .add-player-actions.page-head-actions-beside > button {
+    white-space: nowrap;
+    padding: var(--ctrl-py) 0.65rem;
+    font-size: 0.82rem;
+  }
+
   .page-head > a:not(.page-back):not(.btn-icon-view):not(.btn-icon-edit),
   .page-head > button:not(.page-back):not(.btn-icon-view):not(.btn-icon-edit):not(.btn-icon-del) {
     width: auto;
@@ -3506,7 +3550,6 @@ body.conv-pointer-dragging .conv-selected-row.drag-over {
 
   /* Layouts que se rompen sin sidebar */
   .club-grid,
-  .club-form,
   .ajustes-grid,
   .acta-layout,
   .add-player-grid,
@@ -3518,6 +3561,10 @@ body.conv-pointer-dragging .conv-selected-row.drag-over {
   .rival-dorsal-new,
   .confirm-grid {
     grid-template-columns: 1fr;
+  }
+
+  .club-form {
+    grid-template-columns: 1fr 1fr;
   }
 
   .live-board {
@@ -3773,16 +3820,28 @@ body.conv-pointer-dragging .conv-selected-row.drag-over {
     min-height: 48px;
   }
 
+  /* Identidad: escudo izq. + nombre/código der. (sin apilar en columna) */
   .club-identity,
   .club-identity-wide {
-    flex-direction: column;
-    align-items: stretch;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 0.85rem;
+  }
+
+  .club-identity-media {
+    width: 88px;
   }
 
   .club-escudo,
   .club-escudo.xl {
-    width: 96px;
-    height: 96px;
+    width: 88px;
+    height: 88px;
+    font-size: 1.35rem;
+  }
+
+  .club-identity-fields {
+    flex: 1 1 auto;
+    min-width: 0;
   }
 
   .ficha-top {
@@ -3803,6 +3862,15 @@ body.conv-pointer-dragging .conv-selected-row.drag-over {
   .conv-selected-actions {
     width: 100%;
     justify-content: flex-start;
+    align-items: stretch;
+  }
+
+  .alin-template-actions > .btn-icon-del {
+    width: var(--ctrl-mh);
+    min-width: var(--ctrl-mh);
+    min-height: var(--ctrl-mh);
+    height: auto;
+    align-self: stretch;
   }
 }
 

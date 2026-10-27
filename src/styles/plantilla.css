@@ -231,9 +231,16 @@
 
 .add-player-grid {
   display: grid;
-  grid-template-columns: 260px 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 1rem;
-  align-items: start;
+  align-items: stretch;
+}
+
+.add-player-side,
+.add-player-main {
+  height: 100%;
+  min-height: 100%;
+  box-sizing: border-box;
 }
 
 .add-player-side h2 {

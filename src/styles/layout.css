@@ -309,6 +309,17 @@ a.volver-link svg {
   justify-content: flex-end;
 }
 
+/* CTA al lado del h1 (p. ej. + Nuevo partido), no debajo ni en filtros */
+.page-head .add-player-actions.page-head-actions-beside {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: end;
+  align-self: center;
+  width: auto;
+  max-width: 100%;
+  justify-content: flex-end;
+}
+
 /* Acciones del page-head: mismo tamaño/forma que Volver y filtros */
 .page-head .add-player-actions > button:not(.btn-icon-del):not(.btn-icon-edit):not(.btn-icon-view),
 .page-head .add-player-actions > a:not(.btn-icon-view):not(.btn-icon-edit):not(.btn-icon-del) > button {
@@ -1789,6 +1800,15 @@ button.ghost.danger:hover {
     grid-column: 1 / -1;
     width: 100%;
     justify-self: stretch;
+  }
+
+  .page-head .add-player-actions.page-head-actions-beside {
+    grid-column: 2;
+    grid-row: 1;
+    width: auto;
+    max-width: 100%;
+    justify-self: end;
+    align-self: center;
   }
 }
 

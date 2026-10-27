@@ -84,6 +84,13 @@ export default function Jugadas() {
           <p className="page-kicker">TACTICA</p>
           <h1>Jugadas</h1>
         </div>
+        {canWriteJugadas && (
+          <div className="add-player-actions page-head-actions-beside">
+            <Link to="/jugadas/nueva">
+              <button type="button">Nueva jugada</button>
+            </Link>
+          </div>
+        )}
       </header>
 
       <div className="filters roster-filters" style={{ marginBottom: '1rem' }}>
@@ -104,11 +111,6 @@ export default function Jugadas() {
         >
           Defensa
         </button>
-        {canWriteJugadas && (
-          <Link to="/jugadas/nueva" className="filters-end">
-            <button type="button">Nueva jugada</button>
-          </Link>
-        )}
       </div>
 
       <div className="field roster-search">

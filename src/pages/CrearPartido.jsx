@@ -315,9 +315,6 @@ export default function CrearPartido() {
               Cancelar
             </button>
           </Link>
-          <button type="button" disabled={saving || !canSave} onClick={onSave}>
-            {saving ? 'Guardando…' : isEdit ? 'Guardar cambios' : 'Guardar partido'}
-          </button>
         </div>
       </header>
 
