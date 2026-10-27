@@ -7,58 +7,21 @@ import {
   readConvocatoriaDraft,
   writeConvocatoriaDraft,
 } from '../convocatoriaDraft';
-import { IcoBasura, IcoFlecha } from '../components/ActionIcons';
-import CampoAlineacion, {
-  ZONAS_CAMPO,
-  zonasParaFase,
-  usePointerDnD,
-} from '../components/CampoAlineacion';
-
-const MAX_CONV = 16;
-const MAX_TIT = 7;
-const MAX_ATAQUE = 6;
-const TABS = [
-  { id: 'convocatoria', label: 'Convocatoria' },
-  { id: 'alineacion_ataque', label: 'Ataque', fase: 'ataque' },
-  { id: 'alineacion_defensa', label: 'Defensa', fase: 'defensa' },
-  { id: 'banquillo', label: 'Banquillo' },
-];
-const DND_TYPE = 'application/x-balonmano-jugador';
-const ZONA_IDS = new Set(ZONAS_CAMPO.map((z) => z.id));
-const ZONA_ATAQUE_IDS = new Set(zonasParaFase('ataque').map((z) => z.id));
-
-const shortZona = (zonaId) => ZONAS_CAMPO.find((z) => z.id === zonaId)?.short || zonaId;
-
-function snapConvocatoria(selected, zonasAtaque, zonasDefensa) {
-  const selKeys = Object.keys(selected).sort();
-  const sel = {};
-  for (const k of selKeys) sel[k] = selected[k];
-  const sortMap = (m) => {
-    const out = {};
-    for (const k of Object.keys(m).sort()) out[k] = m[k];
-    return out;
-  };
-  return JSON.stringify({
-    selected: sel,
-    zonasAtaque: sortMap(zonasAtaque),
-    zonasDefensa: sortMap(zonasDefensa),
-  });
-}
-
-const DISP_LABEL = {
-  disponible: 'Disponible',
-  dudosa: 'Dudosa',
-  lesion: 'Lesión',
-  sancion: 'Sanción',
-};
-
-function clearJugadorDeMapa(map, jid) {
-  const next = { ...map };
-  for (const k of Object.keys(next)) {
-    if (next[k] === jid) delete next[k];
-  }
-  return next;
-}
+import { IcoFlecha } from '../components/ActionIcons';
+import ConvocatoriaPlantillaList from './convocatoria/ConvocatoriaPlantillaList';
+import ConvocatoriaPlantillasGuardadas from './convocatoria/ConvocatoriaPlantillasGuardadas';
+import ConvocatoriaSeleccionPanel from './convocatoria/ConvocatoriaSeleccionPanel';
+import useConvocatoriaDnD from './convocatoria/useConvocatoriaDnD';
+import {
+  MAX_ATAQUE,
+  MAX_CONV,
+  MAX_TIT,
+  MSG_SIN_FEDERACION,
+  TABS,
+  ZONA_ATAQUE_IDS,
+  ZONA_IDS,
+  snapConvocatoria,
+} from './convocatoria/utils';
 
 export default function Convocatoria() {
   const { id } = useParams();
@@ -67,16 +30,12 @@ export default function Convocatoria() {
   const [partido, setPartido] = useState(null);
   const [jugadores, setJugadores] = useState([]);
   const [selected, setSelected] = useState({}); // id -> rol
-  const [zonasAtaque, setZonasAtaque] = useState({});
-  const [zonasDefensa, setZonasDefensa] = useState({});
   const [plantillas, setPlantillas] = useState([]);
   const [nombrePlantilla, setNombrePlantilla] = useState('');
   const [q, setQ] = useState('');
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState('');
   const [error, setError] = useState('');
-  const [dragId, setDragId] = useState(null);
-  const [dropZone, setDropZone] = useState(null);
   const [fedOk, setFedOk] = useState({}); // id_jugador -> bool
   const [estadoConv, setEstadoConv] = useState('borrador');
   const [savedSnap, setSavedSnap] = useState(null);
@@ -85,8 +44,61 @@ export default function Convocatoria() {
   const tabMeta = TABS.find((t) => t.id === tab);
   const fase = tabMeta?.fase || null;
   const esCampo = Boolean(fase);
-  const zonasActivas = fase === 'defensa' ? zonasDefensa : zonasAtaque;
-  const setZonasActivas = fase === 'defensa' ? setZonasDefensa : setZonasAtaque;
+
+  const byId = useMemo(() => {
+    const map = {};
+    for (const j of jugadores) map[j.id_jugador] = j;
+    return map;
+  }, [jugadores]);
+
+  const tieneFederacion = (jid) => !canReadCuotas || Boolean(fedOk[jid]);
+
+  const dispDe = (jid) => byId[jid]?.disponibilidad || 'disponible';
+
+  const puedeConvocarPorEstado = (jid) => {
+    const disp = dispDe(jid);
+    return disp !== 'lesion' && disp !== 'sancion';
+  };
+
+  const errorDisponibilidad = (jid) => {
+    const j = byId[jid];
+    const nombre = j ? `${j.nombre} ${j.apellido}`.trim() : 'Esta jugadora';
+    if (dispDe(jid) === 'sancion') return `${nombre} está sancionada y no se puede convocar.`;
+    return `${nombre} está lesionada y no se puede convocar.`;
+  };
+
+  const {
+    zonasAtaque,
+    setZonasAtaque,
+    zonasDefensa,
+    setZonasDefensa,
+    zonasActivas,
+    dragId,
+    dropZone,
+    setDropZone,
+    toggleConvocado,
+    setRol,
+    clearZone,
+    onDragStart,
+    onDragEnd,
+    onDropPlantilla,
+    onDropSeleccion,
+    onDropSelectedRow,
+    onDropZone,
+    onPointerDragStart,
+    ghost,
+  } = useConvocatoriaDnD({
+    tab,
+    fase,
+    esCampo,
+    selected,
+    setSelected,
+    setError,
+    byId,
+    puedeConvocarPorEstado,
+    errorDisponibilidad,
+    tieneFederacion,
+  });
 
   const loadPlantillas = () =>
     api
@@ -165,12 +177,6 @@ export default function Convocatoria() {
     });
   }, [jugadores, q, tab, selected, esCampo]);
 
-  const byId = useMemo(() => {
-    const map = {};
-    for (const j of jugadores) map[j.id_jugador] = j;
-    return map;
-  }, [jugadores]);
-
   const zonaAtaqueDe = useMemo(() => {
     const map = {};
     for (const [zona, jid] of Object.entries(zonasAtaque)) map[jid] = zona;
@@ -182,327 +188,6 @@ export default function Convocatoria() {
     for (const [zona, jid] of Object.entries(zonasDefensa)) map[jid] = zona;
     return map;
   }, [zonasDefensa]);
-
-  const roleForTab = () => {
-    if (esCampo) return 'titular';
-    if (tab === 'banquillo') return 'banquillo';
-    return 'convocado';
-  };
-
-  const removeFromZonas = (jid) => {
-    setZonasAtaque((z) => clearJugadorDeMapa(z, jid));
-    setZonasDefensa((z) => clearJugadorDeMapa(z, jid));
-  };
-
-  const syncRolTrasZonas = (jid, nextAtaque, nextDefensa, baseSelected) => {
-    const next = { ...baseSelected };
-    if (!next[jid]) return next;
-    const inA = Object.values(nextAtaque).includes(jid);
-    const inD = Object.values(nextDefensa).includes(jid);
-    if (inA || inD) next[jid] = 'titular';
-    else if (next[jid] === 'titular') next[jid] = 'banquillo';
-    return next;
-  };
-
-  const tieneFederacion = (jid) => !canReadCuotas || Boolean(fedOk[jid]);
-
-  const dispDe = (jid) => byId[jid]?.disponibilidad || 'disponible';
-
-  const puedeConvocarPorEstado = (jid) => {
-    const disp = dispDe(jid);
-    return disp !== 'lesion' && disp !== 'sancion';
-  };
-
-  const errorDisponibilidad = (jid) => {
-    const j = byId[jid];
-    const nombre = j ? `${j.nombre} ${j.apellido}`.trim() : 'Esta jugadora';
-    if (dispDe(jid) === 'sancion') return `${nombre} está sancionada y no se puede convocar.`;
-    return `${nombre} está lesionada y no se puede convocar.`;
-  };
-
-  const toggleConvocado = (jid) => {
-    setSelected((prev) => {
-      const next = { ...prev };
-      if (next[jid]) {
-        delete next[jid];
-        removeFromZonas(jid);
-      } else {
-        if (!puedeConvocarPorEstado(jid)) {
-          setError(errorDisponibilidad(jid));
-          return prev;
-        }
-        if (!tieneFederacion(jid)) {
-          setError('Sin federación pagada no se puede convocar. Márcala en Club → Cuotas.');
-          return prev;
-        }
-        if (Object.keys(next).length >= MAX_CONV) {
-          setError(`Máximo ${MAX_CONV} convocados`);
-          return prev;
-        }
-        next[jid] = 'convocado';
-        setError('');
-      }
-      return next;
-    });
-  };
-
-  const setRol = (jid, rol) => {
-    setSelected((prev) => {
-      if (!prev[jid]) return prev;
-      if (rol !== 'titular') {
-        removeFromZonas(jid);
-      }
-      setError('');
-      return { ...prev, [jid]: rol };
-    });
-  };
-
-  const applySelectionChange = (updater) => {
-    setSelected((prev) => {
-      const result = updater(prev);
-      if (result === prev) return prev;
-      setError('');
-      return result;
-    });
-  };
-
-  const assignPlayer = (jid, rol, beforeId = null) => {
-    applySelectionChange((prev) => {
-      const already = Boolean(prev[jid]);
-
-      if ((rol === 'titular' || rol === 'banquillo') && !already) {
-        setError('Solo jugadoras convocadas pueden ir a alineación o banquillo');
-        return prev;
-      }
-
-      if (!already && !puedeConvocarPorEstado(jid)) {
-        setError(errorDisponibilidad(jid));
-        return prev;
-      }
-
-      if (!already && !tieneFederacion(jid)) {
-        setError('Sin federación pagada no se puede convocar. Márcala en Club → Cuotas.');
-        return prev;
-      }
-
-      if (!already && Object.keys(prev).length >= MAX_CONV) {
-        setError(`Máximo ${MAX_CONV} convocados`);
-        return prev;
-      }
-
-      if (rol !== 'titular') {
-        removeFromZonas(jid);
-      }
-
-      const keys = Object.keys(prev).filter((k) => k !== jid);
-      if (beforeId && keys.includes(beforeId)) {
-        keys.splice(keys.indexOf(beforeId), 0, jid);
-      } else {
-        keys.push(jid);
-      }
-
-      const next = {};
-      for (const k of keys) next[k] = k === jid ? rol : prev[k];
-      return next;
-    });
-  };
-
-  const removePlayer = (jid) => {
-    applySelectionChange((prev) => {
-      if (!prev[jid]) return prev;
-      const next = { ...prev };
-      delete next[jid];
-      return next;
-    });
-    removeFromZonas(jid);
-  };
-
-  const reorderSelected = (fromId, toId) => {
-    if (!fromId || !toId || fromId === toId) return;
-    applySelectionChange((prev) => {
-      const keys = Object.keys(prev);
-      const fromIdx = keys.indexOf(fromId);
-      const toIdx = keys.indexOf(toId);
-      if (fromIdx < 0 || toIdx < 0) return prev;
-      const nextKeys = [...keys];
-      nextKeys.splice(fromIdx, 1);
-      nextKeys.splice(toIdx, 0, fromId);
-      const next = {};
-      for (const k of nextKeys) next[k] = prev[k];
-      return next;
-    });
-  };
-
-  const placeInZone = (jid, zonaId) => {
-    if (!fase) return;
-    const idsOk = fase === 'ataque' ? ZONA_ATAQUE_IDS : ZONA_IDS;
-    if (!idsOk.has(zonaId)) return;
-    if (fase === 'ataque' && zonaId === 'portero') return;
-
-    setSelected((prev) => {
-      if (!prev[jid]) {
-        setError('Solo jugadoras convocadas pueden entrar en alineación');
-        return prev;
-      }
-
-      const currentMap = fase === 'defensa' ? zonasDefensa : zonasAtaque;
-      const otherMap = fase === 'defensa' ? zonasAtaque : zonasDefensa;
-      const occupant = currentMap[zonaId] && currentMap[zonaId] !== jid ? currentMap[zonaId] : null;
-      const jidYaEnFase = Object.values(currentMap).includes(jid);
-      const maxFase = fase === 'ataque' ? MAX_ATAQUE : MAX_TIT;
-
-      let nEnFase = Object.keys(currentMap).length;
-      if (!jidYaEnFase && !currentMap[zonaId]) nEnFase += 1;
-      if (nEnFase > maxFase) {
-        setError(`Máximo ${maxFase} en alineación de ${fase}`);
-        return prev;
-      }
-
-      const nextMap = clearJugadorDeMapa(currentMap, jid);
-      nextMap[zonaId] = jid;
-
-      let nextOther = otherMap;
-      let nextSelected = { ...prev, [jid]: 'titular' };
-      if (occupant) {
-        const stillOther = Object.values(otherMap).includes(occupant);
-        nextSelected[occupant] = stillOther ? 'titular' : 'banquillo';
-      }
-
-      if (fase === 'defensa') {
-        setZonasDefensa(nextMap);
-        nextSelected = syncRolTrasZonas(jid, nextOther, nextMap, nextSelected);
-      } else {
-        setZonasAtaque(nextMap);
-        nextSelected = syncRolTrasZonas(jid, nextMap, nextOther, nextSelected);
-      }
-
-      setError('');
-      return nextSelected;
-    });
-  };
-
-  const clearZone = (zonaId) => {
-    if (!fase) return;
-    const jid = zonasActivas[zonaId];
-    if (!jid) return;
-
-    const nextMap = { ...zonasActivas };
-    delete nextMap[zonaId];
-    setZonasActivas(nextMap);
-
-    setSelected((prev) => {
-      if (!prev[jid]) return prev;
-      const other = fase === 'defensa' ? zonasAtaque : zonasDefensa;
-      if (Object.values(other).includes(jid)) {
-        return { ...prev, [jid]: 'titular' };
-      }
-      return { ...prev, [jid]: 'banquillo' };
-    });
-  };
-
-  const onDragStart = (e, jid) => {
-    if (tab === 'convocatoria' && !selected[jid] && !puedeConvocarPorEstado(jid)) {
-      e.preventDefault();
-      setError(errorDisponibilidad(jid));
-      return;
-    }
-    if (tab === 'convocatoria' && !selected[jid] && !tieneFederacion(jid)) {
-      e.preventDefault();
-      setError('Sin federación pagada no se puede convocar. Márcala en Club → Cuotas.');
-      return;
-    }
-    e.dataTransfer.setData(DND_TYPE, jid);
-    e.dataTransfer.setData('text/plain', jid);
-    e.dataTransfer.effectAllowed = 'move';
-    setDragId(jid);
-  };
-
-  const onDragEnd = () => {
-    setDragId(null);
-    setDropZone(null);
-  };
-
-  const readDragId = (e) =>
-    e.dataTransfer.getData(DND_TYPE) || e.dataTransfer.getData('text/plain') || dragId;
-
-  const applyDrop = (target, jid) => {
-    if (!jid || !target) {
-      onDragEnd();
-      return;
-    }
-    if (target === 'plantilla') {
-      if (esCampo) {
-        const nextMap = clearJugadorDeMapa(zonasActivas, jid);
-        setZonasActivas(nextMap);
-        setSelected((prev) => {
-          if (!prev[jid]) return prev;
-          const other = fase === 'defensa' ? zonasAtaque : zonasDefensa;
-          if (Object.values(other).includes(jid)) return { ...prev, [jid]: 'titular' };
-          return { ...prev, [jid]: 'banquillo' };
-        });
-      } else if (tab === 'banquillo') {
-        setRol(jid, 'convocado');
-      } else {
-        removePlayer(jid);
-      }
-    } else if (target === 'seleccion') {
-      assignPlayer(jid, roleForTab());
-    } else if (target.startsWith('zona:')) {
-      placeInZone(jid, target.slice(5));
-    } else if (target.startsWith('row:')) {
-      const targetId = target.slice(4);
-      if (selected[jid]) {
-        if (tab !== 'convocatoria') assignPlayer(jid, roleForTab(), targetId);
-        else reorderSelected(jid, targetId);
-      } else {
-        assignPlayer(jid, roleForTab(), targetId);
-      }
-    }
-    onDragEnd();
-  };
-
-  const onDropPlantilla = (e) => {
-    e.preventDefault();
-    applyDrop('plantilla', readDragId(e));
-  };
-
-  const onDropSeleccion = (e) => {
-    e.preventDefault();
-    applyDrop('seleccion', readDragId(e));
-  };
-
-  const onDropSelectedRow = (e, targetId) => {
-    e.preventDefault();
-    e.stopPropagation();
-    applyDrop(`row:${targetId}`, readDragId(e));
-  };
-
-  const onDropZone = (e, zonaId) => {
-    e.preventDefault();
-    e.stopPropagation();
-    applyDrop(`zona:${zonaId}`, readDragId(e));
-  };
-
-  const { onPointerDragStart, ghost } = usePointerDnD({
-    canStart: (jid) => {
-      if (tab === 'convocatoria' && !selected[jid] && !puedeConvocarPorEstado(jid)) {
-        setError(errorDisponibilidad(jid));
-        return false;
-      }
-      if (tab === 'convocatoria' && !selected[jid] && !tieneFederacion(jid)) {
-        setError('Sin federación pagada no se puede convocar. Márcala en Club → Cuotas.');
-        return false;
-      }
-      return true;
-    },
-    onDropTarget: applyDrop,
-    setDragId,
-    setDropZone,
-    labelFor: (jid) => {
-      const j = byId[jid];
-      return j ? `#${j.dorsal ?? '—'} ${j.nombre}` : '…';
-    },
-  });
 
   const currentSnap = snapConvocatoria(selected, zonasAtaque, zonasDefensa);
   const dirty = Boolean(loaded && savedSnap != null && currentSnap !== savedSnap);
@@ -764,280 +449,63 @@ export default function Convocatoria() {
       {status && <p className="club-status saved">{status}</p>}
 
       <div className={`conv-layout${esCampo ? ' conv-layout-field' : ''}`}>
-        <section className="panel club-card">
-          <h2>{tab === 'convocatoria' ? 'Plantilla disponible' : 'Convocadas'}</h2>
-          <div className="field">
-            <input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Nombre, dorsal o posición…"
-            />
-          </div>
-          <div
-            className={`conv-list${dropZone === 'plantilla' ? ' drop-ready' : ''}`}
-            data-drop-target="plantilla"
-            onDragOver={(e) => {
-              e.preventDefault();
-              e.dataTransfer.dropEffect = 'move';
-              setDropZone('plantilla');
-            }}
-            onDragLeave={() => setDropZone((z) => (z === 'plantilla' ? null : z))}
-            onDrop={onDropPlantilla}
-          >
-            {filtrados.map((j) => {
-              const checked = Boolean(selected[j.id_jugador]);
-              const za = zonaAtaqueDe[j.id_jugador];
-              const zd = zonaDefensaDe[j.id_jugador];
-              const esConvTab = tab === 'convocatoria';
-              const fed = tieneFederacion(j.id_jugador);
-              const convocable = puedeConvocarPorEstado(j.id_jugador);
-              const bloqueada = esConvTab && !checked && (!fed || !convocable);
-              const disp = j.disponibilidad || 'disponible';
-              return (
-                <div
-                  key={j.id_jugador}
-                  className={`conv-player${checked ? ' on' : ''}${dragId === j.id_jugador ? ' dragging' : ''}${
-                    bloqueada ? ' conv-player-blocked' : ''
-                  }${disp !== 'disponible' ? ` conv-disp-${disp}` : ''}`}
-                  data-drag-id={j.id_jugador}
-                  draggable={!bloqueada}
-                  onDragStart={(e) => onDragStart(e, j.id_jugador)}
-                  onDragEnd={onDragEnd}
-                  onPointerDown={
-                    bloqueada
-                      ? undefined
-                      : (e) => onPointerDragStart(e, j.id_jugador)
-                  }
-                >
-                  {esConvTab && (
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      disabled={bloqueada}
-                      onChange={() => toggleConvocado(j.id_jugador)}
-                      onClick={(e) => e.stopPropagation()}
-                      onPointerDown={(e) => e.stopPropagation()}
-                      aria-label={`Convocar a ${j.nombre} ${j.apellido}`}
-                    />
-                  )}
-                  <span className="conv-dorsal">#{j.dorsal ?? '—'}</span>
-                  <span className="conv-name">
-                    <strong>
-                      {j.nombre} {j.apellido}
-                    </strong>
-                    <small>
-                      {j.posiciones?.[0] || 'Sin posición'}
-                      {za ? ` · ATK ${shortZona(za)}` : ''}
-                      {zd ? ` · DEF ${shortZona(zd)}` : ''}
-                      {!convocable
-                        ? ` · ${disp === 'sancion' ? 'Sancionada' : 'Lesionada'} · no se puede convocar`
-                        : ''}
-                      {convocable && bloqueada ? ' · Sin federación' : ''}
-                    </small>
-                  </span>
-                  <span className={`conv-disp-badge conv-disp-badge-${disp}`}>
-                    {DISP_LABEL[disp] || disp}
-                  </span>
-                  <span className="conv-grip" aria-hidden="true">
-                    ⋮⋮
-                  </span>
-                </div>
-              );
-            })}
-            {!filtrados.length && (
-              <p className="muted">
-                {tab === 'convocatoria'
-                  ? 'Sin jugadores'
-                  : 'No hay convocadas. Márcalas en la pestaña Convocatoria.'}
-              </p>
-            )}
-          </div>
-        </section>
+        <ConvocatoriaPlantillaList
+          tab={tab}
+          q={q}
+          setQ={setQ}
+          filtrados={filtrados}
+          selected={selected}
+          zonaAtaqueDe={zonaAtaqueDe}
+          zonaDefensaDe={zonaDefensaDe}
+          dragId={dragId}
+          dropZone={dropZone}
+          setDropZone={setDropZone}
+          tieneFederacion={tieneFederacion}
+          puedeConvocarPorEstado={puedeConvocarPorEstado}
+          toggleConvocado={toggleConvocado}
+          onDragStart={onDragStart}
+          onDragEnd={onDragEnd}
+          onPointerDragStart={onPointerDragStart}
+          onDropPlantilla={onDropPlantilla}
+        />
 
-        <section className="panel club-card">
-          <div className="conv-panel-head">
-            <h2>
-              {fase === 'ataque'
-                ? 'Alineación ataque'
-                : fase === 'defensa'
-                  ? 'Alineación defensa'
-                  : tab === 'banquillo'
-                    ? 'Banquillo'
-                    : 'Selección actual'}
-            </h2>
-            {tab === 'convocatoria' && canWriteConvocatoria && (dirty || estadoConv !== 'guardada') && (
-              <button
-                type="button"
-                className="conv-save-btn"
-                disabled={saving || (!dirty && estadoConv === 'guardada')}
-                onClick={persist}
-              >
-                {saving ? 'Guardando…' : 'Guardar convocatoria'}
-              </button>
-            )}
-            {tab === 'convocatoria' && !canWriteConvocatoria && (
-              <button type="button" className="conv-save-btn" disabled>
-                Solo lectura
-              </button>
-            )}
-          </div>
-
-          {esCampo ? (
-            <>
-              <CampoAlineacion
-                fase={fase}
-                zonas={zonasActivas}
-                byId={byId}
-                dragId={dragId}
-                dropZone={dropZone}
-                onDragStart={onDragStart}
-                onDragEnd={onDragEnd}
-                onDragOverZone={(zonaId) => setDropZone(`zona:${zonaId}`)}
-                onDropZone={onDropZone}
-                onClearZone={clearZone}
-                onPointerDragStart={onPointerDragStart}
-              />
-              <div className="alin-save-row">
-                <input
-                  value={nombrePlantilla}
-                  onChange={(e) => setNombrePlantilla(e.target.value)}
-                  placeholder={`Nombre alineación ${fase}…`}
-                  maxLength={120}
-                />
-                <button type="button" disabled={saving || !canWriteConvocatoria} onClick={guardarPlantilla}>
-                  Guardar {fase}
-                </button>
-              </div>
-            </>
-          ) : (
-            <div
-              className={`conv-selected${dropZone === 'seleccion' ? ' drop-ready' : ''}`}
-              data-drop-target="seleccion"
-              onDragOver={(e) => {
-                e.preventDefault();
-                e.dataTransfer.dropEffect = 'move';
-                setDropZone('seleccion');
-              }}
-              onDragLeave={() => setDropZone((z) => (z === 'seleccion' ? null : z))}
-              onDrop={onDropSeleccion}
-            >
-              {listForTab().map((jid) => {
-                const j = byId[jid];
-                if (!j) return null;
-                return (
-                  <div
-                    className={`conv-selected-row${dragId === jid ? ' dragging' : ''}${
-                      dropZone === jid || dropZone === `row:${jid}` ? ' drag-over' : ''
-                    }`}
-                    key={jid}
-                    data-drag-id={jid}
-                    data-drop-target={`row:${jid}`}
-                    draggable
-                    onDragStart={(e) => onDragStart(e, jid)}
-                    onDragEnd={onDragEnd}
-                    onPointerDown={(e) => onPointerDragStart(e, jid)}
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      e.dataTransfer.dropEffect = 'move';
-                      setDropZone(`row:${jid}`);
-                    }}
-                    onDrop={(e) => onDropSelectedRow(e, jid)}
-                  >
-                    <div>
-                      <strong>
-                        #{j.dorsal ?? '—'} {j.nombre} {j.apellido}
-                      </strong>
-                      <small>
-                        {j.posiciones?.[0] || '—'}
-                        {' · '}
-                        {DISP_LABEL[j.disponibilidad || 'disponible']}
-                      </small>
-                    </div>
-                    <div className="conv-selected-actions">
-                      <select
-                        value={selected[jid]}
-                        onChange={(e) => setRol(jid, e.target.value)}
-                        onMouseDown={(e) => e.stopPropagation()}
-                        onClick={(e) => e.stopPropagation()}
-                        onPointerDown={(e) => e.stopPropagation()}
-                      >
-                        <option value="convocado">Convocado</option>
-                        <option value="titular">Titular</option>
-                        <option value="banquillo">Banquillo</option>
-                      </select>
-                      <span className="conv-grip" aria-hidden="true">
-                        ⋮⋮
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-              {!listForTab().length && (
-                <p className="muted conv-drop-placeholder">
-                  {tab === 'banquillo'
-                    ? 'Arrastra aquí para el banquillo'
-                    : 'Arrastra jugadoras de la plantilla'}
-                </p>
-              )}
-            </div>
-          )}
-
-        </section>
+        <ConvocatoriaSeleccionPanel
+          tab={tab}
+          fase={fase}
+          esCampo={esCampo}
+          canWriteConvocatoria={canWriteConvocatoria}
+          dirty={dirty}
+          estadoConv={estadoConv}
+          saving={saving}
+          persist={persist}
+          zonasActivas={zonasActivas}
+          byId={byId}
+          selected={selected}
+          listForTab={listForTab}
+          dragId={dragId}
+          dropZone={dropZone}
+          setDropZone={setDropZone}
+          nombrePlantilla={nombrePlantilla}
+          setNombrePlantilla={setNombrePlantilla}
+          guardarPlantilla={guardarPlantilla}
+          clearZone={clearZone}
+          setRol={setRol}
+          onDragStart={onDragStart}
+          onDragEnd={onDragEnd}
+          onPointerDragStart={onPointerDragStart}
+          onDropSeleccion={onDropSeleccion}
+          onDropSelectedRow={onDropSelectedRow}
+          onDropZone={onDropZone}
+        />
       </div>
 
-      <section className="panel club-card" style={{ marginTop: '1rem' }}>
-        <h2>
-          Alineaciones guardadas
-          {fase ? ` · ${fase}` : ''}
-        </h2>
-        <p className="muted" style={{ marginTop: 0 }}>
-          {fase
-            ? `Plantillas de ${fase} reutilizables en este club.`
-            : 'Abre Ataque o Defensa para filtrar, o aplica cualquiera desde aquí.'}
-        </p>
-        {(fase ? plantillasFiltradas : plantillas).length ? (
-          <div className="alin-templates">
-            {(fase ? plantillasFiltradas : plantillas).map((p) => (
-              <div className="alin-template-row" key={p.id_alineacion}>
-                <div>
-                  <strong>{p.nombre}</strong>
-                  <small>
-                    <span className={`alin-tipo-badge alin-tipo-${p.tipo || 'ataque'}`}>
-                      {p.tipo === 'defensa' ? 'Defensa' : 'Ataque'}
-                    </span>
-                    {' · '}
-                    {(p.items || []).length}/7 posiciones ·{' '}
-                    {p.actualizado_en
-                      ? new Date(p.actualizado_en).toLocaleDateString('es-ES')
-                      : ''}
-                  </small>
-                </div>
-                <div className="alin-template-actions">
-                  <button type="button" className="ghost" onClick={() => aplicarPlantilla(p)}>
-                    Aplicar
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-icon-del"
-                    title="Eliminar alineación"
-                    aria-label={`Eliminar ${p.nombre}`}
-                    onClick={() => borrarPlantilla(p)}
-                  >
-                    <IcoBasura />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="muted">
-            {fase
-              ? `Aún no hay alineaciones de ${fase} guardadas.`
-              : 'Aún no hay alineaciones guardadas.'}
-          </p>
-        )}
-      </section>
+      <ConvocatoriaPlantillasGuardadas
+        fase={fase}
+        plantillas={plantillas}
+        plantillasFiltradas={plantillasFiltradas}
+        aplicarPlantilla={aplicarPlantilla}
+        borrarPlantilla={borrarPlantilla}
+      />
 
       <section className="panel club-card" style={{ marginTop: '1rem' }}>
         <h2>Cuerpo técnico</h2>
