@@ -1121,9 +1121,38 @@ button.full {
 
 .wizard-nav {
   display: flex;
-  justify-content: flex-end;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  justify-content: space-between;
   gap: 0.65rem;
   margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.wizard-nav-cancel,
+.wizard-nav-end {
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.wizard-nav-cancel > button {
+  width: 100%;
+  min-height: var(--ctrl-mh);
+}
+
+.wizard-nav-end {
+  flex-wrap: nowrap;
+  align-items: stretch;
+  justify-content: flex-end;
+  gap: 0.65rem;
+}
+
+.wizard-nav-end > button {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: var(--ctrl-mh);
 }
 
 .crear-partido-form .field.full {

@@ -282,6 +282,8 @@ export default function CrearPartido() {
     return <p className="muted" style={{ padding: '2rem' }}>Cargando partido…</p>;
   }
 
+  const cancelTo = isEdit && editId ? `/partidos/${editId}` : '/partidos';
+
   return (
     <>
       {!canWritePartidos ? (
@@ -308,13 +310,6 @@ export default function CrearPartido() {
         <div>
           <p className="page-kicker">{isEdit ? 'EDITAR PARTIDO' : 'PARTIDO NUEVO'}</p>
           <h1>{isEdit ? 'Editar partido' : 'Crear partido'}</h1>
-        </div>
-        <div className="add-player-actions">
-          <Link to={isEdit && editId ? `/partidos/${editId}` : '/partidos'}>
-            <button type="button" className="ghost">
-              Cancelar
-            </button>
-          </Link>
         </div>
       </header>
 
@@ -438,9 +433,16 @@ export default function CrearPartido() {
             </div>
           </div>
           <div className="wizard-nav">
-            <button type="button" disabled={!canStep1} onClick={() => setStep(2)}>
-              Continuar → Rival
-            </button>
+            <Link to={cancelTo} className="wizard-nav-cancel">
+              <button type="button" className="ghost">
+                Cancelar
+              </button>
+            </Link>
+            <div className="wizard-nav-end">
+              <button type="button" disabled={!canStep1} onClick={() => setStep(2)}>
+                Continuar → Rival
+              </button>
+            </div>
           </div>
         </section>
       )}
@@ -540,12 +542,19 @@ export default function CrearPartido() {
           )}
 
           <div className="wizard-nav">
-            <button type="button" className="ghost" onClick={() => setStep(1)}>
-              ← Partido
-            </button>
-            <button type="button" disabled={!canStep2} onClick={() => setStep(3)}>
-              Continuar → Confirmar
-            </button>
+            <Link to={cancelTo} className="wizard-nav-cancel">
+              <button type="button" className="ghost">
+                Cancelar
+              </button>
+            </Link>
+            <div className="wizard-nav-end">
+              <button type="button" className="ghost" onClick={() => setStep(1)}>
+                ← Partido
+              </button>
+              <button type="button" disabled={!canStep2} onClick={() => setStep(3)}>
+                Continuar → Confirmar
+              </button>
+            </div>
           </div>
         </section>
       )}
@@ -592,12 +601,19 @@ export default function CrearPartido() {
             </div>
           </dl>
           <div className="wizard-nav">
-            <button type="button" className="ghost" onClick={() => setStep(2)}>
-              ← Rival
-            </button>
-            <button type="button" disabled={saving || !canSave} onClick={onSave}>
-              {saving ? 'Guardando…' : 'Guardar partido'}
-            </button>
+            <Link to={cancelTo} className="wizard-nav-cancel">
+              <button type="button" className="ghost">
+                Cancelar
+              </button>
+            </Link>
+            <div className="wizard-nav-end">
+              <button type="button" className="ghost" onClick={() => setStep(2)}>
+                ← Rival
+              </button>
+              <button type="button" disabled={saving || !canSave} onClick={onSave}>
+                {saving ? 'Guardando…' : 'Guardar partido'}
+              </button>
+            </div>
           </div>
         </section>
       )}

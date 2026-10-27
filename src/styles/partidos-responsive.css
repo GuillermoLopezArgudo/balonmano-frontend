@@ -349,7 +349,6 @@
   }
 
   .live-submit-row,
-  .wizard-nav,
   .acta-footer,
   .informes-actions {
     flex-wrap: wrap;
@@ -357,11 +356,24 @@
   }
 
   .live-submit-row > *,
-  .wizard-nav > *,
-  .wizard-nav button,
   .acta-footer-actions,
   .informes-actions > * {
     flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .wizard-nav {
+    flex-wrap: nowrap;
+    align-items: stretch;
+  }
+
+  .wizard-nav-cancel,
+  .wizard-nav-end {
+    min-width: 0;
+  }
+
+  .wizard-nav-end > button {
+    flex: 1 1 0;
     min-width: 0;
   }
 
