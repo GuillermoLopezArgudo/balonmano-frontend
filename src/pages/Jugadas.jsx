@@ -50,7 +50,7 @@ export default function Jugadas() {
     setBusy(true);
     setError('');
     try {
-      await api.copyJugada(j.id_jugada, { nombre: `${j.nombre} (copia)` });
+      await api.copyJugada(j.id_jugada);
       setStatus('Copia creada');
       await load();
     } catch (e) {

@@ -229,7 +229,7 @@
   align-items: center;
 }
 
-.add-player-actions-foot {
+form.add-player .add-player-actions.add-player-actions-foot {
   display: flex;
   flex-wrap: nowrap;
   flex-direction: row;
@@ -241,20 +241,34 @@
   border-top: 1px solid var(--line);
 }
 
-.add-player-actions-foot > a,
-.add-player-actions-foot > button {
+form.add-player .add-player-actions.add-player-actions-foot > a,
+form.add-player .add-player-actions.add-player-actions-foot > button {
   flex: 1 1 0;
   min-width: 0;
+  width: auto;
 }
 
-.add-player-actions-foot > a {
+form.add-player .add-player-actions.add-player-actions-foot > a {
   display: flex;
 }
 
-.add-player-actions-foot > a > button,
-.add-player-actions-foot > button {
+form.add-player .add-player-actions.add-player-actions-foot > a > button,
+form.add-player .add-player-actions.add-player-actions-foot > button {
   width: 100%;
   min-height: var(--ctrl-mh);
+}
+
+@media (max-width: 1024px) {
+  form.add-player .add-player-actions.add-player-actions-foot {
+    flex-wrap: nowrap;
+    flex-direction: row;
+  }
+
+  form.add-player .add-player-actions.add-player-actions-foot > a,
+  form.add-player .add-player-actions.add-player-actions-foot > button {
+    flex: 1 1 0;
+    min-width: 0;
+  }
 }
 
 .add-player-grid {

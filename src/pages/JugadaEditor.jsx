@@ -1181,7 +1181,7 @@ export default function JugadaEditor({ variant = 'jugada' }) {
     if (isNew || !mayWrite) return;
     setSaving(true);
     try {
-      const copia = await api.copyJugada(id, { nombre: `${state.nombre} (copia)` });
+      const copia = await api.copyJugada(id);
       navigate(`${basePath}/${copia.id_jugada}/editar`);
     } catch (e) {
       setError(e.message);
