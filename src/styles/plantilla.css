@@ -270,7 +270,10 @@
 
   .add-player-actions-foot {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    flex-direction: row;
+    align-items: stretch;
+    gap: 0.65rem;
     width: 100%;
     margin-top: 0.35rem;
     padding-top: 1rem;
@@ -279,8 +282,12 @@
 
   .add-player-actions-foot > a,
   .add-player-actions-foot > button {
-    flex: 1 1 auto;
+    flex: 1 1 0;
     min-width: 0;
+  }
+
+  .add-player-actions-foot > a {
+    display: flex;
   }
 
   .add-player-actions-foot > a > button,
