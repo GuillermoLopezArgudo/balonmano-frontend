@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Link, Navigate } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { api, isAbortError } from '../api';
 import { useAuth } from '../auth';
-import { IcoFlecha } from '../components/ActionIcons';
+import FilterChips from '../components/FilterChips';
+import PageHeader from '../components/PageHeader';
 import { useAbortable } from '../useAbortable';
 
 const PAGE = 40;
@@ -84,39 +85,20 @@ export default function Auditoria() {
 
   return (
     <div className="auditoria-page">
-      <header className="page-head">
-        <div>
-          <p className="page-kicker">CLUB · SEGURIDAD</p>
-          <h1>Auditoría</h1>
-        </div>
-        <div className="add-player-actions page-head-actions-beside">
-          <button type="button" className="ghost" onClick={() => setTick((n) => n + 1)}>
-            Actualizar
-          </button>
-          <Link className="page-back" to="/club">
-            <button type="button" className="ghost">
-              <IcoFlecha />
-              Volver
-            </button>
-          </Link>
-        </div>
-      </header>
+      <PageHeader kicker="CLUB · SEGURIDAD" title="Auditoría" backTo="/club">
+        <button type="button" className="ghost" onClick={() => setTick((n) => n + 1)}>
+          Actualizar
+        </button>
+      </PageHeader>
 
-      <div className="filters roster-filters">
-        {FILTROS.map((f) => (
-          <button
-            type="button"
-            key={f.key || 'all'}
-            className={filtro === f.key ? 'active' : ''}
-            onClick={() => {
-              setFiltro(f.key);
-              setOffset(0);
-            }}
-          >
-            {f.label}
-          </button>
-        ))}
-      </div>
+      <FilterChips
+        options={FILTROS.map((f) => ({ id: f.key, label: f.label }))}
+        value={filtro}
+        onChange={(key) => {
+          setFiltro(key);
+          setOffset(0);
+        }}
+      />
 
       <form
         className="auditoria-search"

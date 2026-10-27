@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { useAuth } from '../auth';
 import { IcoBasura, IcoLapiz, IcoVer } from '../components/ActionIcons';
-import { FisicoTabs } from './Entrenamientos';
+import FisicoTabs from '../components/FisicoTabs';
 
 function toDateInput(iso) {
   if (!iso) return '';

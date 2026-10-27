@@ -1,115 +1,27 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link, NavLink } from 'react-router-dom';
-import { api } from '../api';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../auth';
 import { IcoBasura, IcoLapiz, IcoVer } from '../components/ActionIcons';
-
-export function FisicoTabs({ end = null }) {
-  return (
-    <div className="filters roster-filters fisico-tabs" style={{ marginBottom: '1rem' }}>
-      <NavLink
-        to="/preparacion/entrenamiento"
-        end
-        className={({ isActive }) => (isActive ? 'active' : undefined)}
-      >
-        Entrenamientos
-      </NavLink>
-      <NavLink
-        to="/preparacion/asistencia"
-        className={({ isActive }) => (isActive ? 'active' : undefined)}
-      >
-        Asistencia
-      </NavLink>
-      <NavLink to="/preparacion" end className={({ isActive }) => (isActive ? 'active' : undefined)}>
-        Físico
-      </NavLink>
-      {end}
-    </div>
-  );
-}
+import FisicoTabs from '../components/FisicoTabs';
+import PageHeader from '../components/PageHeader';
+import { useJugadaCatalog } from '../hooks/useJugadaCatalog';
 
 export default function Entrenamientos() {
   const { canWriteFisico } = useAuth();
-  const [items, setItems] = useState([]);
-  const [q, setQ] = useState('');
-  const [error, setError] = useState('');
-  const [status, setStatus] = useState('');
-  const [busy, setBusy] = useState(false);
-
-  const load = () =>
-    api
-      .getJugadas({ ambito: 'fisico' })
-      .then(setItems)
-      .catch((e) => setError(e.message));
-
-  useEffect(() => {
-    let cancelled = false;
-    api
-      .getJugadas({ ambito: 'fisico' })
-      .then((all) => {
-        if (!cancelled) setItems(all);
-      })
-      .catch((e) => {
-        if (!cancelled) setError(e.message);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const filtrados = useMemo(() => {
-    const term = q.trim().toLowerCase();
-    if (!term) return items;
-    return items.filter((j) => {
-      const hay = `${j.nombre || ''} ${j.descripcion || ''}`.toLowerCase();
-      return hay.includes(term);
-    });
-  }, [items, q]);
-
-  const copiar = async (j) => {
-    setBusy(true);
-    setError('');
-    try {
-      await api.copyJugada(j.id_jugada);
-      setStatus('Copia creada');
-      await load();
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const borrar = async (j) => {
-    if (!window.confirm(`¿Eliminar el entrenamiento «${j.nombre}»?`)) return;
-    setBusy(true);
-    setError('');
-    try {
-      await api.deleteJugada(j.id_jugada);
-      setStatus('Entrenamiento eliminado');
-      setItems((prev) => prev.filter((x) => x.id_jugada !== j.id_jugada));
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setBusy(false);
-    }
-  };
+  const { items, q, setQ, error, status, busy, filtrados, copiar, borrar } = useJugadaCatalog({
+    ambito: 'fisico',
+    canWrite: canWriteFisico,
+    labelSingular: 'entrenamiento',
+  });
 
   return (
     <>
-      <header className="page-head">
-        <div>
-          <p className="page-kicker">ENTRENAMIENTOS</p>
-          <h1>Entrenamientos</h1>
-        </div>
+      <PageHeader kicker="ENTRENAMIENTOS" title="Entrenamientos">
         {canWriteFisico && (
-          <div className="add-player-actions page-head-actions-beside">
-            <Link to="/preparacion/entrenamiento/nueva">
-              <button type="button">Nuevo entrenamiento</button>
-            </Link>
-          </div>
+          <Link to="/preparacion/entrenamiento/nueva">
+            <button type="button">Nuevo entrenamiento</button>
+          </Link>
         )}
-      </header>
+      </PageHeader>
 
       <FisicoTabs />
 

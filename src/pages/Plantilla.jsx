@@ -4,6 +4,8 @@ import { api, isAbortError } from '../api';
 import AuthImage from '../components/AuthImage';
 import { useAuth } from '../auth';
 import { IcoBasura, IcoLapiz } from '../components/ActionIcons';
+import FilterChips from '../components/FilterChips';
+import PageHeader from '../components/PageHeader';
 import { useAbortable } from '../useAbortable';
 
 const FILTROS = [
@@ -141,32 +143,19 @@ export default function Plantilla() {
 
   return (
     <>
-      <header className="page-head">
-        <div>
-          {eyebrow && <p className="page-kicker">{eyebrow}</p>}
-          <h1>Plantilla</h1>
-        </div>
+      <PageHeader kicker={eyebrow} title="Plantilla">
         {canWritePlantilla && (
-          <div className="add-player-actions page-head-actions-beside">
-            <Link to="/plantilla/nuevo">
-              <button type="button">+ Añadir jugador</button>
-            </Link>
-          </div>
+          <Link to="/plantilla/nuevo">
+            <button type="button">+ Añadir jugador</button>
+          </Link>
         )}
-      </header>
+      </PageHeader>
 
-      <div className="filters roster-filters">
-        {FILTROS.map((f) => (
-          <button
-            type="button"
-            key={f.key}
-            className={filtro === f.key ? 'active' : ''}
-            onClick={() => setFiltro(f.key)}
-          >
-            {f.key}: {counts[f.key] ?? 0}
-          </button>
-        ))}
-      </div>
+      <FilterChips
+        options={FILTROS.map((f) => ({ id: f.key, label: `${f.key}: ${counts[f.key] ?? 0}` }))}
+        value={filtro}
+        onChange={setFiltro}
+      />
 
       <div className="field roster-search">
         <label htmlFor="plantilla-q" className="sr-only">

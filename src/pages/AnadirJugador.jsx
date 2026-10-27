@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
+import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api';
 import AuthImage from '../components/AuthImage';
+import FormActions from '../components/FormActions';
+import PageHeader from '../components/PageHeader';
 import { useAuth } from '../auth';
 
 const empty = {
@@ -131,14 +133,10 @@ export default function AnadirJugador() {
 
   return (
     <form className="add-player" onSubmit={onSubmit}>
-      <header className="page-head">
-        <div>
-          <p className="page-kicker">
-            PLANTILLA / {isEdit ? 'DATOS DEL JUGADOR' : 'GESTIÓN DEL JUGADOR'}
-          </p>
-          <h1>{isEdit ? 'Editar jugador' : 'Añadir jugador'}</h1>
-        </div>
-      </header>
+      <PageHeader
+        kicker={`PLANTILLA / ${isEdit ? 'DATOS DEL JUGADOR' : 'GESTIÓN DEL JUGADOR'}`}
+        title={isEdit ? 'Editar jugador' : 'Añadir jugador'}
+      />
 
       {error && <p className="error">{error}</p>}
 
@@ -264,20 +262,11 @@ export default function AnadirJugador() {
             </div>
           </div>
 
-          <div className="add-player-actions add-player-actions-foot">
-            <Link to={isEdit ? `/plantilla/${id}` : '/plantilla'}>
-              <button type="button" className="ghost">
-                Cancelar
-              </button>
-            </Link>
-            <button type="submit" disabled={saving}>
-              {saving
-                ? 'Guardando…'
-                : isEdit
-                  ? 'Guardar cambios'
-                  : 'Crear jugador'}
-            </button>
-          </div>
+          <FormActions
+            cancelTo={isEdit ? `/plantilla/${id}` : '/plantilla'}
+            submitLabel={saving ? 'Guardando…' : isEdit ? 'Guardar cambios' : 'Crear jugador'}
+            saving={saving}
+          />
         </section>
       </div>
     </form>

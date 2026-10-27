@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { api, isAbortError } from '../api';
 import { useAuth } from '../auth';
 import { IcoBasura, IcoLapiz } from '../components/ActionIcons';
+import FilterChips from '../components/FilterChips';
+import PageHeader from '../components/PageHeader';
 import { useAbortable } from '../useAbortable';
 
 const DIAS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
@@ -146,38 +148,25 @@ export default function Partidos() {
 
   return (
     <>
-      <header className="page-head">
-        <div>
-          <p className="page-kicker">TEMPORADA {temporadaLabel}</p>
-          <h1>Partidos</h1>
-        </div>
+      <PageHeader kicker={`TEMPORADA ${temporadaLabel}`} title="Partidos">
         {canWritePartidos && (
-          <div className="add-player-actions page-head-actions-beside">
-            <Link to="/partidos/nuevo">
-              <button type="button">+ Nuevo partido</button>
-            </Link>
-          </div>
+          <Link to="/partidos/nuevo">
+            <button type="button">+ Nuevo partido</button>
+          </Link>
         )}
-      </header>
+      </PageHeader>
 
-      <div className="filters roster-filters">
-        {[
-          { key: 'todos', label: `Todos · ${counts.todos}` },
-          { key: 'proximos', label: `Próximos · ${counts.proximos}` },
-          { key: 'pendientes', label: `Pendientes · ${counts.pendientes}` },
-          { key: 'aplazados', label: `Aplazados · ${counts.aplazados}` },
-          { key: 'finalizados', label: `Finalizados · ${counts.finalizados}` },
-        ].map((f) => (
-          <button
-            type="button"
-            key={f.key}
-            className={filtro === f.key ? 'active' : ''}
-            onClick={() => setFiltro(f.key)}
-          >
-            {f.label}
-          </button>
-        ))}
-      </div>
+      <FilterChips
+        options={[
+          { id: 'todos', label: `Todos · ${counts.todos}` },
+          { id: 'proximos', label: `Próximos · ${counts.proximos}` },
+          { id: 'pendientes', label: `Pendientes · ${counts.pendientes}` },
+          { id: 'aplazados', label: `Aplazados · ${counts.aplazados}` },
+          { id: 'finalizados', label: `Finalizados · ${counts.finalizados}` },
+        ]}
+        value={filtro}
+        onChange={setFiltro}
+      />
 
       <section className="panel cal-filters">
         <div className="field">

@@ -1,117 +1,43 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { api } from '../api';
 import { useAuth } from '../auth';
 import { IcoBasura, IcoLapiz, IcoVer } from '../components/ActionIcons';
+import FilterChips from '../components/FilterChips';
+import PageHeader from '../components/PageHeader';
 import SinAcceso from '../components/SinAcceso';
+import { useJugadaCatalog } from '../hooks/useJugadaCatalog';
+
+const FASES = [
+  { id: '', label: 'Todas' },
+  { id: 'ataque', label: 'Ataque' },
+  { id: 'defensa', label: 'Defensa' },
+];
 
 export default function Jugadas() {
   const { canWriteJugadas, canRead } = useAuth();
   const puedeVer = canRead('jugadas');
-  const [items, setItems] = useState([]);
   const [fase, setFase] = useState('');
-  const [q, setQ] = useState('');
-  const [error, setError] = useState('');
-  const [status, setStatus] = useState('');
-  const [busy, setBusy] = useState(false);
-
-  const load = (f = fase) =>
-    api
-      .getJugadas(f ? { fase: f, ambito: 'tactica' } : { ambito: 'tactica' })
-      .then(setItems)
-      .catch((e) => setError(e.message));
-
-  useEffect(() => {
-    if (!puedeVer) return undefined;
-    let cancelled = false;
-    api
-      .getJugadas(fase ? { fase, ambito: 'tactica' } : { ambito: 'tactica' })
-      .then((all) => {
-        if (!cancelled) setItems(all);
-      })
-      .catch((e) => {
-        if (!cancelled) setError(e.message);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [fase, puedeVer]);
-
-  const filtrados = useMemo(() => {
-    const term = q.trim().toLowerCase();
-    if (!term) return items;
-    return items.filter((j) => {
-      const hay = `${j.nombre || ''} ${j.descripcion || ''} ${j.fase || ''}`.toLowerCase();
-      return hay.includes(term);
-    });
-  }, [items, q]);
-
-  const copiar = async (j) => {
-    setBusy(true);
-    setError('');
-    try {
-      await api.copyJugada(j.id_jugada);
-      setStatus('Copia creada');
-      await load();
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const borrar = async (j) => {
-    if (!window.confirm(`¿Eliminar la jugada «${j.nombre}»?`)) return;
-    setBusy(true);
-    setError('');
-    try {
-      await api.deleteJugada(j.id_jugada);
-      setStatus('Jugada eliminada');
-      setItems((prev) => prev.filter((x) => x.id_jugada !== j.id_jugada));
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setBusy(false);
-    }
-  };
+  const { items, q, setQ, error, status, busy, filtrados, copiar, borrar } = useJugadaCatalog({
+    ambito: 'tactica',
+    fase,
+    canWrite: canWriteJugadas,
+    labelSingular: 'jugada',
+    enabled: puedeVer,
+  });
 
   if (!puedeVer) return <SinAcceso que="las jugadas" />;
 
   return (
     <>
-      <header className="page-head">
-        <div>
-          <p className="page-kicker">TACTICA</p>
-          <h1>Jugadas</h1>
-        </div>
+      <PageHeader kicker="TACTICA" title="Jugadas">
         {canWriteJugadas && (
-          <div className="add-player-actions page-head-actions-beside">
-            <Link to="/jugadas/nueva">
-              <button type="button">Nueva jugada</button>
-            </Link>
-          </div>
+          <Link to="/jugadas/nueva">
+            <button type="button">Nueva jugada</button>
+          </Link>
         )}
-      </header>
+      </PageHeader>
 
-      <div className="filters roster-filters" style={{ marginBottom: '1rem' }}>
-        <button type="button" className={!fase ? 'active' : ''} onClick={() => setFase('')}>
-          Todas
-        </button>
-        <button
-          type="button"
-          className={fase === 'ataque' ? 'active' : ''}
-          onClick={() => setFase('ataque')}
-        >
-          Ataque
-        </button>
-        <button
-          type="button"
-          className={fase === 'defensa' ? 'active' : ''}
-          onClick={() => setFase('defensa')}
-        >
-          Defensa
-        </button>
-      </div>
+      <FilterChips options={FASES} value={fase} onChange={setFase} style={{ marginBottom: '1rem' }} />
 
       <div className="field roster-search">
         <label htmlFor="jugadas-q" className="sr-only">

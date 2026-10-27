@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../api';
 import { useAuth } from '../auth';
 import { IcoBasura, IcoLapiz, IcoVer } from '../components/ActionIcons';
-import { FisicoTabs } from './Entrenamientos';
+import FisicoTabs from '../components/FisicoTabs';
 
 export const TIPOS_PREP = [
   { value: 'fuerza', label: 'Fuerza' },

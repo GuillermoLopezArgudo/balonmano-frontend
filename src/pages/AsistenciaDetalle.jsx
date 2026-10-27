@@ -3,7 +3,7 @@ import { Link, useLocation, useParams } from 'react-router-dom';
 import { api } from '../api';
 import { useAuth } from '../auth';
 import { IcoFlecha, IcoLapiz } from '../components/ActionIcons';
-import { FisicoTabs } from './Entrenamientos';
+import FisicoTabs from '../components/FisicoTabs';
 
 const ESTADOS = [
   { key: 'presente', label: 'Presente' },
