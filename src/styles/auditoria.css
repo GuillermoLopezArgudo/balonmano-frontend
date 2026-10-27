@@ -1,0 +1,127 @@
+/* Auditoria */
+
+
+/* Auditoría */
+.auditoria-search {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.auditoria-search input[type='search'] {
+  flex: 1 1 12rem;
+  min-width: 0;
+  max-width: 28rem;
+}
+
+.auditoria-meta {
+  margin: 0 0 0.85rem;
+  font-size: 0.85rem;
+}
+
+.auditoria-table td {
+  vertical-align: top;
+}
+
+.auditoria-table td strong {
+  display: block;
+  font-weight: 700;
+}
+
+.auditoria-table td small {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.78rem;
+}
+
+.auditoria-accion {
+  display: inline;
+  margin-right: 0.35rem;
+}
+
+.auditoria-badge {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.15rem 0.4rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  vertical-align: middle;
+}
+
+.auditoria-badge.warn {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 45%, var(--line));
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+}
+
+.auditoria-ip {
+  display: block;
+  font-family: var(--font);
+  font-size: 0.85rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.auditoria-table td,
+.auditoria-table td small {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.auditoria-pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+/* Móvil + tablet: tarjetas; evita min-width de .table-wrap table (scroll horizontal) */
+@media (max-width: 1024px) {
+  .auditoria-table-wrap {
+    overflow-x: hidden;
+  }
+
+  .auditoria-table-wrap .auditoria-table {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .auditoria-table thead {
+    display: none;
+  }
+
+  .auditoria-table tr {
+    display: block;
+    margin-bottom: 0.75rem;
+    padding: 0.75rem 0.85rem;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+  }
+
+  .auditoria-table td {
+    display: block;
+    padding: 0.25rem 0;
+    border: 0;
+  }
+
+  .auditoria-table td::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.1rem;
+  }
+}

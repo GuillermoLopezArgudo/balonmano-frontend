@@ -1,0 +1,166 @@
+/* Layout: tarjetas de miembros */
+
+
+.miembro-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 1rem 1.05rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  min-width: 0;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.miembro-card.is-admin {
+  border-color: color-mix(in srgb, var(--purple) 45%, var(--line));
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--purple) 10%, transparent),
+      transparent 55%
+    ),
+    var(--panel);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--purple) 12%, transparent);
+}
+
+.miembro-card.is-pending {
+  border-style: dashed;
+}
+
+.miembro-card.is-baja {
+  opacity: 0.78;
+}
+
+.miembro-card-head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.miembro-avatar {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--panel-2);
+  color: var(--text);
+  font-family: var(--display);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.miembro-avatar.is-admin {
+  background: var(--purple);
+  color: #fff;
+}
+
+.miembro-card-id {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.miembro-card-id strong {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  font-size: 1rem;
+  line-height: 1.25;
+}
+
+.miembro-card-id small {
+  display: block;
+  margin-top: 0.15rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.miembro-you {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.08rem 0.4rem;
+  border-radius: var(--radius-sm);
+  background: var(--lime-soft);
+  color: var(--lime);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.miembro-pill {
+  flex: 0 0 auto;
+  padding: 0.28rem 0.55rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.miembro-pill.admin {
+  background: rgba(139, 92, 246, 0.18);
+  color: var(--purple);
+}
+
+.miembro-pill.pending {
+  background: rgba(255, 122, 24, 0.16);
+  color: var(--orange);
+}
+
+.miembro-pill.baja {
+  background: rgba(255, 92, 122, 0.14);
+  color: var(--danger);
+}
+
+.miembro-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.miembro-field-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.miembro-select {
+  width: 100%;
+  max-width: none;
+  min-height: 44px;
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.miembro-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: auto;
+  padding-top: 0.15rem;
+}
+
+.miembro-card-actions button {
+  flex: 1 1 auto;
+  min-height: 42px;
+  min-width: calc(50% - 0.25rem);
+}
+
+.miembro-card-note {
+  margin: 0;
+  width: 100%;
+  color: var(--muted);
+  font-size: 0.82rem;
+}

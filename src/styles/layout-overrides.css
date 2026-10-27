@@ -1,0 +1,260 @@
+/* Layout: overrides de tema claro y ajustes responsive finales */
+
+
+[data-theme='claro'] .rail {
+  box-shadow: 1px 0 0 var(--line);
+}
+
+[data-theme='claro'] .rail a.nav-item.active {
+  color: var(--lime);
+}
+
+[data-theme='claro'] .brand-badge,
+[data-theme='claro'] button:not(.ghost):not(.btn-back):not(.step):not(.btn-seg):not(.btn-play):not(.jugada-paso-chip):not(.cuota-cell) {
+  color: #0a0a0a;
+}
+
+[data-theme='claro'] .btn-seg:not(.active),
+[data-theme='claro'] .filters button:not(.active),
+[data-theme='claro'] .live-acciones button:not(.active),
+[data-theme='claro'] .live-zonas button:not(.active),
+[data-theme='claro'] .btn-play {
+  color: var(--muted);
+  background: #fff;
+  border-color: #cbd5e1;
+}
+
+[data-theme='claro'] .btn-back {
+  color: #475569;
+}
+
+[data-theme='claro'] .btn-back:hover {
+  color: #0f172a;
+}
+
+[data-theme='claro'] .page-kicker,
+[data-theme='claro'] .metric span,
+[data-theme='claro'] .panel-hint {
+  color: #475569;
+}
+
+[data-theme='claro'] button.ghost {
+  color: #334155;
+  border-color: #cbd5e1;
+  background: #fff;
+}
+
+[data-theme='claro'] button.ghost:hover {
+  color: #0f172a;
+  border-color: #94a3b8;
+  background: #f8fafc;
+}
+
+[data-theme='claro'] .filters button:not(.active) {
+  color: #334155;
+  background: #fff;
+  border-color: #cbd5e1;
+}
+
+[data-theme='claro'] .filters button.filters-end,
+[data-theme='claro'] .filters a.filters-end > button:not(.ghost) {
+  background: var(--lime);
+  color: #0a0a0a;
+  border-color: var(--lime);
+}
+
+[data-theme='claro'] .filters .filters-end button.ghost {
+  color: #334155;
+  background: #fff;
+  border-color: #cbd5e1;
+}
+
+@media (max-width: 1024px) and (min-width: 641px) {
+  .metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .workspace {
+    padding: 1.35rem 1.5rem 2rem;
+  }
+
+  /* Tablet: misma estructura page-head que desktop */
+  .page-head {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+
+  .page-head > .page-back,
+  .page-head > a.btn-icon-view,
+  .page-head > a.btn-icon-edit {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+    align-self: center;
+  }
+
+  .page-head .add-player-actions,
+  .page-head .add-player-actions.page-head-actions-end {
+    grid-column: 1 / -1;
+    width: 100%;
+    justify-self: stretch;
+  }
+
+  .page-head .add-player-actions.page-head-actions-beside {
+    grid-column: 2;
+    grid-row: 1;
+    width: auto;
+    max-width: 100%;
+    justify-self: end;
+    align-self: center;
+  }
+}
+
+/* Safe areas (notch / home indicator) */
+@supports (padding: max(0px)) {
+  @media (max-width: 1024px) {
+    .mobile-top {
+      padding-top: max(0.55rem, env(safe-area-inset-top));
+      padding-left: max(0.85rem, env(safe-area-inset-left));
+      padding-right: max(0.85rem, env(safe-area-inset-right));
+    }
+
+    .rail {
+      padding-top: max(1.25rem, env(safe-area-inset-top));
+      padding-bottom: max(1.25rem, env(safe-area-inset-bottom));
+    }
+
+    .workspace {
+      padding-bottom: max(2rem, calc(1.5rem + env(safe-area-inset-bottom)));
+    }
+  }
+}
+
+[data-theme='claro'] .rail-backdrop {
+  background: rgba(15, 23, 42, 0.4);
+}
+
+@media (max-width: 640px) {
+  .jugada-ball {
+    width: 18px;
+    height: 18px;
+    margin-left: -9px;
+    margin-top: -9px;
+  }
+
+  .jugada-modes .btn-seg,
+  .jugada-modes .btn-play,
+  .jugada-modes button.ghost {
+    flex: unset;
+    width: 100%;
+    min-width: 0;
+    padding: 0.5rem 0.4rem;
+    white-space: normal;
+    line-height: 1.2;
+  }
+
+  .btn-seg,
+  .filters button:not(.filters-end) {
+    padding: var(--ctrl-py) var(--ctrl-px);
+    font-size: var(--ctrl-fs);
+    min-height: var(--ctrl-mh);
+  }
+
+  .live-acciones,
+  .live-zonas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .live-acciones button,
+  .live-zonas button {
+    flex: 1 1 calc(50% - 0.4rem);
+    min-width: 0;
+  }
+}
+
+.field.has-error input,
+.field.has-error .password-field input {
+  border-color: rgba(255, 92, 122, 0.75);
+}
+
+/* Botones icono: ver / editar (lápiz) / eliminar (basura) */
+.btn-icon-view,
+.btn-icon-edit,
+.btn-icon-del,
+a.btn-icon-view,
+a.btn-icon-edit {
+  width: var(--ctrl-icon);
+  height: var(--ctrl-icon);
+  min-width: var(--ctrl-icon);
+  min-height: var(--ctrl-icon);
+  padding: 0;
+  border-radius: var(--radius-sm);
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+  box-sizing: border-box;
+}
+
+.btn-icon-view,
+a.btn-icon-view {
+  border: 1px solid var(--line);
+  color: var(--text);
+  background: transparent;
+}
+
+.btn-icon-view:hover:not(:disabled),
+a.btn-icon-view:hover {
+  border-color: color-mix(in srgb, var(--cyan) 45%, var(--line));
+  color: var(--cyan);
+  background: color-mix(in srgb, var(--cyan) 10%, transparent);
+}
+
+.btn-icon-edit,
+a.btn-icon-edit {
+  border: 1px solid rgba(191, 255, 0, 0.55);
+  color: var(--lime);
+  background: rgba(191, 255, 0, 0.08);
+}
+
+.btn-icon-edit:hover:not(:disabled),
+a.btn-icon-edit:hover {
+  border-color: var(--lime);
+  background: rgba(191, 255, 0, 0.16);
+}
+
+.btn-icon-del {
+  border: 1px solid rgba(255, 92, 122, 0.5);
+  color: #ff8fa3;
+  background: rgba(255, 92, 122, 0.08);
+}
+
+.btn-icon-del:hover:not(:disabled) {
+  border-color: rgba(255, 92, 122, 0.9);
+  background: rgba(255, 92, 122, 0.16);
+  color: #ffb0be;
+}
+
+.btn-icon-edit:disabled,
+.btn-icon-del:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+[data-theme='claro'] .btn-icon-edit,
+[data-theme='claro'] a.btn-icon-edit {
+  border-color: rgba(120, 160, 0, 0.55);
+  color: #5a7a00;
+  background: rgba(191, 255, 0, 0.2);
+}
+
+[data-theme='claro'] .btn-icon-del {
+  border-color: rgba(200, 60, 90, 0.45);
+  color: #c43b55;
+  background: rgba(255, 92, 122, 0.1);
+}
