@@ -2780,6 +2780,8 @@ body.conv-pointer-dragging .conv-selected-row.drag-over {
   border: 1px solid color-mix(in srgb, var(--lime) 45%, var(--line));
   background:
     linear-gradient(135deg, color-mix(in srgb, var(--lime) 14%, var(--panel)), var(--panel));
+  background-color: var(--panel);
+  background-clip: padding-box;
   color: var(--text);
   text-decoration: none;
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28);
@@ -2788,17 +2790,28 @@ body.conv-pointer-dragging .conv-selected-row.drag-over {
   z-index: 30;
   transition: border-color 0.15s ease, transform 0.15s ease;
   min-width: 0;
+  /* Evita esquina blanca en iOS/Safari (sticky + radius + capa) */
+  isolation: isolate;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
 }
 
-.live-clock-banner:hover {
-  border-color: var(--lime);
-  transform: translateY(-1px);
+@media (hover: hover) and (pointer: fine) {
+  .live-clock-banner:hover {
+    border-color: var(--lime);
+    transform: translateY(-1px);
+  }
 }
 
 .live-clock-banner.is-paused {
   border-color: color-mix(in srgb, var(--orange) 40%, var(--line));
   background:
     linear-gradient(135deg, color-mix(in srgb, var(--orange) 12%, var(--panel)), var(--panel));
+  background-color: var(--panel);
+  background-clip: padding-box;
 }
 
 .live-clock-banner-dot {
@@ -2867,9 +2880,12 @@ body.conv-pointer-dragging .conv-selected-row.drag-over {
 }
 
 @media (max-width: 1024px) {
+  /* Mismo top que desktop. Un top tipo 56px (altura del mobile-top) se
+     comportaba como offset en reposo y tapaba el page-head / h1. Al hacer
+     scroll el banner queda bajo .mobile-top (z-index mayor). */
   .live-clock-banner {
-    top: calc(56px + env(safe-area-inset-top, 0px) + 0.35rem);
-    margin-bottom: 0.85rem;
+    top: 0.35rem;
+    margin-bottom: 1rem;
     padding: 0.65rem 0.8rem;
   }
 }
@@ -2877,6 +2893,7 @@ body.conv-pointer-dragging .conv-selected-row.drag-over {
 @media (max-width: 640px) {
   .live-clock-banner {
     gap: 0.55rem;
+    margin-bottom: 1.1rem;
   }
 
   .live-clock-banner-main strong {

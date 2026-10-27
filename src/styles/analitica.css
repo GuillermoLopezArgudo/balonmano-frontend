@@ -175,11 +175,7 @@
   gap: 0.55rem;
 }
 
-@media (max-width: 720px) {
-  .dash-gk-grid {
-    grid-template-columns: 1fr;
-  }
-}
+/* En móvil las 3 stats de portería siguen en horizontal (ver bloque ≤860px abajo) */
 
 .metric strong.c-purple {
   color: var(--purple);
@@ -193,6 +189,56 @@
   display: grid;
   grid-template-columns: 1.35fr 0.85fr;
   gap: 1rem;
+}
+
+/* Tras .grid-2 base: los media de layout/partidos perdían por orden de cascade */
+@media (max-width: 860px) {
+  .grid-2,
+  .grid-2.dash-main {
+    grid-template-columns: 1fr;
+  }
+
+  /* Stats de portería en fila; no apilar en columna */
+  .dash-gk-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.45rem;
+  }
+
+  .dash-gk-stat {
+    padding: 0.65rem 0.5rem;
+    min-width: 0;
+  }
+
+  .dash-gk-stat strong {
+    font-size: 1.25rem;
+  }
+
+  .dash-gk-stat small {
+    font-size: 0.65rem;
+    line-height: 1.25;
+  }
+
+  .dash-next-card {
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .dash-next-card .match-card-body {
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .dash-next-card .match-card-body > a {
+    display: block;
+    max-width: 100%;
+  }
+
+  .dash-next-card .match-card-body button,
+  .dash-next-card .match-card-body > a > button {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
 }
 
 .panel-photo {
